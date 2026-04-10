@@ -1,0 +1,14 @@
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+android/
+ios/
+linux/
+macos/
+web/
+windows/
+ExploreHub_src/
+ExploreHub_flutter_project.zip
+*.iml
