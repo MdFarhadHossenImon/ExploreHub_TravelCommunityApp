@@ -1,0 +1,29 @@
+name: explorehub_flutter
+description: ExploreHub traveler community and booking app built with Flutter.
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cached_network_image: ^3.4.1
+  dio: ^5.9.2
+  flutter_riverpod: ^3.3.1
+  go_router: ^17.2.0
+  google_fonts: ^8.0.2
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
