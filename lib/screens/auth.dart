@@ -336,20 +336,7 @@ class _OtpScreenState extends State<OtpScreen> {
     super.dispose();
   }
 
-  Future<String?> _askNewPassword() {
-    final pw = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Create a new password'),
-        content: TextField(controller: pw, obscureText: true, decoration: const InputDecoration(hintText: 'At least 8 characters')),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(c, pw.text.length >= 8 ? pw.text : null), child: const Text('Save password')),
-        ],
-      ),
-    );
-  }
+  Future<String?> _askNewPassword() => askNewPassword(context);
 
   Future<void> _resend() async {
     setState(_startTimer);
@@ -400,16 +387,22 @@ class _OtpScreenState extends State<OtpScreen> {
     final mm = (_left ~/ 60).toString().padLeft(2, '0');
     final ss = (_left % 60).toString().padLeft(2, '0');
     return ScreenScaffold(
-      title: 'Verify OTP',
+      title: Backend.on ? 'Check your email' : 'Verify OTP',
       maxWidth: 440,
       body: ListView(padding: const EdgeInsets.all(20), children: [
         const SizedBox(height: 12),
         Text(
-          Backend.on
-              ? 'Enter the 6-digit code sent to ${widget.email}.'
-              : 'Enter the code sent to ${widget.email}. (Demo: any 6 digits work.)',
+          !Backend.on
+              ? 'Enter the code sent to ${widget.email}. (Demo: any 6 digits work.)'
+              : widget.resetFlow
+                  ? 'We emailed ${widget.email}. Open the link in that email to set a new password, or enter the 6-digit code if the email shows one.'
+                  : 'We emailed ${widget.email}. Open the confirmation link in that email to activate your account, then come back and log in. If the email shows a 6-digit code, you can enter it here instead.',
           style: const TextStyle(color: C.muted, fontSize: 13, height: 1.5),
         ),
+        if (Backend.on && !widget.resetFlow) ...[
+          const SizedBox(height: 16),
+          PrimaryButton('I confirmed my email, log in', outlined: true, onPressed: () => goRoot(context, const LoginScreen())),
+        ],
         const SizedBox(height: 32),
         TextField(
           controller: _code,
@@ -438,4 +431,20 @@ class _OtpScreenState extends State<OtpScreen> {
       ]),
     );
   }
+}
+
+/// Dialog asking for a new password (at least 8 characters). Returns null if cancelled.
+Future<String?> askNewPassword(BuildContext context) {
+  final pw = TextEditingController();
+  return showDialog<String>(
+    context: context,
+    builder: (c) => AlertDialog(
+      title: const Text('Create a new password'),
+      content: TextField(controller: pw, obscureText: true, decoration: const InputDecoration(hintText: 'At least 8 characters')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(c, pw.text.length >= 8 ? pw.text : null), child: const Text('Save password')),
+      ],
+    ),
+  );
 }

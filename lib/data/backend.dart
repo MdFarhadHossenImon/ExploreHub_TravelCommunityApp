@@ -31,8 +31,11 @@ class Backend {
   }
 
   // ---------- auth ----------
+  /// Where links in auth emails send people back to: this web page, or the app's deep link on phones.
+  static String get returnUrl => kIsWeb ? '${Uri.base.origin}${Uri.base.path}' : Env.authRedirect;
+
   static Future<AuthResponse> signUp(String email, String password) =>
-      _c.auth.signUp(email: email, password: password);
+      _c.auth.signUp(email: email, password: password, emailRedirectTo: returnUrl);
 
   static Future<AuthResponse> signIn(String email, String password) =>
       _c.auth.signInWithPassword(email: email, password: password);
@@ -41,9 +44,9 @@ class Backend {
       _c.auth.verifyOTP(email: email, token: code, type: recovery ? OtpType.recovery : OtpType.signup);
 
   static Future<void> resendSignupCode(String email) =>
-      _c.auth.resend(type: OtpType.signup, email: email);
+      _c.auth.resend(type: OtpType.signup, email: email, emailRedirectTo: returnUrl);
 
-  static Future<void> sendResetCode(String email) => _c.auth.resetPasswordForEmail(email);
+  static Future<void> sendResetCode(String email) => _c.auth.resetPasswordForEmail(email, redirectTo: returnUrl);
 
   static Future<void> updatePassword(String password) async {
     await _c.auth.updateUser(UserAttributes(password: password));

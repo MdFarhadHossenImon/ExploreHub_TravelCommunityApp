@@ -52,6 +52,18 @@ class _ExploreHubAppState extends State<ExploreHubApp> {
         social.load();
       }
       if (e.event == AuthChangeEvent.signedOut) social.clear();
+      // Opened the password reset link from the email: ask for the new password right away.
+      if (e.event == AuthChangeEvent.passwordRecovery && ctx != null && ctx.mounted) {
+        final pw = await askNewPassword(ctx);
+        if (pw != null) {
+          try {
+            await Backend.updatePassword(pw);
+            say('Password updated');
+          } catch (err) {
+            say(errText(err));
+          }
+        }
+      }
       // Returning from Google / Apple / Facebook: finish the sign-in and open the app.
       if (e.event == AuthChangeEvent.signedIn && !state.loggedIn) {
         final provider = e.session?.user.appMetadata['provider'];
