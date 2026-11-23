@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
 import '../core/env.dart';
+import '../core/levels.dart';
 import '../core/theme.dart';
 import '../data/backend.dart';
 import '../data/mock_data.dart';
@@ -15,6 +16,7 @@ import '../data/social.dart';
 import '../state/app_state.dart';
 import '../state/social_state.dart';
 import '../widgets/common.dart';
+import '../widgets/feed_video.dart';
 import '../widgets/social_widgets.dart';
 import 'feed_sidebars.dart';
 import 'place_detail.dart';
@@ -388,8 +390,7 @@ class PostCard extends StatelessWidget {
             AspectRatio(
               aspectRatio: 16 / 10,
               child: Stack(fit: StackFit.expand, children: [
-                AppImage(o.imageSeed, radius: 0),
-                if (o.isVideo) const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 48)),
+                mediaView(o.imageSeed, isVideo: o.isVideo, autoplay: false),
               ]),
             ),
           Padding(
@@ -518,7 +519,11 @@ class PostCard extends StatelessWidget {
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(post.userName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-                    Text(groupName ?? (post.edited ? '${post.time} · edited' : post.time), style: const TextStyle(color: C.muted, fontSize: 11.5)),
+                    Text(
+                        [groupName ?? post.time, if (post.edited) 'edited', if (place != null) place.name else if (post.locationLabel != null) post.locationLabel!].join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: C.muted, fontSize: 11.5)),
                   ]),
                 ),
                 PopupMenuButton<String>(
@@ -552,18 +557,20 @@ class PostCard extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(26),
               child: Stack(fit: StackFit.expand, children: [
-                AppImage(post.imageSeed, radius: 0),
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0x80000000), Colors.transparent, Colors.transparent, Color(0x99000000)],
-                      stops: [0, .25, .65, 1],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
+                mediaView(post.imageSeed, isVideo: post.isVideo),
+                const IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0x80000000), Colors.transparent, Colors.transparent, Color(0x99000000)],
+                        stops: [0, .25, .65, 1],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                     ),
                   ),
                 ),
-                if (post.isVideo) const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 64)),
+                if (post.isVideo && !post.imageSeed.startsWith('http')) const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 64)),
                 Positioned(
                   left: 12,
                   top: 12,
@@ -618,6 +625,26 @@ class PostCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (place == null && post.locationLabel != null)
+                  Positioned(
+                    left: 12,
+                    bottom: 12,
+                    right: 12,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: glass(
+                        Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.location_on_rounded, size: 16, color: C.primary),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(post.locationLabel!,
+                                overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                          ),
+                        ]),
+                        padding: const EdgeInsets.fromLTRB(10, 7, 12, 7),
+                      ),
+                    ),
+                  ),
                 if (place != null)
                   Positioned(
                     left: 12,
@@ -714,6 +741,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   late String _picked = _gallery.first;
   bool _video = false;
   late String? _placeId = widget.checkIn ? places.first.id : null;
+  static const _otherPlace = '__other__';
+  final _otherName = TextEditingController();
+  String _otherCountry = '';
   Uint8List? _bytes;
   String _ext = 'jpg';
   String _mime = 'image/jpeg';
@@ -744,10 +774,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     final caption = _caption.text.trim();
     if (caption.isEmpty) return toast(context, 'Write a short caption');
     if (!Backend.on) {
-      s.addPost(imageSeed: _picked, caption: caption, placeId: _placeId, isVideo: _video);
+      s.addPost(imageSeed: _picked, caption: caption, placeId: _placeId == _otherPlace ? null : _placeId, isVideo: _video);
     } else {
       setState(() => _busy = true);
-      final ok = await s.publishPost(bytes: _bytes, ext: _ext, mime: _mime, caption: caption, placeId: _placeId, isVideo: _video);
+      final other = _placeId == _otherPlace;
+      if (other && (_otherName.text.trim().length < 2 || _otherCountry.length < 2)) {
+        setState(() => _busy = false);
+        return toast(context, 'Type the place name and country');
+      }
+      final ok = await s.publishPost(
+          bytes: _bytes,
+          ext: _ext,
+          mime: _mime,
+          caption: caption,
+          placeId: other ? null : _placeId,
+          isVideo: _video,
+          locationName: other ? _otherName.text.trim() : null,
+          locationCountry: other ? _otherCountry : null);
       if (!mounted) return;
       setState(() => _busy = false);
       if (!ok) return;
@@ -820,10 +863,31 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           const SizedBox(height: 8),
           DropdownButtonFormField<String?>(
             value: _placeId,
+            isExpanded: true,
             hint: const Text('Optional'),
-            items: [for (final p in places) DropdownMenuItem(value: p.id, child: Text('${p.name}, ${p.country}'))],
+            items: [
+              for (final p in places) DropdownMenuItem(value: p.id, child: Text('${p.name}, ${p.country}', overflow: TextOverflow.ellipsis)),
+              const DropdownMenuItem(value: _otherPlace, child: Text('Another place (type it in)')),
+            ],
             onChanged: (v) => setState(() => _placeId = v),
           ),
+          if (_placeId == _otherPlace) ...[
+            const SizedBox(height: 10),
+            TextField(controller: _otherName, decoration: const InputDecoration(labelText: 'Place name', hintText: 'e.g. Bichanakandi, Sylhet')),
+            const SizedBox(height: 10),
+            Autocomplete<String>(
+              optionsBuilder: (v) => v.text.isEmpty ? const Iterable<String>.empty() : knownCountries.where((c) => c.toLowerCase().startsWith(v.text.toLowerCase())),
+              onSelected: (c) => _otherCountry = c,
+              fieldViewBuilder: (context, ctl, focus, submit) => TextField(
+                controller: ctl,
+                focusNode: focus,
+                onChanged: (v) => _otherCountry = v.trim(),
+                decoration: const InputDecoration(labelText: 'Country', hintText: 'Start typing, e.g. Bangladesh'),
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          const Text('Posts tagged with a place count toward your traveler level.', style: TextStyle(color: C.muted, fontSize: 12)),
         ]),
       );
 }

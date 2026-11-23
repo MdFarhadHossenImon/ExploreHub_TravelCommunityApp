@@ -193,6 +193,8 @@ class Backend {
     String? placeId,
     bool isVideo = false,
     String? sharedPostId,
+    String? locationName,
+    String? locationCountry,
   }) async {
     await _c.from('posts').insert({
       'caption': caption,
@@ -200,6 +202,10 @@ class Backend {
       'place_id': placeId,
       'is_video': isVideo,
       if (sharedPostId != null) 'shared_post_id': sharedPostId,
+      if (placeId == null && locationName != null && locationCountry != null) ...{
+        'location_name': locationName,
+        'location_country': locationCountry,
+      },
     });
   }
 

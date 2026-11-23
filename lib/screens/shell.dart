@@ -179,6 +179,8 @@ Traveler me(AppState s) => Traveler(
       followers: s.followers,
       following: s.followingCount,
       trips: s.tripCount,
+      placesVisited: s.placesVisited,
+      visitedCountries: s.visitedCountries,
     );
 
 /// Floating pill navigation for phones, with a raised "share" button in the middle.

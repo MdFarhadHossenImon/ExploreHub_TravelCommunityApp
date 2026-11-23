@@ -23,6 +23,8 @@ class AppState extends ChangeNotifier {
   String? coverUrl;
   List<String> countries = Backend.on ? [] : ['Bangladesh', 'Nepal', 'Thailand', 'Indonesia'];
   int followers = Backend.on ? 0 : 1240, followingCount = Backend.on ? 0 : 310, tripCount = Backend.on ? 0 : 9;
+  int placesVisited = Backend.on ? 0 : 14;
+  List<String> visitedCountries = Backend.on ? [] : ['Bangladesh', 'Nepal', 'Thailand', 'Indonesia'];
   String language = 'English (US)';
   bool push = true;
   bool promo = false;
@@ -83,6 +85,8 @@ class AppState extends ChangeNotifier {
       followers = (p?['followers'] as num?)?.toInt() ?? 0;
       followingCount = (p?['following'] as num?)?.toInt() ?? 0;
       tripCount = (p?['trips'] as num?)?.toInt() ?? 0;
+      placesVisited = (p?['places_visited'] as num?)?.toInt() ?? 0;
+      visitedCountries = List<String>.from(p?['visited_countries'] as List? ?? const []);
     } catch (_) {
       name = email.split('@').first;
     }
@@ -330,11 +334,15 @@ class AppState extends ChangeNotifier {
     required String caption,
     String? placeId,
     bool isVideo = false,
+    String? locationName,
+    String? locationCountry,
   }) async {
     try {
       final url = bytes == null ? '' : await Backend.upload(bytes, ext, mime);
-      await Backend.createPost(caption: caption, mediaUrl: url, placeId: placeId, isVideo: bytes != null && isVideo);
+      await Backend.createPost(caption: caption, mediaUrl: url, placeId: placeId, isVideo: bytes != null && isVideo,
+          locationName: locationName, locationCountry: locationCountry);
       posts..clear()..addAll(await Backend.posts());
+      await refreshStats();
       notifyListeners();
       return true;
     } catch (e) {
@@ -377,6 +385,17 @@ class AppState extends ChangeNotifier {
       say(errText(e));
       return false;
     }
+  }
+
+  /// Reloads the places-visited count and countries (they decide the traveler level).
+  Future<void> refreshStats() async {
+    if (!Backend.on || Backend.user == null) return;
+    try {
+      final p = await Backend.profile();
+      placesVisited = (p?['places_visited'] as num?)?.toInt() ?? placesVisited;
+      visitedCountries = List<String>.from(p?['visited_countries'] as List? ?? visitedCountries);
+      notifyListeners();
+    } catch (_) {}
   }
 
   /// Reloads notifications (called when a new one arrives in real time).

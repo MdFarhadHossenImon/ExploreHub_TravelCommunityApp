@@ -54,7 +54,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           VerifiedName(t, size: 15),
                           const SizedBox(height: 2),
-                          Text('${social.mutuals(t)} mutual buddies · ${t.countries.length} countries', style: const TextStyle(color: C.muted, fontSize: 12.5)),
+                          Row(children: [
+                            LevelBadge(t),
+                            const SizedBox(width: 6),
+                            Flexible(child: Text('${social.mutuals(t)} mutual · ${t.placesVisited} places', overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 12.5))),
+                          ]),
                           const SizedBox(height: 10),
                           Row(children: [
                             FilledButton(onPressed: () => social.acceptRequest(t.id), child: const Text('Confirm')),

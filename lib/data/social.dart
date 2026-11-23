@@ -14,8 +14,13 @@ class Traveler {
   final bool online;
   final String? nextTrip; // place id the traveler plans to visit
   final String? cover; // cover photo URL
+  /// Distinct places this traveler has posted from, and the countries they are in (drives the level).
+  final int placesVisited;
+  final List<String> visitedCountries;
   const Traveler({
     this.cover,
+    this.placesVisited = 0,
+    this.visitedCountries = const [],
     required this.id,
     required this.name,
     required this.seed,
@@ -47,6 +52,8 @@ class Traveler {
         followers: (r['followers'] as num?)?.toInt() ?? 0,
         following: (r['following'] as num?)?.toInt() ?? 0,
         trips: (r['trips'] as num?)?.toInt() ?? 0,
+        placesVisited: (r['places_visited'] as num?)?.toInt() ?? 0,
+        visitedCountries: List<String>.from(r['visited_countries'] as List? ?? const []),
       );
 }
 
@@ -158,34 +165,34 @@ const meId = 'me';
 final List<Traveler> travelers = <Traveler>[
   Traveler(id: 'ayesha', name: 'Ayesha Rahman', seed: 'ayesha', handle: 'ayesha.travels', home: 'Dhaka, Bangladesh',
       bio: 'Hill tracts lover. Chasing clouds, tea gardens and slow trains.', countries: ['Bangladesh', 'Nepal', 'India', 'Bhutan', 'Thailand'],
-      followers: 12400, following: 380, trips: 41, verified: true, online: true, nextTrip: 'kaptai'),
+      followers: 12400, following: 380, trips: 41, placesVisited: 123, verified: true, online: true, nextTrip: 'kaptai'),
   Traveler(id: 'meilin', name: 'Mei Lin', seed: 'meilin', handle: 'meilin.wanders', home: 'Osaka, Japan',
       bio: 'Filmmaker. 60-second city guides every Friday.', countries: ['Japan', 'Korea', 'Vietnam', 'Peru', 'Greece', 'Morocco'],
-      followers: 58200, following: 210, trips: 77, verified: true, online: true, nextTrip: 'santorini'),
+      followers: 58200, following: 210, trips: 77, placesVisited: 231, verified: true, online: true, nextTrip: 'santorini'),
   Traveler(id: 'carlos', name: 'Carlos Vega', seed: 'carlos', handle: 'carlos.trails', home: 'Lima, Peru',
       bio: 'Trekker and trail runner. Inca Trail x7.', countries: ['Peru', 'Chile', 'Bolivia', 'Nepal'],
-      followers: 8100, following: 512, trips: 29, online: false, nextTrip: 'sajek'),
+      followers: 8100, following: 512, trips: 29, placesVisited: 87, online: false, nextTrip: 'sajek'),
   Traveler(id: 'tanvir', name: 'Tanvir Hasan', seed: 'tanvir', handle: 'tanvir.boats', home: 'Chattogram, Bangladesh',
       bio: 'Budget routes, real prices. Boat person.', countries: ['Bangladesh', 'India', 'Malaysia'],
-      followers: 3900, following: 640, trips: 18, online: true, nextTrip: 'coxs'),
+      followers: 3900, following: 640, trips: 18, placesVisited: 54, online: true, nextTrip: 'coxs'),
   Traveler(id: 'nora', name: 'Nora Haddad', seed: 'nora', handle: 'nora.desert', home: 'Beirut, Lebanon',
       bio: 'Deserts, souks and long dinners. Solo female travel tips.', countries: ['Morocco', 'Jordan', 'Egypt', 'Turkey', 'Greece'],
-      followers: 21000, following: 300, trips: 52, verified: true, online: false, nextTrip: 'raja-ampat'),
+      followers: 21000, following: 300, trips: 52, placesVisited: 156, verified: true, online: false, nextTrip: 'raja-ampat'),
   Traveler(id: 'sam', name: 'Sam Okafor', seed: 'sam', handle: 'sam.dives', home: 'Lagos, Nigeria',
       bio: 'Divemaster. Ocean first, everything else second.', countries: ['Indonesia', 'Philippines', 'Egypt', 'Maldives'],
-      followers: 14800, following: 190, trips: 35, online: true, nextTrip: 'raja-ampat'),
+      followers: 14800, following: 190, trips: 35, placesVisited: 105, online: true, nextTrip: 'raja-ampat'),
   Traveler(id: 'eleni', name: 'Eleni Katsaros', seed: 'eleni', handle: 'eleni.islands', home: 'Athens, Greece',
       bio: 'Local historian. Quiet beaches over crowded viewpoints.', countries: ['Greece', 'Italy', 'Cyprus'],
-      followers: 6400, following: 420, trips: 23, online: false, nextTrip: 'kyoto'),
+      followers: 6400, following: 420, trips: 23, placesVisited: 69, online: false, nextTrip: 'kyoto'),
   Traveler(id: 'arjun', name: 'Arjun Mehta', seed: 'arjun', handle: 'arjun.on.road', home: 'Mumbai, India',
       bio: 'Motorbike tours across the Himalaya.', countries: ['India', 'Nepal', 'Bhutan'],
-      followers: 2300, following: 280, trips: 14, online: true, nextTrip: 'sajek'),
+      followers: 2300, following: 280, trips: 14, placesVisited: 42, online: true, nextTrip: 'sajek'),
   Traveler(id: 'lena', name: 'Lena Fischer', seed: 'lena', handle: 'lena.backpacks', home: 'Berlin, Germany',
       bio: 'Backpacking 30 countries on a budget. Hostels and night buses.', countries: ['Germany', 'Thailand', 'Vietnam', 'Peru', 'Morocco', 'Nepal'],
-      followers: 9100, following: 760, trips: 33, online: false, nextTrip: 'machu-picchu'),
+      followers: 9100, following: 760, trips: 33, placesVisited: 99, online: false, nextTrip: 'machu-picchu'),
   Traveler(id: 'hana', name: 'Hana Sato', seed: 'hana', handle: 'hana.eats', home: 'Kyoto, Japan',
       bio: 'Street food maps for every city I visit.', countries: ['Japan', 'Taiwan', 'Thailand', 'Bangladesh'],
-      followers: 17300, following: 350, trips: 40, online: true, nextTrip: 'coxs'),
+      followers: 17300, following: 350, trips: 40, placesVisited: 120, online: true, nextTrip: 'coxs'),
 ];
 
 const _unknown = Traveler(id: '', name: 'Traveler', seed: '', handle: 'traveler', home: '', bio: '', countries: []);

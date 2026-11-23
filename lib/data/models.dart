@@ -135,6 +135,9 @@ class Post {
   /// The post this one re-shares, if any.
   final Post? shared;
 
+  /// A place the author typed in (not in the catalog), e.g. "Bichanakandi, Bangladesh".
+  final String? locationLabel;
+
   Post({
     required this.id,
     required this.userName,
@@ -153,6 +156,7 @@ class Post {
     this.shareCount = 0,
     this.edited = false,
     this.shared,
+    this.locationLabel,
   })  : comments = comments ?? [],
         commentCount = commentCount ?? (comments?.length ?? 0);
 
@@ -175,6 +179,7 @@ class Post {
       commentCount: (r['comment_count'] as num?)?.toInt() ?? 0,
       shareCount: (r['share_count'] as num?)?.toInt() ?? 0,
       edited: r['edited_at'] != null,
+      locationLabel: r['location_name'] == null ? null : '${r['location_name']}, ${r['location_country'] ?? ''}',
       time: ago(DateTime.parse(r['created_at'] as String).toLocal()),
       shared: r['shared_post_id'] == null || r['shared_caption'] == null
           ? null

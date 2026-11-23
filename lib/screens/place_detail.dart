@@ -10,6 +10,7 @@ import '../data/mock_data.dart';
 import '../data/models.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/feed_video.dart';
 import 'booking_flow.dart';
 import 'shell.dart';
 import 'transport.dart';
@@ -134,8 +135,12 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                 height: 180,
                 margin: const EdgeInsets.only(bottom: 12),
                 child: Stack(fit: StackFit.expand, children: [
-                  AppImage(v.imageSeed),
-                  const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 54)),
+                  if (v.imageSeed.startsWith('http'))
+                    mediaView(v.imageSeed, isVideo: true, radius: 16, autoplay: false)
+                  else ...[
+                    AppImage(v.imageSeed),
+                    const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 54)),
+                  ],
                   Positioned(left: 12, bottom: 10, child: Text(v.videoTitle ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500))),
                 ]),
               ),

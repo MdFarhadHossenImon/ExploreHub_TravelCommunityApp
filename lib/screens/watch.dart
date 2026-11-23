@@ -6,11 +6,11 @@ import '../data/mock_data.dart';
 import '../data/models.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/feed_video.dart';
 import 'community.dart';
 import 'place_detail.dart';
 
-/// Vertical short-video discovery. Thumbnails stand in for video;
-/// plug in `video_player` / `chewie` and real URLs to play media.
+/// Vertical short-video discovery. Real uploads play inline (muted until you tap the speaker).
 class WatchScreen extends StatelessWidget {
   const WatchScreen({super.key});
 
@@ -58,21 +58,22 @@ class _ReelState extends State<_Reel> {
             Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
           ]),
         );
+    final real = p.imageSeed.startsWith('http');
     return GestureDetector(
-      onTap: () => setState(() => _playing = !_playing),
+      onTap: real ? null : () => setState(() => _playing = !_playing),
       child: Stack(fit: StackFit.expand, children: [
-        AppImage(p.imageSeed as String, radius: 0),
-        const DecoratedBox(
+        real ? FeedVideo(p.imageSeed) : AppImage(p.imageSeed, radius: 0),
+        const IgnorePointer(child: DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: [Color(0x80102826), Colors.transparent, Color(0xCC0A1A19)], begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: [0, 0.5, 1]),
           ),
-        ),
+        )),
         const Positioned(
           top: 0,
           left: 16,
           child: SafeArea(child: Padding(padding: EdgeInsets.only(top: 12), child: Text('Watch & explore', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)))),
         ),
-        if (p.isVideo)
+        if (p.isVideo && !real)
           Positioned(
             left: 18,
             right: 18,
@@ -90,7 +91,7 @@ class _ReelState extends State<_Reel> {
                   : const LinearProgressIndicator(value: 0.4, minHeight: 3, color: C.primary, backgroundColor: Colors.white30),
             ),
           ),
-        if (!_playing) const Center(child: Icon(Icons.play_arrow_rounded, color: Colors.white, size: 84)),
+        if (!_playing && !real) const Center(child: Icon(Icons.play_arrow_rounded, color: Colors.white, size: 84)),
         Positioned(
           right: 4,
           bottom: 30,

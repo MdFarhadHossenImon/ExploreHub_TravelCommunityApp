@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/levels.dart';
 import '../core/theme.dart';
 import '../data/social.dart';
 import '../state/app_state.dart';
@@ -303,4 +304,101 @@ class AvatarStack extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// Small level label, e.g. next to a traveler's name.
+class LevelBadge extends StatelessWidget {
+  final Traveler t;
+  const LevelBadge(this.t, {super.key});
+  @override
+  Widget build(BuildContext context) {
+    final l = levelFor(t.placesVisited, t.visitedCountries).level;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: l.color.withValues(alpha: .16), borderRadius: BorderRadius.circular(20)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(l.icon, size: 13, color: l.color),
+        const SizedBox(width: 4),
+        Text(l.short, style: TextStyle(color: l.color, fontSize: 11, fontWeight: FontWeight.w800)),
+      ]),
+    );
+  }
+}
+
+/// Traveler level card with progress toward the next level. Tap to see how levels work.
+class LevelCard extends StatelessWidget {
+  final Traveler t;
+  final bool isMe;
+  const LevelCard(this.t, {super.key, this.isMe = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final lp = levelFor(t.placesVisited, t.visitedCountries);
+    final l = lp.level;
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () => showLevelGuide(context, lp),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(colors: [l.color.withValues(alpha: .22), l.color.withValues(alpha: .06)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+          border: Border.all(color: l.color.withValues(alpha: .35)),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: l.color.withValues(alpha: .2), shape: BoxShape.circle),
+              child: Icon(l.icon, color: l.color, size: 22),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(l.name, style: TextStyle(color: l.color, fontWeight: FontWeight.w800, fontSize: 16)),
+                Text('${lp.places} ${lp.places == 1 ? 'place' : 'places'} · ${lp.countries} ${lp.countries == 1 ? 'country' : 'countries'} · ${lp.continents} ${lp.continents == 1 ? 'continent' : 'continents'}',
+                    style: const TextStyle(color: C.muted, fontSize: 12)),
+              ]),
+            ),
+            const Icon(Icons.info_outline_rounded, size: 18, color: C.muted),
+          ]),
+          if (lp.next != null) ...[
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(value: lp.progress, minHeight: 7, color: l.color, backgroundColor: C.line),
+            ),
+            const SizedBox(height: 6),
+            Text(isMe ? lp.nextHint : '${t.first} needs ${lp.nextHint}', style: const TextStyle(fontSize: 12)),
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
+void showLevelGuide(BuildContext context, LevelProgress lp) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    constraints: const BoxConstraints(maxWidth: 560),
+    builder: (c) => SafeArea(
+      child: ListView(shrinkWrap: true, padding: const EdgeInsets.fromLTRB(16, 16, 16, 20), children: [
+        const Text('Traveler levels', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+        const SizedBox(height: 6),
+        const Text(
+            'Levels are earned, not claimed. Every different place you post from counts once: tag a listed destination, or choose "Another place" and type the place and its country.',
+            style: TextStyle(color: C.muted, fontSize: 13, height: 1.45)),
+        const SizedBox(height: 12),
+        for (final l in travelerLevels)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: CircleAvatar(backgroundColor: l.color.withValues(alpha: .18), child: Icon(l.icon, color: l.color)),
+            title: Text(l.name, style: TextStyle(fontWeight: l == lp.level ? FontWeight.w800 : FontWeight.w600)),
+            subtitle: Text(l.rule),
+            trailing: l == lp.level ? Pill('Current', color: l.color) : null,
+          ),
+      ]),
+    ),
+  );
 }

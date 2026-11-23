@@ -92,7 +92,9 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
         ),
         const SizedBox(height: 12),
         VerifiedName(t, size: 23),
-        const SizedBox(height: 2),
+        const SizedBox(height: 6),
+        LevelBadge(t),
+        const SizedBox(height: 6),
         Text('@${t.handle}  ·  ${t.home}', textAlign: TextAlign.center, style: const TextStyle(color: C.muted, fontSize: 13)),
         if (t.bio.isNotEmpty)
           Padding(
@@ -110,9 +112,11 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
         Row(children: [
           _stat(compact(t.followers), 'Followers'),
           _stat(compact(t.following), 'Following'),
+          _stat('${t.placesVisited}', 'Places'),
           _stat('${t.trips}', 'Trips'),
-          _stat('${t.countries.length}', 'Countries'),
         ]),
+        const SizedBox(height: 12),
+        ConstrainedBox(constraints: const BoxConstraints(maxWidth: 560), child: LevelCard(t, isMe: isMe)),
         const SizedBox(height: 14),
         if (isMe)
           Row(children: [
