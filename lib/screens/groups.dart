@@ -9,6 +9,7 @@ import '../data/social.dart';
 import '../state/app_state.dart';
 import '../state/social_state.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 import '../widgets/social_widgets.dart';
 import 'community.dart';
 
@@ -20,7 +21,11 @@ class GroupsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final social = context.watch<SocialState>();
     final w = MediaQuery.sizeOf(context).width;
-    final cols = w >= 1100 ? 3 : w >= 640 ? 2 : 1;
+    final cols = w >= 1100
+        ? 3
+        : w >= 640
+            ? 2
+            : 1;
     final groupFeed = [
       for (final g in social.myGroups)
         for (final p in g.posts) (g, p),
@@ -36,7 +41,8 @@ class GroupsScreen extends StatelessWidget {
       ),
       body: Constrained(
         maxWidth: Bp.isDesktop(context) ? 1100 : 760,
-        child: ListView(padding: const EdgeInsets.all(16), children: [
+        child: PullRefresh(
+            child: ListView(padding: const EdgeInsets.all(16), children: [
           const Text('Your groups', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
           const SizedBox(height: 10),
           SizedBox(
@@ -75,9 +81,8 @@ class GroupsScreen extends StatelessWidget {
           const SizedBox(height: 22),
           const Text('Recent activity', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
           const SizedBox(height: 10),
-          for (final e in groupFeed)
-            Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 620), child: PostCard(e.$2, groupName: e.$1.name))),
-        ]),
+          for (final e in groupFeed) Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 620), child: PostCard(e.$2, groupName: e.$1.name))),
+        ])),
       ),
     );
   }
@@ -140,8 +145,7 @@ class GroupCard extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(g.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
             const SizedBox(height: 2),
-            Text('${g.private ? 'Private' : 'Public'} group · ${compact(g.members)} members',
-                style: const TextStyle(color: C.muted, fontSize: 12)),
+            Text('${g.private ? 'Private' : 'Public'} group · ${compact(g.members)} members', style: const TextStyle(color: C.muted, fontSize: 12)),
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -150,7 +154,13 @@ class GroupCard extends StatelessWidget {
                       style: OutlinedButton.styleFrom(foregroundColor: C.ink, side: const BorderSide(color: C.line)),
                       onPressed: () => go(context, GroupDetailScreen(group: g)),
                       child: const Text('View group'))
-                  : FilledButton(onPressed: () => social.toggleJoin(g), child: Text(pending ? 'Requested' : g.private ? 'Request to join' : 'Join group')),
+                  : FilledButton(
+                      onPressed: () => social.toggleJoin(g),
+                      child: Text(pending
+                          ? 'Requested'
+                          : g.private
+                              ? 'Request to join'
+                              : 'Join group')),
             ),
           ]),
         ),
@@ -212,7 +222,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     final canSee = joined || !g.private;
     final members = travelers.take(6).toList();
     return Scaffold(
-      body: CustomScrollView(slivers: [
+      body: PullRefresh(
+          child: CustomScrollView(physics: const AlwaysScrollableScrollPhysics(), slivers: [
         SliverAppBar(
           pinned: true,
           expandedHeight: 220,
@@ -248,7 +259,11 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                         : FilledButton.icon(
                             onPressed: () => social.toggleJoin(g),
                             icon: Icon(pending ? Icons.schedule_rounded : Icons.group_add_rounded, size: 18),
-                            label: Text(pending ? 'Requested' : g.private ? 'Request to join' : 'Join group')),
+                            label: Text(pending
+                                ? 'Requested'
+                                : g.private
+                                    ? 'Request to join'
+                                    : 'Join group')),
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
@@ -270,15 +285,15 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: SegmentedButton<int>(
-                  showSelectedIcon: false,
-                  segments: const [
-                    ButtonSegment(value: 0, label: Text('Discussion')),
-                    ButtonSegment(value: 1, label: Text('About')),
-                    ButtonSegment(value: 2, label: Text('Members')),
-                  ],
-                  selected: {_tab},
-                  onSelectionChanged: (v) => setState(() => _tab = v.first),
-                ),
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(value: 0, label: Text('Discussion')),
+                      ButtonSegment(value: 1, label: Text('About')),
+                      ButtonSegment(value: 2, label: Text('Members')),
+                    ],
+                    selected: {_tab},
+                    onSelectionChanged: (v) => setState(() => _tab = v.first),
+                  ),
                 ),
                 const SizedBox(height: 14),
                 if (_tab == 1) ...[
@@ -314,7 +329,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
             ),
           ),
         const SliverToBoxAdapter(child: SizedBox(height: 30)),
-      ]),
+      ])),
     );
   }
 }

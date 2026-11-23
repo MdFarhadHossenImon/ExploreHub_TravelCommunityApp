@@ -9,6 +9,7 @@ import '../data/models.dart';
 import '../state/app_state.dart';
 import '../state/social_state.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 import 'notifications.dart';
 import 'meetups.dart';
 import 'place_detail.dart';
@@ -38,7 +39,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
 
     return Scaffold(
-      body: SingleChildScrollView(
+      body: PullRefresh(
+          child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Constrained(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _Header(unread: s.unread, name: s.name, wide: wide),
@@ -117,8 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           left: 12,
                           right: 12,
                           bottom: 10,
-                          child: Text(v.videoTitle ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                          child: Text(v.videoTitle ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
                         ),
                       ]),
                     ),
@@ -130,41 +132,40 @@ class _HomeScreenState extends State<HomeScreen> {
             // Events
             if (!Backend.on) SectionHeader('Top Events', onSeeAll: () => go(context, const SearchScreen())),
             if (!Backend.on)
-            SizedBox(
-              height: 112,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: events.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (c, i) {
-                  final e = events[i];
-                  final p = placeById(e.placeId);
-                  return GestureDetector(
-                    onTap: () => go(context, PlaceDetailScreen(place: p)),
-                    child: SizedBox(
-                      width: 140,
-                      child: Stack(fit: StackFit.expand, children: [
-                        AppImage(p.photo, radius: 20),
-                        const DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.all(Radius.circular(20)),
-                            gradient: LinearGradient(colors: [Colors.transparent, Color(0xCC0A1A19)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+              SizedBox(
+                height: 112,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: events.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (c, i) {
+                    final e = events[i];
+                    final p = placeById(e.placeId);
+                    return GestureDetector(
+                      onTap: () => go(context, PlaceDetailScreen(place: p)),
+                      child: SizedBox(
+                        width: 140,
+                        child: Stack(fit: StackFit.expand, children: [
+                          AppImage(p.photo, radius: 20),
+                          const DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.all(Radius.circular(20)),
+                              gradient: LinearGradient(colors: [Colors.transparent, Color(0xCC0A1A19)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+                            ),
                           ),
-                        ),
-                        Positioned(
-                          left: 10,
-                          right: 10,
-                          bottom: 8,
-                          child: Text(e.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600)),
-                        ),
-                      ]),
-                    ),
-                  );
-                },
+                          Positioned(
+                            left: 10,
+                            right: 10,
+                            bottom: 8,
+                            child: Text(e.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600)),
+                          ),
+                        ]),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
 
             // Live: upcoming traveler meetups
             if (Backend.on) ...[
@@ -216,8 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Icon(Icons.camera_alt_rounded, color: C.on, size: 30),
                     SizedBox(width: 14),
                     Expanded(
-                      child: Text('Back from a trip? Share your photos and videos with the community.',
-                          style: TextStyle(color: C.on, fontWeight: FontWeight.w700, height: 1.4)),
+                      child: Text('Back from a trip? Share your photos and videos with the community.', style: TextStyle(color: C.on, fontWeight: FontWeight.w700, height: 1.4)),
                     ),
                   ]),
                 ),
@@ -226,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 16),
           ]),
         ),
-      ),
+      )),
     );
   }
 }
@@ -388,8 +388,7 @@ class _PlaceCard extends StatelessWidget {
             Positioned(
               right: 12,
               top: 12,
-              child: RoundIconButton(saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                  () => context.read<AppState>().toggleSavePlace(p.id), size: 34),
+              child: RoundIconButton(saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, () => context.read<AppState>().toggleSavePlace(p.id), size: 34),
             ),
             Positioned(
               left: 16,
@@ -398,15 +397,13 @@ class _PlaceCard extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
                 _tag(Text(p.price > 0 ? money(p.price) : p.category, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600))),
                 const SizedBox(height: 8),
-                Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
+                Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
                 const SizedBox(height: 2),
                 Row(children: [
                   const Icon(Icons.location_on, color: Colors.white70, size: 13),
                   const SizedBox(width: 3),
                   Expanded(
-                    child: Text('${p.location}, ${p.country}', maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    child: Text('${p.location}, ${p.country}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 12)),
                   ),
                 ]),
               ]),

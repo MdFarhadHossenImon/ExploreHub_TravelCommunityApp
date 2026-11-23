@@ -7,6 +7,7 @@ import '../data/mock_data.dart';
 import '../data/social.dart';
 import '../state/social_state.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 import '../widgets/social_widgets.dart';
 import 'bookings.dart';
 import 'messages.dart';
@@ -51,10 +52,15 @@ class _PlansTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final social = context.watch<SocialState>();
     final w = MediaQuery.sizeOf(context).width;
-    final cols = w >= 1100 ? 3 : w >= 700 ? 2 : 1;
+    final cols = w >= 1100
+        ? 3
+        : w >= 700
+            ? 2
+            : 1;
     return Constrained(
       maxWidth: 1100,
-      child: ListView(padding: const EdgeInsets.all(16), children: [
+      child: PullRefresh(
+          child: ListView(padding: const EdgeInsets.all(16), children: [
         Panel(
           onTap: () => go(context, const CreateTripScreen()),
           child: const Row(children: [
@@ -81,7 +87,7 @@ class _PlansTab extends StatelessWidget {
             itemCount: social.trips.length,
             itemBuilder: (c, i) => TripCard(social.trips[i]),
           ),
-      ]),
+      ])),
     );
   }
 }
@@ -117,8 +123,7 @@ class TripCard extends StatelessWidget {
                 child: Text(days > 0 ? 'In $days days' : 'Now', style: const TextStyle(color: C.on, fontWeight: FontWeight.w800, fontSize: 11)),
               ),
             ),
-            if (!trip.public)
-              const Positioned(right: 10, top: 10, child: Icon(Icons.lock_rounded, color: Colors.white, size: 18)),
+            if (!trip.public) const Positioned(right: 10, top: 10, child: Icon(Icons.lock_rounded, color: Colors.white, size: 18)),
             Positioned(
               left: 12,
               right: 12,
@@ -147,8 +152,7 @@ class TripCard extends StatelessWidget {
                 if (buddies.isNotEmpty) AvatarStack(buddies, radius: 12),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(buddies.isEmpty ? 'Solo trip' : 'With ${buddies.map((b) => b.first).join(', ')}',
-                      overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 12)),
+                  child: Text(buddies.isEmpty ? 'Solo trip' : 'With ${buddies.map((b) => b.first).join(', ')}', overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 12)),
                 ),
                 if (trip.budget > 0) Text(money(trip.budget), style: const TextStyle(color: C.primary, fontWeight: FontWeight.w800)),
               ]),
@@ -302,9 +306,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             ListTile(
               leading: PersonAvatar(t, showOnline: true),
               title: Text(t.name),
-              trailing: widget.trip.buddies.contains(t.id)
-                  ? const Icon(Icons.check_circle_rounded, color: C.primary)
-                  : const Icon(Icons.add_circle_outline_rounded, color: C.muted),
+              trailing: widget.trip.buddies.contains(t.id) ? const Icon(Icons.check_circle_rounded, color: C.primary) : const Icon(Icons.add_circle_outline_rounded, color: C.muted),
               onTap: () {
                 social.inviteBuddy(widget.trip, t.id);
                 Navigator.pop(c);
@@ -456,7 +458,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     ]);
 
     return Scaffold(
-      body: CustomScrollView(slivers: [
+      body: PullRefresh(
+          child: CustomScrollView(physics: const AlwaysScrollableScrollPhysics(), slivers: [
         SliverAppBar(
           pinned: true,
           expandedHeight: 230,
@@ -514,7 +517,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
-      ]),
+      ])),
       floatingActionButton: FloatingActionButton.extended(onPressed: _addStop, icon: const Icon(Icons.add_rounded), label: const Text('Add stop')),
     );
   }

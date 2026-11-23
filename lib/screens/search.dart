@@ -7,6 +7,7 @@ import '../data/mock_data.dart';
 import '../data/models.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 import 'place_detail.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -42,7 +43,11 @@ class _SearchScreenState extends State<SearchScreen> {
       final okQ = q.isEmpty || '${p.name} ${p.location} ${p.country}'.toLowerCase().contains(q);
       return okCat && okQ;
     }).toList();
-    list.sort((a, b) => _sort == 0 ? a.price.compareTo(b.price) : _sort == 1 ? b.price.compareTo(a.price) : b.rating.compareTo(a.rating));
+    list.sort((a, b) => _sort == 0
+        ? a.price.compareTo(b.price)
+        : _sort == 1
+            ? b.price.compareTo(a.price)
+            : b.rating.compareTo(a.rating));
     return list;
   }
 
@@ -92,24 +97,19 @@ class _SearchScreenState extends State<SearchScreen> {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('Dhaka, Bangladesh', style: TextStyle(fontWeight: FontWeight.w500)),
                   const SizedBox(height: 4),
-                  Text('${fmtDate(_range.start)} to ${fmtDate(_range.end)}  ·  $_guests guests',
-                      style: const TextStyle(fontSize: 11.5, color: C.muted)),
+                  Text('${fmtDate(_range.start)} to ${fmtDate(_range.end)}  ·  $_guests guests', style: const TextStyle(fontSize: 11.5, color: C.muted)),
                 ]),
               ),
               TextButton.icon(onPressed: _edit, icon: const Icon(Icons.edit_calendar_rounded, size: 18), label: const Text('Edit')),
-              IconButton(
-                  tooltip: 'Fewer guests',
-                  onPressed: _guests > 1 ? () => setState(() => _guests--) : null,
-                  icon: const Icon(Icons.remove_circle_outline_rounded, size: 20)),
-              IconButton(
-                  tooltip: 'More guests',
-                  onPressed: () => setState(() => _guests++),
-                  icon: const Icon(Icons.add_circle_outline_rounded, size: 20)),
+              IconButton(tooltip: 'Fewer guests', onPressed: _guests > 1 ? () => setState(() => _guests--) : null, icon: const Icon(Icons.remove_circle_outline_rounded, size: 20)),
+              IconButton(tooltip: 'More guests', onPressed: () => setState(() => _guests++), icon: const Icon(Icons.add_circle_outline_rounded, size: 20)),
             ]),
           ),
           SizedBox(
             height: 44,
-            child: ListView(
+            child: PullRefresh(
+                child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
@@ -126,7 +126,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   ),
               ],
-            ),
+            )),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
@@ -151,8 +151,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 : wide
                     ? GridView.builder(
                         padding: const EdgeInsets.all(16),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2, mainAxisExtent: 116, crossAxisSpacing: 14, mainAxisSpacing: 14),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisExtent: 116, crossAxisSpacing: 14, mainAxisSpacing: 14),
                         itemCount: res.length,
                         itemBuilder: (c, i) => PlaceCard(res[i]),
                       )

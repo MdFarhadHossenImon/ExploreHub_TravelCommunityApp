@@ -6,6 +6,7 @@ import '../core/theme.dart';
 import '../data/social.dart';
 import '../state/social_state.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 import '../widgets/social_widgets.dart';
 import 'traveler_profile.dart';
 
@@ -66,7 +67,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
       Expanded(
         child: list.isEmpty
             ? const EmptyState(Icons.chat_bubble_outline_rounded, 'No conversations', 'Say hi to a travel buddy.')
-            : ListView.builder(
+            : PullRefresh(
+                child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: list.length,
                 itemBuilder: (c, i) {
                   final cv = list[i];
@@ -79,13 +82,15 @@ class _MessagesScreenState extends State<MessagesScreen> {
                       onTap: () => _select(cv),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                       leading: cv.isGroup
-                          ? SizedBox(width: 48, height: 48, child: Stack(children: [
-                              Positioned(right: 0, top: 0, child: Avatar(people[0].seed, name: people[0].name, radius: 17)),
-                              Positioned(left: 0, bottom: 0, child: CircleAvatar(radius: 19, backgroundColor: C.bg, child: Avatar(people[1].seed, name: people[1].name, radius: 17))),
-                            ]))
+                          ? SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: Stack(children: [
+                                Positioned(right: 0, top: 0, child: Avatar(people[0].seed, name: people[0].name, radius: 17)),
+                                Positioned(left: 0, bottom: 0, child: CircleAvatar(radius: 19, backgroundColor: C.bg, child: Avatar(people[1].seed, name: people[1].name, radius: 17))),
+                              ]))
                           : PersonAvatar(people.first, radius: 24, showOnline: true),
-                      title: Text(cv.title,
-                          maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: cv.unread > 0 ? FontWeight.w800 : FontWeight.w600, fontSize: 14.5)),
+                      title: Text(cv.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: cv.unread > 0 ? FontWeight.w800 : FontWeight.w600, fontSize: 14.5)),
                       subtitle: Text(
                         last == null ? 'Start chatting' : '${last.fromId == meId ? 'You: ' : ''}${last.text}  ·  ${last.time}',
                         maxLines: 1,
@@ -102,7 +107,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                     ),
                   );
                 },
-              ),
+              )),
       ),
     ]);
 
@@ -116,8 +121,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
           builder: (c) => SafeArea(
             child: ListView(shrinkWrap: true, children: [
               const Padding(padding: EdgeInsets.all(16), child: Text('New message', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
-              for (final t in social.buddyList)
-                ListTile(leading: PersonAvatar(t, showOnline: true), title: Text(t.name), subtitle: Text(t.home), onTap: () => Navigator.pop(c, t)),
+              for (final t in social.buddyList) ListTile(leading: PersonAvatar(t, showOnline: true), title: Text(t.name), subtitle: Text(t.home), onTap: () => Navigator.pop(c, t)),
             ]),
           ),
         );
@@ -234,10 +238,7 @@ class _ChatViewState extends State<ChatView> {
             IconButton(tooltip: 'Voice call', onPressed: () => toast(context, 'Calling is coming soon'), icon: const Icon(Icons.call_rounded, color: C.primary)),
             IconButton(tooltip: 'Video call', onPressed: () => toast(context, 'Video calls are coming soon'), icon: const Icon(Icons.videocam_rounded, color: C.primary)),
             if (!cv.isGroup)
-              IconButton(
-                  tooltip: 'Profile',
-                  onPressed: () => go(context, TravelerProfileScreen(traveler: people.first)),
-                  icon: const Icon(Icons.info_outline_rounded, color: C.primary)),
+              IconButton(tooltip: 'Profile', onPressed: () => go(context, TravelerProfileScreen(traveler: people.first)), icon: const Icon(Icons.info_outline_rounded, color: C.primary)),
           ]),
         ),
       Expanded(
@@ -253,8 +254,7 @@ class _ChatViewState extends State<ChatView> {
                   cv.isGroup ? AvatarStack(people, radius: 22) : Avatar(people.first.seed, name: people.first.name, radius: 34),
                   const SizedBox(height: 8),
                   Text(cv.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-                  Text(cv.isGroup ? 'Group chat for your trip' : 'You are travel buddies on ExploreHub',
-                      style: const TextStyle(color: C.muted, fontSize: 12)),
+                  Text(cv.isGroup ? 'Group chat for your trip' : 'You are travel buddies on ExploreHub', style: const TextStyle(color: C.muted, fontSize: 12)),
                 ]),
               );
             }
@@ -284,14 +284,14 @@ class _ChatViewState extends State<ChatView> {
                         GestureDetector(
                           onLongPress: mine ? () => _confirmDelete(context, cv, m) : null,
                           child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                          decoration: BoxDecoration(
-                            color: mine ? C.primary : C.card,
-                            border: mine ? null : Border.all(color: C.line),
-                            borderRadius: BorderRadius.circular(18),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                            decoration: BoxDecoration(
+                              color: mine ? C.primary : C.card,
+                              border: mine ? null : Border.all(color: C.line),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Text(m.text, style: TextStyle(color: mine ? C.on : C.ink, fontSize: 14, height: 1.35)),
                           ),
-                          child: Text(m.text, style: TextStyle(color: mine ? C.on : C.ink, fontSize: 14, height: 1.35)),
-                        ),
                         ),
                         if (mine && i == cv.messages.length)
                           const Padding(padding: EdgeInsets.only(top: 3, right: 4), child: Text('Hold a message to delete it', style: TextStyle(color: C.muted, fontSize: 10.5))),

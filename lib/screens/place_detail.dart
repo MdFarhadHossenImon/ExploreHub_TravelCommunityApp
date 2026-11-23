@@ -10,6 +10,7 @@ import '../data/mock_data.dart';
 import '../data/models.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 import '../widgets/feed_video.dart';
 import 'booking_flow.dart';
 import 'shell.dart';
@@ -42,15 +43,16 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     try {
       final r = await Backend.reviews(p.id);
       if (!mounted) return;
-      setState(() => _reviews..clear()..addAll(r));
+      setState(() => _reviews
+        ..clear()
+        ..addAll(r));
     } catch (e) {
       say(errText(e));
     }
   }
 
   Future<void> _openMap() async {
-    final url = p.mapsUrl ??
-        (p.lat != null ? 'https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}' : null);
+    final url = p.mapsUrl ?? (p.lat != null ? 'https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}' : null);
     if (url == null) return;
     if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)) say('Could not open maps');
   }
@@ -154,8 +156,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   Widget _about() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('About', style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
-        Text(p.about, maxLines: _more ? null : 4, overflow: _more ? TextOverflow.visible : TextOverflow.ellipsis,
-            style: const TextStyle(color: C.muted, fontSize: 13, height: 1.6)),
+        Text(p.about, maxLines: _more ? null : 4, overflow: _more ? TextOverflow.visible : TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 13, height: 1.6)),
         GestureDetector(
           onTap: () => setState(() => _more = !_more),
           child: Padding(
@@ -166,8 +167,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         if ((p.imageUrl ?? '').contains('wikimedia.org'))
           const Padding(
             padding: EdgeInsets.only(top: 10),
-            child: Text('Cover photo: Wikimedia Commons contributors, free license (Creative Commons or public domain).',
-                style: TextStyle(color: C.muted, fontSize: 11)),
+            child: Text('Cover photo: Wikimedia Commons contributors, free license (Creative Commons or public domain).', style: TextStyle(color: C.muted, fontSize: 11)),
           ),
         const SizedBox(height: 18),
         Row(children: [
@@ -283,7 +283,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                       child: OutlinedButton.icon(
                         onPressed: () => go(context, TransportScreen(type: steps[i].action!, to: p.hub)),
                         icon: Icon(modeIcon(steps[i].action!), size: 16),
-                        label: Text('Find ${steps[i].action == 'flight' ? 'flights' : steps[i].action == 'train' ? 'trains' : 'buses'}', style: const TextStyle(fontSize: 12.5)),
+                        label: Text(
+                            'Find ${steps[i].action == 'flight' ? 'flights' : steps[i].action == 'train' ? 'trains' : 'buses'}',
+                            style: const TextStyle(fontSize: 12.5)),
                       ),
                     ),
                   ],
@@ -346,16 +348,14 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                 child: p.price == 0
                     ? PrimaryButton('Plan a trip here', icon: Icons.map_rounded, onPressed: () => go(context, const CreateTripScreen()))
                     : PrimaryButton('Book a Trip  ·  ${money(p.price)}/person',
-                    onPressed: () => go(
-                        context,
-                        BookingFlowScreen(
-                            draft: BookingDraft(title: p.name, location: '${p.location}, ${p.country}', type: 'tour', seed: p.id, unitPrice: p.price)))),
+                        onPressed: () => go(context, BookingFlowScreen(draft: BookingDraft(title: p.name, location: '${p.location}, ${p.country}', type: 'tour', seed: p.id, unitPrice: p.price)))),
               ),
             ),
           ),
         ),
       ),
-      body: CustomScrollView(slivers: [
+      body: PullRefresh(
+          child: CustomScrollView(physics: const AlwaysScrollableScrollPhysics(), slivers: [
         SliverAppBar(
           pinned: true,
           expandedHeight: wide ? 380 : 320,
@@ -424,10 +424,10 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Expanded(child: Text(p.name, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w600))),
                   if (p.price > 0)
-                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                    Text(money(p.price), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600)),
-                    const Text('per person', style: TextStyle(fontSize: 11, color: C.muted)),
-                  ]),
+                    Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                      Text(money(p.price), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600)),
+                      const Text('per person', style: TextStyle(fontSize: 11, color: C.muted)),
+                    ]),
                 ]),
                 const SizedBox(height: 4),
                 Row(children: [
@@ -460,7 +460,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             ),
           ),
         ),
-      ]),
+      ])),
     );
   }
 }

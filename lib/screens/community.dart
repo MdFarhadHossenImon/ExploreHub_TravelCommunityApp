@@ -16,6 +16,7 @@ import '../data/social.dart';
 import '../state/app_state.dart';
 import '../state/social_state.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 import '../widgets/feed_video.dart';
 import '../widgets/social_widgets.dart';
 import 'feed_sidebars.dart';
@@ -37,7 +38,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   String _greeting() {
     final h = DateTime.now().hour;
-    return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    return h < 12
+        ? 'Good morning'
+        : h < 18
+            ? 'Good afternoon'
+            : 'Good evening';
   }
 
   @override
@@ -104,8 +109,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
     final empty = Padding(
       padding: const EdgeInsets.all(24),
-      child: EmptyState(Icons.dynamic_feed_rounded, _filter == 'For you' ? 'Your feed is quiet' : 'Nothing here yet',
-          'Add travel buddies or join groups to see their journeys.'),
+      child: EmptyState(Icons.dynamic_feed_rounded, _filter == 'For you' ? 'Your feed is quiet' : 'Nothing here yet', 'Add travel buddies or join groups to see their journeys.'),
     );
 
     if (!desktop) {
@@ -114,7 +118,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
           bottom: false,
           child: Constrained(
             maxWidth: 640,
-            child: ListView(padding: const EdgeInsets.only(bottom: 110), children: [
+            child: PullRefresh(
+                child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.only(bottom: 110), children: [
               header,
               const SizedBox(height: 14),
               const StoryRow(),
@@ -126,7 +131,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 PostCard(posts[i]),
                 if (i == 1 && _filter == 'For you') const PeopleStrip(),
               ],
-            ]),
+            ])),
           ),
         ),
       );
@@ -140,7 +145,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
     return Scaffold(
       body: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(
-          child: ListView(padding: const EdgeInsets.only(bottom: 40), children: [
+          child: PullRefresh(
+              child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.only(bottom: 40), children: [
             header,
             const SizedBox(height: 16),
             const StoryRow(padding: 28),
@@ -155,7 +161,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 Expanded(child: Column(children: [for (final p in right) PostCard(p)])),
               ]),
             ),
-          ]),
+          ])),
         ),
         Container(
           width: 340,
@@ -166,7 +172,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 }
-
 
 const reactionSet = [
   ('❤️', 'Love'),
@@ -411,9 +416,11 @@ class PostCard extends StatelessWidget {
   void _openAuthor(BuildContext context) {
     final s = context.read<AppState>();
     final mine = Backend.on ? post.userId == Backend.uid : post.userName == s.name;
-    final t = mine ? me(s) : (travelerForPost(post) ??
-        Traveler(id: post.userId ?? post.userName, name: post.userName, seed: post.userSeed, handle: post.userName.toLowerCase().replaceAll(' ', '.'),
-            home: 'Traveler', bio: '', countries: const []));
+    final t = mine
+        ? me(s)
+        : (travelerForPost(post) ??
+            Traveler(
+                id: post.userId ?? post.userName, name: post.userName, seed: post.userSeed, handle: post.userName.toLowerCase().replaceAll(' ', '.'), home: 'Traveler', bio: '', countries: const []));
     go(context, TravelerProfileScreen(traveler: t));
   }
 
@@ -519,11 +526,8 @@ class PostCard extends StatelessWidget {
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(post.userName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-                    Text(
-                        [groupName ?? post.time, if (post.edited) 'edited', if (place != null) place.name else if (post.locationLabel != null) post.locationLabel!].join(' · '),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: C.muted, fontSize: 11.5)),
+                    Text([groupName ?? post.time, if (post.edited) 'edited', if (place != null) place.name else if (post.locationLabel != null) post.locationLabel!].join(' · '),
+                        maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 11.5)),
                   ]),
                 ),
                 PopupMenuButton<String>(
@@ -548,144 +552,143 @@ class PostCard extends StatelessWidget {
             ]),
           )
         else
-        GestureDetector(
-          onDoubleTap: () {
-            if (!liked) s.toggleLike(post);
-          },
-          child: AspectRatio(
-            aspectRatio: post.isVideo ? 4 / 5 : 1,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(26),
-              child: Stack(fit: StackFit.expand, children: [
-                mediaView(post.imageSeed, isVideo: post.isVideo),
-                const IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0x80000000), Colors.transparent, Colors.transparent, Color(0x99000000)],
-                        stops: [0, .25, .65, 1],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
+          GestureDetector(
+            onDoubleTap: () {
+              if (!liked) s.toggleLike(post);
+            },
+            child: AspectRatio(
+              aspectRatio: post.isVideo ? 4 / 5 : 1,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(26),
+                child: Stack(fit: StackFit.expand, children: [
+                  mediaView(post.imageSeed, isVideo: post.isVideo),
+                  const IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0x80000000), Colors.transparent, Colors.transparent, Color(0x99000000)],
+                          stops: [0, .25, .65, 1],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                if (post.isVideo && !post.imageSeed.startsWith('http')) const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 64)),
-                Positioned(
-                  left: 12,
-                  top: 12,
-                  right: 56,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: GestureDetector(
-                      onTap: () => _openAuthor(context),
-                      child: glass(Row(mainAxisSize: MainAxisSize.min, children: [
-                        Avatar(post.userSeed, name: post.userName, radius: 16),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                            Row(mainAxisSize: MainAxisSize.min, children: [
-                              Flexible(child: Text(post.userName, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
-                              if (traveler?.verified ?? false) const Padding(padding: EdgeInsets.only(left: 3), child: Icon(Icons.verified_rounded, size: 13, color: C.primary)),
-                            ]),
-                            Text(groupName ?? (post.edited ? '${post.time} · edited' : post.time), overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                          ]),
-                        ),
-                        if (!mine && traveler != null && !social.buddies.contains(traveler.id)) ...[
-                          const SizedBox(width: 8),
-                          InkWell(
-                            onTap: () => social.toggleRequest(traveler.id),
-                            child: Icon(social.sent.contains(traveler.id) ? Icons.schedule_rounded : Icons.person_add_alt_1_rounded, size: 18, color: C.primary),
-                          ),
-                        ],
-                      ])),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: 8,
-                  top: 10,
-                  child: Material(
-                    color: const Color(0xB3101E1D),
-                    shape: const CircleBorder(),
-                    child: PopupMenuButton<String>(
-                      tooltip: 'More',
-                      icon: const Icon(Icons.more_horiz_rounded, color: Colors.white),
-                      onSelected: (v) => _menu(context, v),
-                      itemBuilder: (_) => [
-                        PopupMenuItem(value: 'save', child: Text(saved ? 'Remove from saved' : 'Save post')),
-                        if (mine) ...const [
-                          PopupMenuItem(value: 'edit', child: Text('Edit post')),
-                          PopupMenuItem(value: 'delete', child: Text('Delete post')),
-                        ] else ...const [
-                          PopupMenuItem(value: 'report', child: Text('Report post')),
-                          PopupMenuItem(value: 'block', child: Text('Block user')),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-                if (place == null && post.locationLabel != null)
+                  if (post.isVideo && !post.imageSeed.startsWith('http')) const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 64)),
                   Positioned(
                     left: 12,
-                    bottom: 12,
-                    right: 12,
+                    top: 12,
+                    right: 56,
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: glass(
-                        Row(mainAxisSize: MainAxisSize.min, children: [
-                          const Icon(Icons.location_on_rounded, size: 16, color: C.primary),
-                          const SizedBox(width: 4),
+                      child: GestureDetector(
+                        onTap: () => _openAuthor(context),
+                        child: glass(Row(mainAxisSize: MainAxisSize.min, children: [
+                          Avatar(post.userSeed, name: post.userName, radius: 16),
+                          const SizedBox(width: 8),
                           Flexible(
-                            child: Text(post.locationLabel!,
-                                overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                              Row(mainAxisSize: MainAxisSize.min, children: [
+                                Flexible(child: Text(post.userName, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
+                                if (traveler?.verified ?? false) const Padding(padding: EdgeInsets.only(left: 3), child: Icon(Icons.verified_rounded, size: 13, color: C.primary)),
+                              ]),
+                              Text(groupName ?? (post.edited ? '${post.time} · edited' : post.time), overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                            ]),
                           ),
-                        ]),
-                        padding: const EdgeInsets.fromLTRB(10, 7, 12, 7),
+                          if (!mine && traveler != null && !social.buddies.contains(traveler.id)) ...[
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: () => social.toggleRequest(traveler.id),
+                              child: Icon(social.sent.contains(traveler.id) ? Icons.schedule_rounded : Icons.person_add_alt_1_rounded, size: 18, color: C.primary),
+                            ),
+                          ],
+                        ])),
                       ),
                     ),
                   ),
-                if (place != null)
                   Positioned(
-                    left: 12,
-                    bottom: 12,
-                    right: 12,
-                    child: Row(children: [
-                      Flexible(
-                        child: InkWell(
-                          onTap: () => go(context, PlaceDetailScreen(place: place)),
-                          child: glass(
-                            Row(mainAxisSize: MainAxisSize.min, children: [
-                              const Icon(Icons.location_on_rounded, size: 16, color: C.primary),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text('${place.name}, ${place.country}',
-                                    overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700)),
-                              ),
-                            ]),
-                            padding: const EdgeInsets.fromLTRB(10, 7, 12, 7),
+                    right: 8,
+                    top: 10,
+                    child: Material(
+                      color: const Color(0xB3101E1D),
+                      shape: const CircleBorder(),
+                      child: PopupMenuButton<String>(
+                        tooltip: 'More',
+                        icon: const Icon(Icons.more_horiz_rounded, color: Colors.white),
+                        onSelected: (v) => _menu(context, v),
+                        itemBuilder: (_) => [
+                          PopupMenuItem(value: 'save', child: Text(saved ? 'Remove from saved' : 'Save post')),
+                          if (mine) ...const [
+                            PopupMenuItem(value: 'edit', child: Text('Edit post')),
+                            PopupMenuItem(value: 'delete', child: Text('Delete post')),
+                          ] else ...const [
+                            PopupMenuItem(value: 'report', child: Text('Report post')),
+                            PopupMenuItem(value: 'block', child: Text('Block user')),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (place == null && post.locationLabel != null)
+                    Positioned(
+                      left: 12,
+                      bottom: 12,
+                      right: 12,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: glass(
+                          Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.location_on_rounded, size: 16, color: C.primary),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(post.locationLabel!, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                            ),
+                          ]),
+                          padding: const EdgeInsets.fromLTRB(10, 7, 12, 7),
+                        ),
+                      ),
+                    ),
+                  if (place != null)
+                    Positioned(
+                      left: 12,
+                      bottom: 12,
+                      right: 12,
+                      child: Row(children: [
+                        Flexible(
+                          child: InkWell(
+                            onTap: () => go(context, PlaceDetailScreen(place: place)),
+                            child: glass(
+                              Row(mainAxisSize: MainAxisSize.min, children: [
+                                const Icon(Icons.location_on_rounded, size: 16, color: C.primary),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text('${place.name}, ${place.country}',
+                                      overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                                ),
+                              ]),
+                              padding: const EdgeInsets.fromLTRB(10, 7, 12, 7),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      InkWell(
-                        onTap: () => go(context, PlaceDetailScreen(place: place, initialTab: 1)),
-                        child: Container(
-                          padding: const EdgeInsets.fromLTRB(10, 7, 12, 7),
-                          decoration: BoxDecoration(color: C.primary, borderRadius: BorderRadius.circular(30)),
-                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.directions_rounded, size: 16, color: C.on),
-                            SizedBox(width: 4),
-                            Text('Route', style: TextStyle(color: C.on, fontWeight: FontWeight.w800, fontSize: 12.5)),
-                          ]),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () => go(context, PlaceDetailScreen(place: place, initialTab: 1)),
+                          child: Container(
+                            padding: const EdgeInsets.fromLTRB(10, 7, 12, 7),
+                            decoration: BoxDecoration(color: C.primary, borderRadius: BorderRadius.circular(30)),
+                            child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                              Icon(Icons.directions_rounded, size: 16, color: C.on),
+                              SizedBox(width: 4),
+                              Text('Route', style: TextStyle(color: C.on, fontWeight: FontWeight.w800, fontSize: 12.5)),
+                            ]),
+                          ),
                         ),
-                      ),
-                    ]),
-                  ),
-              ]),
+                      ]),
+                    ),
+                ]),
+              ),
             ),
           ),
-        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(2, 6, 2, 0),
           child: Row(children: [
@@ -699,21 +702,20 @@ class PostCard extends StatelessWidget {
             stat(const Icon(Icons.chat_bubble_outline_rounded, size: 21), '${post.commentCount}', () => _comments(context), tip: 'Comments'),
             stat(const Icon(Icons.near_me_outlined, size: 21), post.shareCount > 0 ? '${post.shareCount}' : null, () => _share(context), tip: 'Share'),
             const Spacer(),
-            stat(Icon(saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, size: 22, color: saved ? C.primary : C.ink), null,
-                () => s.toggleSavePost(post), tip: 'Save'),
+            stat(Icon(saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, size: 22, color: saved ? C.primary : C.ink), null, () => s.toggleSavePost(post), tip: 'Save'),
           ]),
         ),
         if (post.imageSeed.isNotEmpty)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-          child: Text.rich(
-            TextSpan(children: [
-              TextSpan(text: '${post.userName.split(' ').first}  ', style: const TextStyle(fontWeight: FontWeight.w800)),
-              TextSpan(text: post.caption),
-            ]),
-            style: const TextStyle(fontSize: 14, height: 1.45),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: '${post.userName.split(' ').first}  ', style: const TextStyle(fontWeight: FontWeight.w800)),
+                TextSpan(text: post.caption),
+              ]),
+              style: const TextStyle(fontSize: 14, height: 1.45),
+            ),
           ),
-        ),
         if (post.commentCount > 0)
           Padding(
             padding: const EdgeInsets.fromLTRB(10, 6, 10, 0),
@@ -726,7 +728,6 @@ class PostCard extends StatelessWidget {
     );
   }
 }
-
 
 class CreatePostScreen extends StatefulWidget {
   final bool checkIn;
@@ -751,9 +752,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   Future<void> _pick() async {
     final picker = ImagePicker();
-    final XFile? f = _video
-        ? await picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(minutes: 2))
-        : await picker.pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
+    final XFile? f =
+        _video ? await picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(minutes: 2)) : await picker.pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
     if (f == null) return;
     final bytes = await f.readAsBytes();
     if (bytes.length > 45 * 1024 * 1024) {
@@ -818,32 +818,30 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               const SizedBox(height: 8),
                               Text('Tap to add a ${_video ? 'video' : 'photo'} (optional)', style: const TextStyle(color: C.primary)),
                             ])
-                          : (_video
-                              ? const Center(child: Icon(Icons.check_circle_rounded, size: 52, color: C.primary))
-                              : Image.memory(_bytes!, fit: BoxFit.cover)),
+                          : (_video ? const Center(child: Icon(Icons.check_circle_rounded, size: 52, color: C.primary)) : Image.memory(_bytes!, fit: BoxFit.cover)),
                     ),
                   )
                 : AppImage(_picked),
           ),
           const SizedBox(height: 12),
           if (!Backend.on) ...[
-          const Text('Choose media (demo gallery. Add Supabase keys to upload real photos)', style: TextStyle(color: C.muted, fontSize: 12)),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 70,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _gallery.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (c, i) => GestureDetector(
-                onTap: () => setState(() => _picked = _gallery[i]),
-                child: Container(
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: _picked == _gallery[i] ? C.primary : Colors.transparent, width: 3)),
-                  child: AppImage(_gallery[i], width: 70, height: 64, radius: 9),
+            const Text('Choose media (demo gallery. Add Supabase keys to upload real photos)', style: TextStyle(color: C.muted, fontSize: 12)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 70,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _gallery.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (c, i) => GestureDetector(
+                  onTap: () => setState(() => _picked = _gallery[i]),
+                  child: Container(
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: _picked == _gallery[i] ? C.primary : Colors.transparent, width: 3)),
+                    child: AppImage(_gallery[i], width: 70, height: 64, radius: 9),
+                  ),
                 ),
               ),
             ),
-          ),
           ],
           const SizedBox(height: 12),
           SegmentedButton<bool>(

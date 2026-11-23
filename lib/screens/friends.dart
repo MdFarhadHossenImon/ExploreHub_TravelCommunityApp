@@ -7,6 +7,7 @@ import '../data/mock_data.dart';
 import '../data/social.dart';
 import '../state/social_state.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 import '../widgets/social_widgets.dart';
 import 'feed_sidebars.dart';
 import 'messages.dart';
@@ -26,7 +27,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
   @override
   Widget build(BuildContext context) {
     final social = context.watch<SocialState>();
-    final cols = MediaQuery.sizeOf(context).width >= 1100 ? 4 : MediaQuery.sizeOf(context).width >= 700 ? 3 : 2;
+    final cols = MediaQuery.sizeOf(context).width >= 1100
+        ? 4
+        : MediaQuery.sizeOf(context).width >= 700
+            ? 3
+            : 2;
     final tabs = ['Requests', 'Suggestions', 'Buddy finder', 'Your buddies'];
 
     Widget grid(List<Traveler> list) => GridView.builder(
@@ -79,13 +84,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
       case 2:
         final going = travelers.where((t) => _dest == null ? t.nextTrip != null : t.nextTrip == _dest).toList();
         body = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Find travelers heading to the same place as you, split costs and explore together.',
-              style: TextStyle(color: C.muted, fontSize: 13, height: 1.4)),
+          const Text('Find travelers heading to the same place as you, split costs and explore together.', style: TextStyle(color: C.muted, fontSize: 13, height: 1.4)),
           const SizedBox(height: 12),
           Wrap(spacing: 8, runSpacing: 8, children: [
             ChoiceChip(label: const Text('Anywhere'), selected: _dest == null, onSelected: (_) => setState(() => _dest = null)),
-            for (final p in places.where((p) => travelers.any((t) => t.nextTrip == p.id)))
-              ChoiceChip(label: Text(p.name), selected: _dest == p.id, onSelected: (_) => setState(() => _dest = p.id)),
+            for (final p in places.where((p) => travelers.any((t) => t.nextTrip == p.id))) ChoiceChip(label: Text(p.name), selected: _dest == p.id, onSelected: (_) => setState(() => _dest = p.id)),
           ]),
           const SizedBox(height: 14),
           for (final t in going)
@@ -141,7 +144,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
       appBar: AppBar(leading: const BackCircle(), leadingWidth: 56, title: const Text('Travel buddies')),
       body: Constrained(
         maxWidth: Bp.isDesktop(context) ? 1000 : 760,
-        child: ListView(padding: const EdgeInsets.all(16), children: [
+        child: PullRefresh(
+            child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(16), children: [
           SizedBox(
             height: 40,
             child: ListView.separated(
@@ -160,7 +164,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
           ),
           const SizedBox(height: 16),
           body,
-        ]),
+        ])),
       ),
     );
   }

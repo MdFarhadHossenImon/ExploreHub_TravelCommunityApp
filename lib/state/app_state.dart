@@ -94,6 +94,24 @@ class AppState extends ChangeNotifier {
     await refreshAll();
   }
 
+  /// Pull-to-refresh: reloads the catalog plus everything the user sees.
+  Future<void> pullRefresh() async {
+    if (!Backend.on) {
+      await Future.delayed(const Duration(milliseconds: 600));
+      return;
+    }
+    try {
+      final pl = await Backend.places();
+      if (pl.isNotEmpty) places..clear()..addAll(pl);
+      final gd = await Backend.guides();
+      if (gd.isNotEmpty) guides..clear()..addAll(gd);
+    } catch (e) {
+      say(errText(e));
+    }
+    await refreshAll();
+    if (Backend.user != null) await refreshStats();
+  }
+
   Future<void> refreshAll() async {
     if (!Backend.on || Backend.user == null) return;
     try {

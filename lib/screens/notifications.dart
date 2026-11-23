@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 
 IconData _icon(String k) {
   switch (k) {
@@ -39,7 +40,8 @@ class NotificationsScreen extends StatelessWidget {
       actions: [TextButton(onPressed: s.unread == 0 ? null : s.markAllRead, child: const Text('Read all'))],
       body: s.notifications.isEmpty
           ? const EmptyState(Icons.notifications_none_rounded, 'All caught up', 'Booking updates and community activity show up here.')
-          : ListView(padding: const EdgeInsets.all(16), children: [
+          : PullRefresh(
+              child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(16), children: [
               for (final d in days) ...[
                 Padding(padding: const EdgeInsets.only(top: 8, bottom: 8), child: Text(d, style: const TextStyle(color: C.muted, fontSize: 12.5))),
                 for (final n in s.notifications.where((x) => x.day == d))
@@ -72,7 +74,7 @@ class NotificationsScreen extends StatelessWidget {
                     ),
                   ),
               ],
-            ]),
+            ])),
     );
   }
 }

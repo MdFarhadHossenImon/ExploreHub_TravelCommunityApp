@@ -10,6 +10,7 @@ import '../data/social.dart';
 import '../state/app_state.dart';
 import '../state/social_state.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 import '../widgets/social_widgets.dart';
 import 'community.dart';
 import 'edit_profile.dart';
@@ -17,10 +18,30 @@ import 'messages.dart';
 import 'trips.dart';
 
 const _flags = {
-  'Bangladesh': '🇧🇩', 'Nepal': '🇳🇵', 'India': '🇮🇳', 'Bhutan': '🇧🇹', 'Thailand': '🇹🇭', 'Japan': '🇯🇵', 'Korea': '🇰🇷',
-  'Vietnam': '🇻🇳', 'Peru': '🇵🇪', 'Greece': '🇬🇷', 'Morocco': '🇲🇦', 'Chile': '🇨🇱', 'Bolivia': '🇧🇴', 'Malaysia': '🇲🇾',
-  'Jordan': '🇯🇴', 'Egypt': '🇪🇬', 'Turkey': '🇹🇷', 'Indonesia': '🇮🇩', 'Philippines': '🇵🇭', 'Maldives': '🇲🇻',
-  'Italy': '🇮🇹', 'Cyprus': '🇨🇾', 'Germany': '🇩🇪', 'Taiwan': '🇹🇼',
+  'Bangladesh': '🇧🇩',
+  'Nepal': '🇳🇵',
+  'India': '🇮🇳',
+  'Bhutan': '🇧🇹',
+  'Thailand': '🇹🇭',
+  'Japan': '🇯🇵',
+  'Korea': '🇰🇷',
+  'Vietnam': '🇻🇳',
+  'Peru': '🇵🇪',
+  'Greece': '🇬🇷',
+  'Morocco': '🇲🇦',
+  'Chile': '🇨🇱',
+  'Bolivia': '🇧🇴',
+  'Malaysia': '🇲🇾',
+  'Jordan': '🇯🇴',
+  'Egypt': '🇪🇬',
+  'Turkey': '🇹🇷',
+  'Indonesia': '🇮🇩',
+  'Philippines': '🇵🇭',
+  'Maldives': '🇲🇻',
+  'Italy': '🇮🇹',
+  'Cyprus': '🇨🇾',
+  'Germany': '🇩🇪',
+  'Taiwan': '🇹🇼',
 };
 
 /// Public traveler profile (also used for "me").
@@ -33,6 +54,7 @@ class TravelerProfileScreen extends StatefulWidget {
 
 class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
   int _tab = 0;
+
   /// Live mode: this traveler's own posts, fetched from the database.
   List<Post>? _theirPosts;
 
@@ -55,9 +77,7 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
     final social = context.watch<SocialState>();
     final t = widget.traveler;
     final isMe = t.id == meId;
-    final posts = Backend.on
-        ? (isMe ? s.myPosts : (_theirPosts ?? const <Post>[]))
-        : s.posts.where((p) => isMe ? p.userName == s.name : p.userName == t.name).toList();
+    final posts = Backend.on ? (isMe ? s.myPosts : (_theirPosts ?? const <Post>[])) : s.posts.where((p) => isMe ? p.userName == s.name : p.userName == t.name).toList();
     final trips = isMe ? social.trips : social.trips.where((x) => x.buddies.contains(t.id)).toList();
     final wide = Bp.isWide(context);
     final w = MediaQuery.sizeOf(context).width;
@@ -206,19 +226,17 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
       ]),
     );
 
-
     // Photo grid: media from this traveler's posts (demo mode adds a few sample shots).
     final photos = <String>[
       ...posts.where((p) => p.imageSeed.isNotEmpty && !p.isVideo).map((p) => p.imageSeed),
-      if (!Backend.on) for (var i = 1; i <= 9; i++) '${t.seed}-trip-$i',
+      if (!Backend.on)
+        for (var i = 1; i <= 9; i++) '${t.seed}-trip-$i',
     ];
     final cols = w >= 900 ? 4 : 3;
 
     Widget content;
     if (_tab == 0) {
-      content = posts.isEmpty
-          ? const EmptyState(Icons.photo_camera_outlined, 'No posts yet', 'Trips shared will show up here.')
-          : Column(children: [for (final p in posts) PostCard(p)]);
+      content = posts.isEmpty ? const EmptyState(Icons.photo_camera_outlined, 'No posts yet', 'Trips shared will show up here.') : Column(children: [for (final p in posts) PostCard(p)]);
     } else if (_tab == 1) {
       content = Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -246,7 +264,7 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
     return Scaffold(
       body: Constrained(
         maxWidth: 940,
-        child: ListView(padding: EdgeInsets.zero, children: [header, content, const SizedBox(height: 40)]),
+        child: PullRefresh(child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: EdgeInsets.zero, children: [header, content, const SizedBox(height: 40)])),
       ),
     );
   }

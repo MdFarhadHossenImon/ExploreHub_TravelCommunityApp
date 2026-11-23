@@ -6,6 +6,7 @@ import '../core/theme.dart';
 import '../state/app_state.dart';
 import '../state/social_state.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 import '../widgets/social_widgets.dart';
 import 'bookings.dart';
 import 'friends.dart';
@@ -27,12 +28,22 @@ class MenuScreen extends StatelessWidget {
     final s = context.watch<AppState>();
     final social = context.watch<SocialState>();
     final w = MediaQuery.sizeOf(context).width;
-    final cols = w >= 900 ? 4 : w >= 600 ? 3 : 2;
+    final cols = w >= 900
+        ? 4
+        : w >= 600
+            ? 3
+            : 2;
     final items = <(IconData, Color, String, String?, VoidCallback)>[
       (Icons.people_alt_rounded, const Color(0xFF6FB7E9), 'Travel buddies', social.incoming.isEmpty ? null : '${social.incoming.length} new', () => go(context, const FriendsScreen())),
       (Icons.chat_bubble_rounded, const Color(0xFFB68CF0), 'Messages', social.unreadChats == 0 ? null : '${social.unreadChats} unread', () => go(context, const MessagesScreen())),
       (Icons.groups_rounded, const Color(0xFF7CC08D), 'Groups', '${social.joined.length} joined', () => go(context, const GroupsScreen())),
-      (Icons.event_rounded, const Color(0xFFE76F51), 'Meetups', social.meetups.where((m) => !m.isPast).isEmpty ? null : '${social.meetups.where((m) => !m.isPast).length} upcoming', () => go(context, const MeetupsScreen())),
+      (
+        Icons.event_rounded,
+        const Color(0xFFE76F51),
+        'Meetups',
+        social.meetups.where((m) => !m.isPast).isEmpty ? null : '${social.meetups.where((m) => !m.isPast).length} upcoming',
+        () => go(context, const MeetupsScreen())
+      ),
       (Icons.map_rounded, C.primary, 'Trip planner', '${social.trips.length} plans', () => shellTab.value = 3),
       (Icons.confirmation_number_rounded, const Color(0xFFE9C46A), 'Bookings', null, () => go(context, const Scaffold(body: BookingsScreen()))),
       (Icons.smart_display_rounded, C.danger, 'Watch', null, () => shellTab.value = 2),
@@ -51,7 +62,8 @@ class MenuScreen extends StatelessWidget {
             ),
       body: Constrained(
         maxWidth: 900,
-        child: ListView(padding: const EdgeInsets.all(16), children: [
+        child: PullRefresh(
+            child: ListView(padding: const EdgeInsets.all(16), children: [
           Panel(
             onTap: () => go(context, TravelerProfileScreen(traveler: me(s))),
             child: Row(children: [
@@ -106,7 +118,7 @@ class MenuScreen extends StatelessWidget {
               ),
             ]),
           ),
-        ]),
+        ])),
       ),
     );
   }

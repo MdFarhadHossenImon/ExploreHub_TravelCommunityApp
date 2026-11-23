@@ -5,6 +5,7 @@ import '../core/responsive.dart';
 import '../core/theme.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 import 'auth.dart';
 import 'community.dart';
 import 'search.dart';
@@ -50,7 +51,8 @@ class ProfileScreen extends StatelessWidget {
       ),
       body: Constrained(
         maxWidth: 640,
-        child: ListView(padding: const EdgeInsets.fromLTRB(20, 4, 20, 24), children: [
+        child: PullRefresh(
+            child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.fromLTRB(20, 4, 20, 24), children: [
           Center(child: Avatar(s.avatarSeed, name: s.name, radius: 46)),
           const SizedBox(height: 10),
           Center(child: Text(s.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600))),
@@ -117,10 +119,15 @@ class ProfileScreen extends StatelessWidget {
             );
           }, trailing: s.language),
           _tile(Icons.bookmark_border_rounded, 'Saved places', () => go(context, const SavedPlacesScreen())),
-          _tile(Icons.shield_outlined, 'Privacy Policy', () => go(context, const _InfoScreen('Privacy Policy', [
-                ('What we collect', 'Your profile, bookings and the posts you share. We never sell personal data.'),
-                ('Your choices', 'You can edit or delete posts and bookings, and turn notifications off at any time.'),
-              ]))),
+          _tile(
+              Icons.shield_outlined,
+              'Privacy Policy',
+              () => go(
+                  context,
+                  const _InfoScreen('Privacy Policy', [
+                    ('What we collect', 'Your profile, bookings and the posts you share. We never sell personal data.'),
+                    ('Your choices', 'You can edit or delete posts and bookings, and turn notifications off at any time.'),
+                  ]))),
           _h('Notifications'),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -139,11 +146,16 @@ class ProfileScreen extends StatelessWidget {
             onChanged: s.setPromo,
           ),
           _h('More'),
-          _tile(Icons.help_outline_rounded, 'Help Center', () => go(context, const _InfoScreen('Help Center', [
-                ('How do I book a trip?', 'Open a place, tap Book a Trip, then follow the three steps. You can also book flights, trains, buses and guides from Explore.'),
-                ('Can I cancel?', 'Open Trips, choose See detail, then Cancel booking. Refunds follow each operator policy.'),
-                ('How do I share photos?', 'Go to Community and tap Share trip.'),
-              ]))),
+          _tile(
+              Icons.help_outline_rounded,
+              'Help Center',
+              () => go(
+                  context,
+                  const _InfoScreen('Help Center', [
+                    ('How do I book a trip?', 'Open a place, tap Book a Trip, then follow the three steps. You can also book flights, trains, buses and guides from Explore.'),
+                    ('Can I cancel?', 'Open Trips, choose See detail, then Cancel booking. Refunds follow each operator policy.'),
+                    ('How do I share photos?', 'Go to Community and tap Share trip.'),
+                  ]))),
           _tile(Icons.logout_rounded, 'Log Out', () async {
             final ok = await showDialog<bool>(
               context: context,
@@ -183,7 +195,7 @@ class ProfileScreen extends StatelessWidget {
               }
             }
           }, color: C.danger),
-        ]),
+        ])),
       ),
     );
   }

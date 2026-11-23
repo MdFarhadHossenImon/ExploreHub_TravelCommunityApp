@@ -6,6 +6,7 @@ import '../data/mock_data.dart';
 import '../data/models.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 import '../widgets/feed_video.dart';
 import 'community.dart';
 import 'place_detail.dart';
@@ -24,11 +25,13 @@ class WatchScreen extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 460),
           child: reels.isEmpty
               ? const EmptyState(Icons.videocam_outlined, 'No videos yet', 'Share a trip video from Community.')
-              : PageView.builder(
+              : PullRefresh(
+                  child: PageView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   scrollDirection: Axis.vertical,
                   itemCount: reels.length,
                   itemBuilder: (c, i) => _Reel(reels[i]),
-                ),
+                )),
         ),
       ),
     );
@@ -63,7 +66,8 @@ class _ReelState extends State<_Reel> {
       onTap: real ? null : () => setState(() => _playing = !_playing),
       child: Stack(fit: StackFit.expand, children: [
         real ? FeedVideo(p.imageSeed) : AppImage(p.imageSeed, radius: 0),
-        const IgnorePointer(child: DecoratedBox(
+        const IgnorePointer(
+            child: DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: [Color(0x80102826), Colors.transparent, Color(0xCC0A1A19)], begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: [0, 0.5, 1]),
           ),
