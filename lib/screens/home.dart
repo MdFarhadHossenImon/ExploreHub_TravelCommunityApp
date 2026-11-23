@@ -412,7 +412,7 @@ class _PlaceCard extends StatelessWidget {
                   const Icon(Icons.location_on, color: Colors.white70, size: 13),
                   const SizedBox(width: 3),
                   Expanded(
-                    child: Text('${p.location}, ${p.country}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    child: Text(p.where, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 12)),
                   ),
                 ]),
               ]),

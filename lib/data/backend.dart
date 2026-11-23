@@ -82,7 +82,7 @@ class Backend {
 
   // ---------- catalog ----------
   static Future<List<Place>> places() async {
-    const cols = 'id,name,location,country,category,hub,rating,reviews,price,about,season,last_mode,last_detail,last_duration,facilities,'
+    const cols = 'id,name,location,country,category,hub,rating,reviews,price,season,last_mode,last_detail,last_duration,facilities,'
         'address,lat,lng,hours,maps_url,image_url,wiki_title,video_url,continent,budget_low,budget_high,popularity';
     final out = <Place>[];
     // The API returns at most 1000 rows per request, so page through the catalog.
@@ -97,6 +97,11 @@ class Backend {
       if (rows.length < 1000) break;
     }
     return out;
+  }
+
+  static Future<String?> placeAbout(String id) async {
+    final r = await _c.from('places').select('about').eq('id', id).maybeSingle();
+    return r?['about'] as String?;
   }
 
   static Future<List<Guide>> guides() async {

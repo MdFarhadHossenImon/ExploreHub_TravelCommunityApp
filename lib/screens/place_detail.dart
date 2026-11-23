@@ -33,11 +33,17 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   int _page = 0;
   bool _more = false;
   late final List<Review> _reviews = Backend.on ? <Review>[] : List.of(reviewsSeed);
+  late String _aboutText = widget.place.about;
 
   @override
   void initState() {
     super.initState();
     if (Backend.on) _loadReviews();
+    if (Backend.on && _aboutText.isEmpty) {
+      Backend.placeAbout(widget.place.id).then((t) {
+        if (mounted && t != null) setState(() => _aboutText = t);
+      }).catchError((_) {});
+    }
   }
 
   Future<void> _loadReviews() async {
@@ -157,7 +163,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   Widget _about() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('About', style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
-        Text(p.about, maxLines: _more ? null : 4, overflow: _more ? TextOverflow.visible : TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 13, height: 1.6)),
+        Text(_aboutText.isEmpty ? 'Loading details...' : _aboutText, maxLines: _more ? null : 4, overflow: _more ? TextOverflow.visible : TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 13, height: 1.6)),
         GestureDetector(
           onTap: () => setState(() => _more = !_more),
           child: Padding(
@@ -188,9 +194,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           const SizedBox(height: 8),
           WeatherCard(p.lat!, p.lng!),
         ],
-        const SizedBox(height: 18),
         EssentialsCard(p.country),
-        const SizedBox(height: 18),
         NearbyStrip(p, onOpen: (o) => go(context, PlaceDetailScreen(place: o))),
         if (p.videoUrl != null) ...[
           const SizedBox(height: 18),
@@ -384,7 +388,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                 child: p.price == 0
                     ? PrimaryButton('Plan a trip here', icon: Icons.map_rounded, onPressed: () => go(context, const CreateTripScreen()))
                     : PrimaryButton('Book a Trip  ·  ${money(p.price)}/person',
-                        onPressed: () => go(context, BookingFlowScreen(draft: BookingDraft(title: p.name, location: '${p.location}, ${p.country}', type: 'tour', seed: p.id, unitPrice: p.price)))),
+                        onPressed: () => go(context, BookingFlowScreen(draft: BookingDraft(title: p.name, location: p.where, type: 'tour', seed: p.id, unitPrice: p.price)))),
               ),
             ),
           ),
@@ -469,7 +473,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                 Row(children: [
                   const Icon(Icons.location_on, color: C.primary, size: 16),
                   const SizedBox(width: 3),
-                  Text('${p.location}, ${p.country}', style: const TextStyle(color: C.muted, fontSize: 12.5)),
+                  Text(p.where, style: const TextStyle(color: C.muted, fontSize: 12.5)),
                 ]),
                 const SizedBox(height: 6),
                 RatingText(p.rating, reviews: p.reviews),

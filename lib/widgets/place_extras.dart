@@ -186,6 +186,7 @@ class _EssentialsCardState extends State<EssentialsCard> {
       if (_rate != null) '· 1 USD ≈ ${_rate! >= 100 ? _rate!.round() : _rate!.toStringAsFixed(2)} $code',
     ].join(' ');
     return Container(
+      margin: const EdgeInsets.only(top: 18),
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 4),
       decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.line)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -238,6 +239,7 @@ class NearbyStrip extends StatelessWidget {
     final list = nearbyPlaces(place);
     if (list.isEmpty) return const SizedBox.shrink();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SizedBox(height: 18),
       const Text('Nearby places', style: TextStyle(fontWeight: FontWeight.w600)),
       const SizedBox(height: 8),
       SizedBox(

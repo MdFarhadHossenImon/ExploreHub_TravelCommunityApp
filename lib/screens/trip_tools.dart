@@ -217,7 +217,7 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const CircleAvatar(backgroundColor: C.card, child: Icon(Icons.swap_horiz_rounded, color: C.primary)),
-                      title: Text('${_name(members, s.$1)} pays ${_name(members, s.$2)}'),
+                      title: Text(_name(members, s.$1) == 'You' ? 'You pay ${_name(members, s.$2)}' : '${_name(members, s.$1)} pays ${_name(members, s.$2) == 'You' ? 'you' : _name(members, s.$2)}'),
                       trailing: Text('\$${s.$3.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w700)),
                     ),
                 const SizedBox(height: 14),

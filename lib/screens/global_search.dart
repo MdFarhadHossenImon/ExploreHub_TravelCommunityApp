@@ -95,7 +95,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
                 onTap: () => go(context, PlaceDetailScreen(place: p)),
                 leading: AppImage(p.photo, width: 48, height: 48, radius: 12),
                 title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: Text('${p.category} · ${p.location}, ${p.country}', style: const TextStyle(color: C.muted, fontSize: 12)),
+                subtitle: Text('${p.category} · ${p.where}', style: const TextStyle(color: C.muted, fontSize: 12)),
                 trailing: RatingText(p.rating),
               ),
           ],

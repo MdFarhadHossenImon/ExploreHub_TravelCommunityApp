@@ -47,7 +47,7 @@ class _SearchScreenState extends State<SearchScreen> {
       return okCat && okRegion && okQ;
     }).toList();
     if (_sort == 1) {
-      list.sort((a, b) => a.dailyBudget.compareTo(b.dailyBudget));
+      list.sort((a, b) => (a.dailyBudget == 0 ? 1 << 20 : a.dailyBudget).compareTo(b.dailyBudget == 0 ? 1 << 20 : b.dailyBudget));
     } else if (_sort == 2) {
       list.sort((a, b) => b.rating.compareTo(a.rating));
     }
@@ -216,12 +216,18 @@ class PlaceCard extends StatelessWidget {
                 Row(children: [
                   const Icon(Icons.location_on, color: C.primary, size: 13),
                   const SizedBox(width: 2),
-                  Expanded(child: Text('${p.location}, ${p.country}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: C.muted))),
+                  Expanded(child: Text(p.where, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: C.muted))),
                 ]),
                 const Spacer(),
                 Row(children: [
-                  Text(money(p.price), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                  const Text(' /person', style: TextStyle(fontSize: 11, color: C.muted)),
+                  if (p.price > 0) ...[
+                    Text(money(p.price), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    const Text(' /person', style: TextStyle(fontSize: 11, color: C.muted)),
+                  ] else if (p.dailyBudget > 0) ...[
+                    Text('from \$${p.dailyBudget}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    const Text(' /day', style: TextStyle(fontSize: 11, color: C.muted)),
+                  ] else
+                    Text(p.category, style: const TextStyle(fontSize: 12, color: C.muted)),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

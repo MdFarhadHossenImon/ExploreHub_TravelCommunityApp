@@ -23,7 +23,10 @@ class Place {
   final int? budgetLow, budgetHigh, popularity;
 
   /// Typical daily spend in USD for a mid-range traveler (0 when unknown).
-  int get dailyBudget => budgetLow ?? (price > 0 ? price.round() : 0);
+  int get dailyBudget => budgetLow ?? 0;
+
+  /// "Area, Country" without repeating the country.
+  String get where => (location.isEmpty || location == country) ? country : '$location, $country';
 
   /// Photo to show: the real image when the backend has one, else the place id (demo).
   String get photo => imageUrl ?? id;
