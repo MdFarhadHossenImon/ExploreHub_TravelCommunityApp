@@ -7,6 +7,7 @@ import '../data/mock_data.dart';
 import '../data/social.dart';
 import '../state/social_state.dart';
 import '../widgets/common.dart';
+import 'trip_tools.dart';
 import '../widgets/pull_refresh.dart';
 import '../widgets/social_widgets.dart';
 import 'bookings.dart';
@@ -437,6 +438,29 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             ),
           const SizedBox(height: 6),
           OutlinedButton.icon(onPressed: _invite, icon: const Icon(Icons.person_add_alt_rounded, size: 18), label: const Text('Invite')),
+        ]),
+      ),
+      const SizedBox(height: 12),
+      Panel(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Trip tools', style: TextStyle(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.receipt_long_rounded, color: C.primary),
+            title: const Text('Shared expenses'),
+            subtitle: const Text('Log costs, see who owes whom', style: TextStyle(fontSize: 12, color: C.muted)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => go(context, TripExpensesScreen(trip: t)),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.luggage_rounded, color: C.primary),
+            title: const Text('Packing list'),
+            subtitle: const Text('Shared checklist for the group', style: TextStyle(fontSize: 12, color: C.muted)),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => go(context, TripPackingScreen(trip: t)),
+          ),
         ]),
       ),
       const SizedBox(height: 12),

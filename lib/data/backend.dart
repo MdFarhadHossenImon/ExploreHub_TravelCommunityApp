@@ -82,8 +82,21 @@ class Backend {
 
   // ---------- catalog ----------
   static Future<List<Place>> places() async {
-    final rows = await _c.from('places').select().order('reviews', ascending: false);
-    return rows.map<Place>((r) => Place.fromRow(r)).toList();
+    const cols = 'id,name,location,country,category,hub,rating,reviews,price,about,season,last_mode,last_detail,last_duration,facilities,'
+        'address,lat,lng,hours,maps_url,image_url,wiki_title,video_url,continent,budget_low,budget_high,popularity';
+    final out = <Place>[];
+    // The API returns at most 1000 rows per request, so page through the catalog.
+    for (var from = 0; from < 5000; from += 1000) {
+      final rows = await _c
+          .from('places')
+          .select(cols)
+          .order('popularity', ascending: false, nullsFirst: true)
+          .order('id')
+          .range(from, from + 999);
+      out.addAll(rows.map<Place>((r) => Place.fromRow(r)));
+      if (rows.length < 1000) break;
+    }
+    return out;
   }
 
   static Future<List<Guide>> guides() async {
@@ -372,7 +385,7 @@ class Backend {
   }
 
   static Future<List<AppNotification>> notifications() async {
-    final rows = await _c.from('notifications').select().order('created_at', ascending: false).limit(50);
+    final rows = await _c.from('notifications').select('*, actor:profiles!notifications_actor_id_fkey(name, avatar_url)').order('created_at', ascending: false).limit(50);
     return rows.map<AppNotification>((r) => AppNotification.fromRow(r)).toList();
   }
 
@@ -385,6 +398,16 @@ class Backend {
   }
 
   // ================= social =================
+
+  static Future<Traveler?> fetchTraveler(String id) async {
+    final r = await _c.from('profiles_view').select().eq('id', id).maybeSingle();
+    return r == null ? null : Traveler.fromRow(r);
+  }
+
+  static Future<Post?> postById(String id) async {
+    final r = await _c.from('posts_feed').select().eq('id', id).maybeSingle();
+    return r == null ? null : Post.fromRow(r);
+  }
 
   static Future<List<Traveler>> travelers() async {
     final rows = await _c.from('profiles_view').select().order('created_at', ascending: false).limit(300);
@@ -558,4 +581,29 @@ class Backend {
   }
 
   static Future<void> removeStop(String id) async => _c.from('trip_stops').delete().eq('id', id);
+
+  // ---- trip tools: shared expenses and packing list ----
+  static Future<List<Map<String, dynamic>>> tripExpenses(String tripId) async =>
+      List<Map<String, dynamic>>.from(await _c.from('trip_expenses').select().eq('trip_id', tripId).order('created_at', ascending: false));
+
+  static Future<void> addTripExpense(String tripId, String title, double amount, String paidBy, List<String> splitWith) async {
+    await _c.from('trip_expenses').insert({'trip_id': tripId, 'title': title, 'amount': amount, 'paid_by': paidBy, 'split_with': splitWith});
+  }
+
+  static Future<void> deleteTripExpense(String id) async => _c.from('trip_expenses').delete().eq('id', id);
+
+  static Future<List<Map<String, dynamic>>> tripItems(String tripId) async =>
+      List<Map<String, dynamic>>.from(await _c.from('trip_items').select().eq('trip_id', tripId).order('created_at'));
+
+  static Future<void> addTripItems(String tripId, List<(String, String)> items) async {
+    await _c.from('trip_items').insert([for (final i in items) {'trip_id': tripId, 'title': i.$1, 'category': i.$2}]);
+  }
+
+  static Future<void> setTripItemDone(String id, bool done) async => _c.from('trip_items').update({'done': done}).eq('id', id);
+
+  static Future<void> deleteTripItem(String id) async => _c.from('trip_items').delete().eq('id', id);
+
+  // ---- country essentials ----
+  static Future<Map<String, dynamic>?> countryInfo(String country) async =>
+      await _c.from('country_info').select().eq('country', country).maybeSingle();
 }

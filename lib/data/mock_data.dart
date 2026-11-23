@@ -1,6 +1,6 @@
 import 'models.dart';
 
-const categories = ['Mountains', 'Beach', 'Lakes', 'Camp', 'City'];
+const categories = ['Heritage', 'Nature', 'Mountains', 'Beach', 'Lakes', 'City', 'Camp'];
 
 const cities = [
   'Dhaka', 'Chattogram', "Cox's Bazar", 'Sylhet', 'Kathmandu', 'Jakarta',

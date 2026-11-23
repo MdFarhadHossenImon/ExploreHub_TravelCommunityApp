@@ -12,6 +12,7 @@ import '../state/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/pull_refresh.dart';
 import '../widgets/feed_video.dart';
+import '../widgets/place_extras.dart';
 import 'booking_flow.dart';
 import 'shell.dart';
 import 'transport.dart';
@@ -169,6 +170,41 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             padding: EdgeInsets.only(top: 10),
             child: Text('Cover photo: Wikimedia Commons contributors, free license (Creative Commons or public domain).', style: TextStyle(color: C.muted, fontSize: 11)),
           ),
+        if (p.wikiTitle != null && p.popularity != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: InkWell(
+              onTap: () => launchUrl(Uri.parse('https://en.wikipedia.org/wiki/${Uri.encodeComponent(p.wikiTitle!)}'), mode: LaunchMode.externalApplication),
+              child: const Text('Text: Wikipedia (CC BY-SA). Read the full article', style: TextStyle(color: C.primary, fontSize: 11, decoration: TextDecoration.underline)),
+            ),
+          ),
+        if (p.dailyBudget > 0) ...[
+          const SizedBox(height: 18),
+          _BudgetCard(p),
+        ],
+        if (p.lat != null && p.lng != null) ...[
+          const SizedBox(height: 18),
+          const Text('Weather', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          WeatherCard(p.lat!, p.lng!),
+        ],
+        const SizedBox(height: 18),
+        EssentialsCard(p.country),
+        const SizedBox(height: 18),
+        NearbyStrip(p, onOpen: (o) => go(context, PlaceDetailScreen(place: o))),
+        if (p.videoUrl != null) ...[
+          const SizedBox(height: 18),
+          const Text('Watch', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: ClipRRect(borderRadius: BorderRadius.circular(14), child: FeedVideo(p.videoUrl!, autoplay: false, fit: BoxFit.contain)),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(top: 6),
+            child: Text('Video: Wikimedia Commons contributors, free license.', style: TextStyle(color: C.muted, fontSize: 11)),
+          ),
+        ],
         const SizedBox(height: 18),
         Row(children: [
           const Icon(Icons.wb_sunny_outlined, size: 18, color: C.primary),
@@ -479,4 +515,45 @@ class _Chip extends StatelessWidget {
           Text(text, style: const TextStyle(fontSize: 11.5, color: C.primaryDark)),
         ]),
       );
+}
+
+
+/// Daily cost guide for three travel styles, from the place's budget range.
+class _BudgetCard extends StatelessWidget {
+  final Place p;
+  const _BudgetCard(this.p);
+
+  @override
+  Widget build(BuildContext context) {
+    final low = p.budgetLow ?? p.dailyBudget;
+    final high = p.budgetHigh ?? (low * 3);
+    final mid = ((low + high) / 2).round();
+    Widget tier(String name, IconData icon, int v, String what) => Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: C.line)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(icon, size: 20, color: C.primary),
+              const SizedBox(height: 6),
+              Text(name, style: const TextStyle(fontSize: 12, color: C.muted)),
+              Text('\$$v', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              Text(what, style: const TextStyle(fontSize: 10.5, color: C.muted, height: 1.3)),
+            ]),
+          ),
+        );
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('Daily budget per person', style: TextStyle(fontWeight: FontWeight.w600)),
+      const SizedBox(height: 8),
+      Row(children: [
+        tier('Backpacker', Icons.backpack_outlined, low, 'Hostel, street food, buses'),
+        const SizedBox(width: 8),
+        tier('Mid-range', Icons.hotel_outlined, mid, 'Hotel, restaurants, taxis'),
+        const SizedBox(width: 8),
+        tier('Comfort', Icons.diamond_outlined, high, 'Upscale stay, tours, car'),
+      ]),
+      const SizedBox(height: 6),
+      Text('Estimated in US dollars from typical costs in ${p.country}. Entry tickets and flights are extra.',
+          style: const TextStyle(fontSize: 11, color: C.muted)),
+    ]);
+  }
 }

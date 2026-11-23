@@ -18,8 +18,12 @@ class Place {
   final double rating, price;
   final int reviews;
   final List<String> facilities;
-  final String? address, hours, mapsUrl, imageUrl;
+  final String? address, hours, mapsUrl, imageUrl, videoUrl, continent, wikiTitle;
   final double? lat, lng;
+  final int? budgetLow, budgetHigh, popularity;
+
+  /// Typical daily spend in USD for a mid-range traveler (0 when unknown).
+  int get dailyBudget => budgetLow ?? (price > 0 ? price.round() : 0);
 
   /// Photo to show: the real image when the backend has one, else the place id (demo).
   String get photo => imageUrl ?? id;
@@ -46,6 +50,12 @@ class Place {
     this.imageUrl,
     this.lat,
     this.lng,
+    this.videoUrl,
+    this.continent,
+    this.wikiTitle,
+    this.budgetLow,
+    this.budgetHigh,
+    this.popularity,
   });
 
   factory Place.fromRow(Map<String, dynamic> r) => Place(
@@ -70,6 +80,12 @@ class Place {
         imageUrl: r['image_url'] as String?,
         lat: (r['lat'] as num?)?.toDouble(),
         lng: (r['lng'] as num?)?.toDouble(),
+        videoUrl: r['video_url'] as String?,
+        continent: r['continent'] as String?,
+        wikiTitle: r['wiki_title'] as String?,
+        budgetLow: (r['budget_low'] as num?)?.toInt(),
+        budgetHigh: (r['budget_high'] as num?)?.toInt(),
+        popularity: (r['popularity'] as num?)?.toInt(),
       );
 
   /// "How to go there" guide, built from the place's nearest travel hub.
@@ -232,8 +248,14 @@ class Booking {
 
 class AppNotification {
   final String id, title, body, kind, time, day;
+  final String? actorId, actorName, actorAvatar, targetType, targetId;
   bool read;
   AppNotification({
+    this.actorId,
+    this.actorName,
+    this.actorAvatar,
+    this.targetType,
+    this.targetId,
     required this.id,
     required this.title,
     required this.body,
@@ -253,6 +275,11 @@ class AppNotification {
       time: clock(t),
       day: dayLabel(t),
       read: r['read'] as bool? ?? false,
+      actorId: r['actor_id'] as String?,
+      actorName: (r['actor'] as Map?)?['name'] as String?,
+      actorAvatar: (r['actor'] as Map?)?['avatar_url'] as String?,
+      targetType: r['target_type'] as String?,
+      targetId: r['target_id'] as String?,
     );
   }
 }

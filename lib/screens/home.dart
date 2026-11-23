@@ -90,7 +90,16 @@ class _HomeScreenState extends State<HomeScreen> {
             if (list.isEmpty)
               const Padding(padding: EdgeInsets.all(24), child: EmptyState(Icons.search_off_rounded, 'No places here yet', 'Try another category.'))
             else
-              for (final p in list) _PlaceCard(p),
+              for (final p in list.take(12)) _PlaceCard(p),
+            if (list.length > 12)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: OutlinedButton.icon(
+                  onPressed: () => go(context, SearchScreen(category: categories.contains(_cat) ? _cat : null)),
+                  icon: const Icon(Icons.travel_explore_rounded),
+                  label: Text('See all ${list.length} places'),
+                ),
+              ),
 
             // Watch to explore
             SectionHeader('Watch & explore', onSeeAll: () => shellTab.value = 2),

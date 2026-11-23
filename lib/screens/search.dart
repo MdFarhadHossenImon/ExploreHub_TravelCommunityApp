@@ -21,14 +21,16 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final _q = TextEditingController();
   String? _cat;
-  int _sort = 0; // 0 price low-high, 1 price high-low, 2 rating
+  int _sort = 0; // 0 popular, 1 budget low-high, 2 rating
+  String? _region;
   int _guests = 2;
   DateTimeRange _range = DateTimeRange(
     start: DateTime.now().add(const Duration(days: 14)),
     end: DateTime.now().add(const Duration(days: 17)),
   );
 
-  static const _sorts = ['Price (Low to High)', 'Price (High to Low)', 'Top rated'];
+  static const _sorts = ['Most popular', 'Budget (Low to High)', 'Top rated'];
+  static const _regions = ['Asia', 'Europe', 'Africa', 'North America', 'South America', 'Oceania'];
 
   @override
   void initState() {
@@ -40,14 +42,15 @@ class _SearchScreenState extends State<SearchScreen> {
     final q = _q.text.trim().toLowerCase();
     final list = places.where((p) {
       final okCat = _cat == null || p.category == _cat;
+      final okRegion = _region == null || p.continent == _region;
       final okQ = q.isEmpty || '${p.name} ${p.location} ${p.country}'.toLowerCase().contains(q);
-      return okCat && okQ;
+      return okCat && okRegion && okQ;
     }).toList();
-    list.sort((a, b) => _sort == 0
-        ? a.price.compareTo(b.price)
-        : _sort == 1
-            ? b.price.compareTo(a.price)
-            : b.rating.compareTo(a.rating));
+    if (_sort == 1) {
+      list.sort((a, b) => a.dailyBudget.compareTo(b.dailyBudget));
+    } else if (_sort == 2) {
+      list.sort((a, b) => b.rating.compareTo(a.rating));
+    }
     return list;
   }
 
@@ -107,9 +110,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           SizedBox(
             height: 44,
-            child: PullRefresh(
-                child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
+            child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
@@ -126,7 +127,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   ),
               ],
-            )),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
@@ -135,6 +136,21 @@ class _SearchScreenState extends State<SearchScreen> {
               const SizedBox(width: 8),
               Text('${res.length} places', style: const TextStyle(fontSize: 13)),
               const Spacer(),
+              PopupMenuButton<String>(
+                onSelected: (v) => setState(() => _region = v.isEmpty ? null : v),
+                itemBuilder: (_) => [
+                  const PopupMenuItem(value: '', child: Text('Anywhere')),
+                  for (final r in _regions) PopupMenuItem(value: r, child: Text(r)),
+                ],
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.public_rounded, size: 16, color: C.primary),
+                    const SizedBox(width: 4),
+                    Text(_region ?? 'Anywhere', style: const TextStyle(color: C.primary, fontSize: 13)),
+                  ]),
+                ),
+              ),
               PopupMenuButton<int>(
                 onSelected: (v) => setState(() => _sort = v),
                 itemBuilder: (_) => [for (var i = 0; i < _sorts.length; i++) PopupMenuItem(value: i, child: Text(_sorts[i]))],
@@ -148,19 +164,21 @@ class _SearchScreenState extends State<SearchScreen> {
           Expanded(
             child: res.isEmpty
                 ? const EmptyState(Icons.travel_explore_rounded, 'No places found', 'Try another name or clear the category filter.')
-                : wide
+                : PullRefresh(child: wide
                     ? GridView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.all(16),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisExtent: 116, crossAxisSpacing: 14, mainAxisSpacing: 14),
                         itemCount: res.length,
                         itemBuilder: (c, i) => PlaceCard(res[i]),
                       )
                     : ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.all(16),
                         itemCount: res.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (c, i) => SizedBox(height: 116, child: PlaceCard(res[i])),
-                      ),
+                      )),
           ),
         ]),
       ),
