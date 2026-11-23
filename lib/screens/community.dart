@@ -1,5 +1,5 @@
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../core/responsive.dart';
 import '../core/env.dart';
 import '../core/levels.dart';
+import '../core/media_compress.dart';
 import '../core/theme.dart';
 import '../data/backend.dart';
 import '../data/mock_data.dart';
@@ -749,19 +750,36 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   String _ext = 'jpg';
   String _mime = 'image/jpeg';
   bool _busy = false;
+  bool _compressing = false;
 
   Future<void> _pick() async {
     final picker = ImagePicker();
     final XFile? f =
-        _video ? await picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(minutes: 2)) : await picker.pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
+        _video ? await picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(minutes: 10)) : await picker.pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
     if (f == null) return;
-    final bytes = await f.readAsBytes();
-    if (bytes.length > 50 * 1024 * 1024) {
-      if (mounted) toast(context, 'File is too large. Videos can be up to 50 MB for now.');
+    var bytes = await f.readAsBytes();
+    var compressed = false;
+    if (_video && bytes.length > maxPickVideoBytes) {
+      if (mounted) toast(context, 'Video is too large. Pick one up to 250 MB.');
       return;
     }
+    if (bytes.length > maxUploadBytes) {
+      if (!_video || kIsWeb) {
+        if (mounted) toast(context, _video ? 'On the web, videos can be up to 50 MB. Use the app for bigger videos (up to 250 MB).' : 'Photo is too large (max 50 MB).');
+        return;
+      }
+      setState(() => _compressing = true);
+      final small = await compressVideo(f.path);
+      if (mounted) setState(() => _compressing = false);
+      if (small == null) {
+        if (mounted) toast(context, "Couldn't shrink this video under 50 MB. Try a shorter clip.");
+        return;
+      }
+      bytes = small;
+      compressed = true;
+    }
     final name = f.name.toLowerCase();
-    final ext = name.contains('.') ? name.split('.').last : (_video ? 'mp4' : 'jpg');
+    final ext = compressed ? 'mp4' : (name.contains('.') ? name.split('.').last : (_video ? 'mp4' : 'jpg'));
     setState(() {
       _bytes = bytes;
       _ext = ext;
@@ -802,21 +820,28 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   @override
   Widget build(BuildContext context) => ScreenScaffold(
         title: widget.checkIn ? 'Check in' : 'Create post',
-        bottom: PrimaryButton(_busy ? 'Posting...' : 'Post', icon: Icons.send_rounded, onPressed: _busy ? null : _post),
+        bottom: PrimaryButton(_busy ? 'Posting...' : 'Post', icon: Icons.send_rounded, onPressed: _busy || _compressing ? null : _post),
         body: ListView(padding: const EdgeInsets.all(16), children: [
           AspectRatio(
             aspectRatio: 4 / 3,
             child: Backend.on
                 ? GestureDetector(
-                    onTap: _pick,
+                    onTap: _compressing ? null : _pick,
                     child: Container(
                       decoration: BoxDecoration(color: C.primary.withOpacity(.08), borderRadius: BorderRadius.circular(16)),
                       clipBehavior: Clip.antiAlias,
-                      child: _bytes == null
+                      child: _compressing
+                          ? const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                              CircularProgressIndicator(color: C.primary),
+                              SizedBox(height: 12),
+                              Text('Compressing video...', style: TextStyle(color: C.primary)),
+                            ])
+                          : _bytes == null
                           ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                               Icon(_video ? Icons.video_library_outlined : Icons.add_photo_alternate_outlined, size: 42, color: C.primary),
                               const SizedBox(height: 8),
                               Text('Tap to add a ${_video ? 'video' : 'photo'} (optional)', style: const TextStyle(color: C.primary)),
+                              if (_video) const Padding(padding: EdgeInsets.only(top: 4), child: Text('Up to 250 MB in the app, 50 MB on the web', style: TextStyle(color: C.muted, fontSize: 12))),
                             ])
                           : (_video ? const Center(child: Icon(Icons.check_circle_rounded, size: 52, color: C.primary)) : Image.memory(_bytes!, fit: BoxFit.cover)),
                     ),
