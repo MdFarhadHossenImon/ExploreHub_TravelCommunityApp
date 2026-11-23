@@ -756,8 +756,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         _video ? await picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(minutes: 2)) : await picker.pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
     if (f == null) return;
     final bytes = await f.readAsBytes();
-    if (bytes.length > 45 * 1024 * 1024) {
-      if (mounted) toast(context, 'File is too large (max 45 MB)');
+    if (bytes.length > 50 * 1024 * 1024) {
+      if (mounted) toast(context, 'File is too large. Videos can be up to 50 MB for now.');
       return;
     }
     final name = f.name.toLowerCase();
