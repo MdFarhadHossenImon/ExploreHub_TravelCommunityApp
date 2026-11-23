@@ -1,0 +1,467 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../core/responsive.dart';
+import '../core/theme.dart';
+import '../core/env.dart';
+import '../data/backend.dart';
+import '../data/mock_data.dart';
+import '../data/models.dart';
+import '../state/app_state.dart';
+import '../widgets/common.dart';
+import 'booking_flow.dart';
+import 'shell.dart';
+import 'transport.dart';
+
+const _tabs = ['About', 'How to go', 'Reviews', 'Photos', 'Videos'];
+
+class PlaceDetailScreen extends StatefulWidget {
+  final Place place;
+  final int initialTab;
+  const PlaceDetailScreen({super.key, required this.place, this.initialTab = 0});
+  @override
+  State<PlaceDetailScreen> createState() => _PlaceDetailScreenState();
+}
+
+class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
+  late int _tab = widget.initialTab;
+  int _page = 0;
+  bool _more = false;
+  late final List<Review> _reviews = Backend.on ? <Review>[] : List.of(reviewsSeed);
+
+  @override
+  void initState() {
+    super.initState();
+    if (Backend.on) _loadReviews();
+  }
+
+  Future<void> _loadReviews() async {
+    try {
+      final r = await Backend.reviews(p.id);
+      if (!mounted) return;
+      setState(() => _reviews..clear()..addAll(r));
+    } catch (e) {
+      say(errText(e));
+    }
+  }
+
+  Future<void> _openMap() async {
+    final url = p.mapsUrl ??
+        (p.lat != null ? 'https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}' : null);
+    if (url == null) return;
+    if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)) say('Could not open maps');
+  }
+
+  Place get p => widget.place;
+
+  void _addReview() {
+    final ctl = TextEditingController();
+    double stars = 5;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (c) => StatefulBuilder(
+        builder: (c, set) => Padding(
+          padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(c).viewInsets.bottom),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Write a review', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Row(children: [
+              for (var i = 1; i <= 5; i++)
+                IconButton(
+                  onPressed: () => set(() => stars = i.toDouble()),
+                  icon: Icon(i <= stars ? Icons.star_rounded : Icons.star_border_rounded, color: C.star, size: 30),
+                ),
+            ]),
+            TextField(controller: ctl, maxLines: 3, decoration: const InputDecoration(hintText: 'What should other travelers know?')),
+            const SizedBox(height: 14),
+            PrimaryButton('Post review', onPressed: () async {
+              final text = ctl.text.trim();
+              if (text.isEmpty) return;
+              final who = context.read<AppState>().name.split(' ').first;
+              Navigator.pop(c);
+              try {
+                if (Backend.on) await Backend.addReview(p.id, stars, text);
+                if (mounted) setState(() => _reviews.insert(0, Review(who, stars, text, 'just now')));
+              } catch (e) {
+                say(errText(e));
+              }
+            }),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  /// The place's own photo first, then photos travelers posted from here (real data when live).
+  List<String> _gallery() => [
+        p.photo,
+        for (final post in context.read<AppState>().posts)
+          if (post.placeId == p.id && !post.isVideo) post.imageSeed,
+      ];
+
+  Widget _content() {
+    switch (_tab) {
+      case 1:
+        return _howToGo();
+      case 2:
+        return _reviewsTab();
+      case 3:
+        final shots = _gallery();
+        if (shots.length <= 1) {
+          return const EmptyState(Icons.photo_camera_outlined, 'No traveler photos yet', 'Check in here and share the first photo.');
+        }
+        return GridView.count(
+          crossAxisCount: Bp.isWide(context) ? 4 : 3,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          children: [for (final g in shots) AppImage(g, radius: 10)],
+        );
+      case 4:
+        final vids = context.watch<AppState>().posts.where((v) => v.isVideo && v.placeId == p.id).toList();
+        if (vids.isEmpty) {
+          return const EmptyState(Icons.videocam_off_outlined, 'No videos yet', 'Be the first to share a video from here.');
+        }
+        return Column(children: [
+          for (final v in vids)
+            GestureDetector(
+              onTap: () => openTab(context, 2),
+              child: Container(
+                height: 180,
+                margin: const EdgeInsets.only(bottom: 12),
+                child: Stack(fit: StackFit.expand, children: [
+                  AppImage(v.imageSeed),
+                  const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 54)),
+                  Positioned(left: 12, bottom: 10, child: Text(v.videoTitle ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500))),
+                ]),
+              ),
+            ),
+        ]);
+      default:
+        return _about();
+    }
+  }
+
+  Widget _about() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('About', style: TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        Text(p.about, maxLines: _more ? null : 4, overflow: _more ? TextOverflow.visible : TextOverflow.ellipsis,
+            style: const TextStyle(color: C.muted, fontSize: 13, height: 1.6)),
+        GestureDetector(
+          onTap: () => setState(() => _more = !_more),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(_more ? 'Show less' : 'Read more', style: const TextStyle(color: C.danger, fontSize: 13)),
+          ),
+        ),
+        const SizedBox(height: 18),
+        Row(children: [
+          const Icon(Icons.wb_sunny_outlined, size: 18, color: C.primary),
+          const SizedBox(width: 8),
+          Text('Best time: ${p.season}', style: const TextStyle(fontSize: 13)),
+        ]),
+        if (p.address != null || p.hours != null) ...[
+          const SizedBox(height: 18),
+          const Text('Location', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: C.line)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (p.address != null)
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Icon(Icons.place_outlined, size: 18, color: C.primary),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(p.address!, style: const TextStyle(fontSize: 13))),
+                ]),
+              if (p.hours != null) ...[
+                const SizedBox(height: 8),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Icon(Icons.schedule_rounded, size: 18, color: C.primary),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(p.hours!, style: const TextStyle(fontSize: 13))),
+                ]),
+              ],
+              if (p.mapsUrl != null || p.lat != null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(onPressed: _openMap, icon: const Icon(Icons.map_outlined, size: 18), label: const Text('Open in Maps')),
+                ),
+            ]),
+          ),
+        ],
+        const SizedBox(height: 18),
+        const Text('Facilities', style: TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 10),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final f in p.facilities)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(10), border: Border.all(color: C.line)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.check_circle_rounded, size: 15, color: C.ok),
+                const SizedBox(width: 6),
+                Text(f, style: const TextStyle(fontSize: 12)),
+              ]),
+            ),
+        ]),
+        const SizedBox(height: 18),
+        const Text('Tour guide', style: TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 10),
+        InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => go(context, GuidesScreen(country: p.country)),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: C.line)),
+            child: const Row(children: [
+              Icon(Icons.badge_rounded, color: C.primary),
+              SizedBox(width: 12),
+              Expanded(child: Text('Hire a verified local guide for this trip', style: TextStyle(fontSize: 13))),
+              Icon(Icons.chevron_right_rounded, color: C.muted),
+            ]),
+          ),
+        ),
+        const SizedBox(height: 24),
+      ]);
+
+  Widget _howToGo() {
+    final steps = p.routes;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('How to get to ${p.name}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+      const SizedBox(height: 4),
+      const Text('Step by step from your city, with tickets you can book right here.', style: TextStyle(color: C.muted, fontSize: 12.5)),
+      const SizedBox(height: 16),
+      for (var i = 0; i < steps.length; i++)
+        IntrinsicHeight(
+          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Column(children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(color: C.primary, shape: BoxShape.circle),
+                child: Icon(modeIcon(steps[i].mode), color: C.on, size: 18),
+              ),
+              if (i < steps.length - 1) Expanded(child: Container(width: 2, color: C.line)),
+            ]),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.line)),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(steps[i].title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  Text(steps[i].detail, style: const TextStyle(color: C.muted, fontSize: 12.5, height: 1.5)),
+                  if (steps[i].duration.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Wrap(spacing: 8, children: [
+                      _Chip(Icons.schedule_rounded, steps[i].duration),
+                      if (steps[i].cost.isNotEmpty) _Chip(Icons.payments_outlined, steps[i].cost),
+                    ]),
+                  ],
+                  if (steps[i].action != null) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 38,
+                      child: OutlinedButton.icon(
+                        onPressed: () => go(context, TransportScreen(type: steps[i].action!, to: p.hub)),
+                        icon: Icon(modeIcon(steps[i].action!), size: 16),
+                        label: Text('Find ${steps[i].action == 'flight' ? 'flights' : steps[i].action == 'train' ? 'trains' : 'buses'}', style: const TextStyle(fontSize: 12.5)),
+                      ),
+                    ),
+                  ],
+                ]),
+              ),
+            ),
+          ]),
+        ),
+    ]);
+  }
+
+  Widget _reviewsTab() {
+    final avg = _reviews.isEmpty ? 0.0 : _reviews.fold<double>(0, (a, r) => a + r.rating) / _reviews.length;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Text(avg.toStringAsFixed(1), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w600)),
+        const SizedBox(width: 10),
+        Text('${_reviews.length} recent reviews', style: const TextStyle(color: C.muted)),
+        const Spacer(),
+        TextButton(onPressed: _addReview, child: const Text('Write a review')),
+      ]),
+      for (final r in _reviews)
+        Container(
+          margin: const EdgeInsets.only(top: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: C.line)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Avatar(r.name, name: r.name, radius: 14),
+              const SizedBox(width: 8),
+              Text(r.name, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+              const Spacer(),
+              RatingText(r.rating),
+            ]),
+            const SizedBox(height: 8),
+            Text(r.text, style: const TextStyle(fontSize: 12.5, color: C.muted, height: 1.5)),
+            const SizedBox(height: 6),
+            Text(r.when, style: const TextStyle(fontSize: 11, color: C.muted)),
+          ]),
+        ),
+    ]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final saved = context.watch<AppState>().savedPlaces.contains(p.id);
+    final wide = Bp.isWide(context);
+    return Scaffold(
+      bottomNavigationBar: Material(
+        color: C.card,
+        elevation: 0,
+        child: SafeArea(
+          top: false,
+          child: Center(
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: PrimaryButton('Book a Trip  ·  ${money(p.price)}/person',
+                    onPressed: () => go(
+                        context,
+                        BookingFlowScreen(
+                            draft: BookingDraft(title: p.name, location: '${p.location}, ${p.country}', type: 'tour', seed: p.id, unitPrice: p.price)))),
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: CustomScrollView(slivers: [
+        SliverAppBar(
+          pinned: true,
+          expandedHeight: wide ? 380 : 320,
+          backgroundColor: C.bg,
+          leading: const BackCircle(),
+          leadingWidth: 56,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.all(6),
+              child: RoundIconButton(saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, () => context.read<AppState>().toggleSavePlace(p.id), size: 38),
+            ),
+            const SizedBox(width: 8),
+          ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(24),
+            child: Container(
+              height: 24,
+              decoration: const BoxDecoration(color: C.bg, borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+            ),
+          ),
+          flexibleSpace: FlexibleSpaceBar(
+            collapseMode: CollapseMode.parallax,
+            background: Stack(fit: StackFit.expand, children: [
+              PageView.builder(
+                itemCount: _gallery().take(6).length,
+                onPageChanged: (v) => setState(() => _page = v),
+                itemBuilder: (c, i) => AppImage(_gallery()[i], radius: 0),
+              ),
+              Positioned(
+                right: 16,
+                bottom: 42,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(color: const Color(0x99132625), borderRadius: BorderRadius.circular(12)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.photo_library_outlined, size: 13, color: Colors.white),
+                    const SizedBox(width: 5),
+                    Text('${_page + 1}/${_gallery().take(6).length}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+                  ]),
+                ),
+              ),
+              Positioned(
+                bottom: 36,
+                left: 0,
+                right: 0,
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  for (var i = 0; i < 4; i++)
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.all(3),
+                      width: i == _page ? 18 : 6,
+                      height: 6,
+                      decoration: BoxDecoration(color: i == _page ? C.primary : Colors.white54, borderRadius: BorderRadius.circular(3)),
+                    ),
+                ]),
+              ),
+            ]),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Constrained(
+            maxWidth: 760,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(child: Text(p.name, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w600))),
+                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    Text(money(p.price), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600)),
+                    const Text('per person', style: TextStyle(fontSize: 11, color: C.muted)),
+                  ]),
+                ]),
+                const SizedBox(height: 4),
+                Row(children: [
+                  const Icon(Icons.location_on, color: C.primary, size: 16),
+                  const SizedBox(width: 3),
+                  Text('${p.location}, ${p.country}', style: const TextStyle(color: C.muted, fontSize: 12.5)),
+                ]),
+                const SizedBox(height: 6),
+                RatingText(p.rating, reviews: p.reviews),
+                const SizedBox(height: 14),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(children: [
+                    for (var i = 0; i < _tabs.length; i++)
+                      InkWell(
+                        onTap: () => setState(() => _tab = i),
+                        child: Container(
+                          padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+                          margin: const EdgeInsets.only(right: 22),
+                          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: i == _tab ? C.primary : Colors.transparent, width: 2))),
+                          child: Text(_tabs[i], style: TextStyle(fontWeight: i == _tab ? FontWeight.w600 : FontWeight.w400, color: i == _tab ? C.primary : C.muted)),
+                        ),
+                      ),
+                  ]),
+                ),
+                const SizedBox(height: 16),
+                _content(),
+                const SizedBox(height: 12),
+              ]),
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _Chip(this.icon, this.text);
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(color: C.tint, borderRadius: BorderRadius.circular(20)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 13, color: C.primary),
+          const SizedBox(width: 5),
+          Text(text, style: const TextStyle(fontSize: 11.5, color: C.primaryDark)),
+        ]),
+      );
+}

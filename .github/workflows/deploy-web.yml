@@ -1,0 +1,58 @@
+name: Deploy web app
+
+# Every push builds the Flutter web app against the live Supabase backend
+# and publishes it to GitHub Pages.
+on:
+  push:
+    branches: [codex/explorehub-flutter, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  # Public values only. The anon key is meant to ship inside the app; row level security protects the data.
+  SUPABASE_URL: https://qikajcgweazcpohbynkf.supabase.co
+  SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpa2FqY2d3ZWF6Y3BvaGJ5bmtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU0NTUyMjMsImV4cCI6MjExMTAzMTIyM30.VVuCJe4V7khMPmGrpuP03ixPBH3jtkjgxHFQv6dmq20
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.27.1
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - run: flutter test
+      - name: Build
+        run: |
+          flutter build web --release --web-renderer html --pwa-strategy=none \
+            --base-href "/${{ github.event.repository.name }}/" \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+          rm -rf build/web/canvaskit build/web/assets/assets/demo
+          cp build/web/index.html build/web/404.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
