@@ -22,7 +22,7 @@ class StoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
     final social = context.watch<SocialState>();
-    final list = social.stories;
+    final list = social.storyQueue;
     Widget tile({required Widget image, required Widget avatar, required String label, required bool ring, VoidCallback? onTap}) => Padding(
           padding: const EdgeInsets.only(right: 12),
           child: InkWell(
@@ -62,17 +62,24 @@ class StoryRow extends StatelessWidget {
           label: 'Add moment',
         ),
         for (var i = 0; i < list.length; i++)
-          tile(
-            onTap: () => Navigator.of(context).push(PageRouteBuilder(
-              opaque: true,
-              pageBuilder: (_, __, ___) => StoryViewer(start: i),
-              transitionsBuilder: (_, a, __, child) => FadeTransition(opacity: a, child: child),
-            )),
-            ring: !social.seenStories.contains(list[i].id),
-            image: AppImage(list[i].imageSeed, radius: 0),
-            avatar: _storyAvatar(list[i], s, 13),
-            label: _storyName(list[i], s).split(' ').first,
-          ),
+          if (i == 0 || list[i - 1].travelerId != list[i].travelerId)
+            Builder(builder: (context) {
+              final who = list[i].travelerId;
+              final group = [for (var k = i; k < list.length && list[k].travelerId == who; k++) k];
+              final firstUnseen = group.firstWhere((k) => !social.seenStories.contains(list[k].id), orElse: () => group.first);
+              final latest = list[group.last];
+              return tile(
+                onTap: () => Navigator.of(context).push(PageRouteBuilder(
+                  opaque: true,
+                  pageBuilder: (_, __, ___) => StoryViewer(start: firstUnseen),
+                  transitionsBuilder: (_, a, __, child) => FadeTransition(opacity: a, child: child),
+                )),
+                ring: group.any((k) => !social.seenStories.contains(list[k].id)),
+                image: AppImage(latest.imageSeed, radius: 0),
+                avatar: _storyAvatar(latest, s, 13),
+                label: group.length > 1 ? '${_storyName(latest, s).split(' ').first} · ${group.length}' : _storyName(latest, s).split(' ').first,
+              );
+            }),
       ]),
     );
   }
@@ -193,13 +200,14 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
   }
 
   void _show() {
-    final list = context.read<SocialState>().stories;
+    final list = context.read<SocialState>().storyQueue;
+    if (_i >= list.length) return;
     scheduleMicrotask(() => context.read<SocialState>().markSeen(list[_i].id));
     _ac.forward(from: 0);
   }
 
   void _next() {
-    final n = context.read<SocialState>().stories.length;
+    final n = context.read<SocialState>().storyQueue.length;
     if (_i + 1 >= n) {
       Navigator.of(context).maybePop();
       return;
@@ -227,8 +235,18 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
-    final list = context.watch<SocialState>().stories;
+    final list = context.watch<SocialState>().storyQueue;
+    if (list.isEmpty) return const Scaffold(backgroundColor: Colors.black);
+    if (_i >= list.length) _i = list.length - 1;
     final st = list[_i];
+    // Progress bars cover only this traveler's stories.
+    var gStart = _i, gEnd = _i;
+    while (gStart > 0 && list[gStart - 1].travelerId == st.travelerId) {
+      gStart--;
+    }
+    while (gEnd < list.length - 1 && list[gEnd + 1].travelerId == st.travelerId) {
+      gEnd++;
+    }
     final mine = st.travelerId == meId;
     final t = mine ? null : travelerById(st.travelerId);
     final place = st.placeId == null ? null : placeById(st.placeId!);
@@ -256,7 +274,7 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
                   padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
-                      for (var k = 0; k < list.length; k++)
+                      for (var k = gStart; k <= gEnd; k++)
                         Expanded(
                           child: Container(
                             height: 3,

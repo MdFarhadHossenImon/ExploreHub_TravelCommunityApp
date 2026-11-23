@@ -354,6 +354,19 @@ class SocialState extends ChangeNotifier {
     await _guard(() => Backend.deleteMessage(m.id!), () => conv.messages.insert(i, m));
   }
 
+  /// Stories in viewing order: one group per traveler (you first, then whoever posted most recently),
+  /// each group oldest to newest, like Facebook.
+  List<Story> get storyQueue {
+    final order = <String>[];
+    final by = <String, List<Story>>{};
+    for (final st in stories) {
+      if (!by.containsKey(st.travelerId)) order.add(st.travelerId);
+      (by[st.travelerId] ??= []).add(st);
+    }
+    order.sort((a, b) => a == meId ? -1 : (b == meId ? 1 : 0));
+    return [for (final id in order) ...by[id]!.reversed];
+  }
+
   /// Deletes one of your own stories.
   Future<void> deleteStory(Story st) async {
     final i = stories.indexOf(st);
