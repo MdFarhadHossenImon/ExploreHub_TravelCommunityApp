@@ -7,8 +7,10 @@ import '../data/backend.dart';
 import '../data/mock_data.dart';
 import '../data/models.dart';
 import '../state/app_state.dart';
+import '../state/social_state.dart';
 import '../widgets/common.dart';
 import 'notifications.dart';
+import 'meetups.dart';
 import 'place_detail.dart';
 import 'search.dart';
 import 'shell.dart';
@@ -163,6 +165,43 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
+
+            // Live: upcoming traveler meetups
+            if (Backend.on) ...[
+              SectionHeader('Upcoming meetups', onSeeAll: () => go(context, const MeetupsScreen())),
+              Builder(builder: (context) {
+                final ms = context.watch<SocialState>().meetups.where((m) => !m.isPast).take(8).toList();
+                if (ms.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => go(context, const CreateMeetupScreen()),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), border: Border.all(color: C.line)),
+                        child: const Row(children: [
+                          Icon(Icons.event_available_rounded, color: C.primary),
+                          SizedBox(width: 12),
+                          Expanded(child: Text('No meetups yet. Host the first one and meet travelers in person.', style: TextStyle(fontSize: 13))),
+                          Icon(Icons.chevron_right_rounded, color: C.muted),
+                        ]),
+                      ),
+                    ),
+                  );
+                }
+                return SizedBox(
+                  height: 250,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: ms.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (c, i) => MeetupCard(ms[i], width: 240),
+                  ),
+                );
+              }),
+            ],
 
             // Share CTA
             Padding(
@@ -357,7 +396,7 @@ class _PlaceCard extends StatelessWidget {
               right: 64,
               bottom: 16,
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                _tag(Text(money(p.price), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600))),
+                _tag(Text(p.price > 0 ? money(p.price) : p.category, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600))),
                 const SizedBox(height: 8),
                 Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis,
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),

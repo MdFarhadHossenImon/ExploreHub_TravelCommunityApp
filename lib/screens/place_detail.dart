@@ -13,6 +13,7 @@ import '../widgets/common.dart';
 import 'booking_flow.dart';
 import 'shell.dart';
 import 'transport.dart';
+import 'trips.dart';
 
 const _tabs = ['About', 'How to go', 'Reviews', 'Photos', 'Videos'];
 
@@ -157,6 +158,12 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             child: Text(_more ? 'Show less' : 'Read more', style: const TextStyle(color: C.danger, fontSize: 13)),
           ),
         ),
+        if ((p.imageUrl ?? '').contains('wikimedia.org'))
+          const Padding(
+            padding: EdgeInsets.only(top: 10),
+            child: Text('Cover photo: Wikimedia Commons contributors, free license (Creative Commons or public domain).',
+                style: TextStyle(color: C.muted, fontSize: 11)),
+          ),
         const SizedBox(height: 18),
         Row(children: [
           const Icon(Icons.wb_sunny_outlined, size: 18, color: C.primary),
@@ -331,7 +338,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               constraints: const BoxConstraints(maxWidth: 760),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                child: PrimaryButton('Book a Trip  ·  ${money(p.price)}/person',
+                child: p.price == 0
+                    ? PrimaryButton('Plan a trip here', icon: Icons.map_rounded, onPressed: () => go(context, const CreateTripScreen()))
+                    : PrimaryButton('Book a Trip  ·  ${money(p.price)}/person',
                     onPressed: () => go(
                         context,
                         BookingFlowScreen(
@@ -409,6 +418,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Expanded(child: Text(p.name, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w600))),
+                  if (p.price > 0)
                   Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                     Text(money(p.price), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600)),
                     const Text('per person', style: TextStyle(fontSize: 11, color: C.muted)),

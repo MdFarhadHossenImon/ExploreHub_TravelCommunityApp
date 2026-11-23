@@ -13,6 +13,9 @@ class Env {
   /// and be listed under Supabase > Authentication > URL Configuration > Redirect URLs.
   static const authRedirect = 'io.explorehub.app://login-callback/';
 
+  /// Public web address of the app (used in shared links).
+  static const webUrl = 'https://mdfarhadhossenimon.github.io/ExploreHub_TravelCommunityApp/';
+
   static bool get configured => supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 }
 

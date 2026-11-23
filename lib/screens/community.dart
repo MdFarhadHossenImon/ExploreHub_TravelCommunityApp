@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
+import '../core/env.dart';
 import '../core/theme.dart';
 import '../data/backend.dart';
 import '../data/mock_data.dart';
@@ -282,13 +283,129 @@ class PostCard extends StatelessWidget {
       if (ok == true) await s.deletePost(post);
     } else if (v == 'save') {
       s.toggleSavePost(post);
+    } else if (v == 'edit') {
+      await _edit(context);
     }
   }
 
+  /// Share sheet: re-post to your feed, send to a buddy in chat, or copy a link.
   void _share(BuildContext context) {
-    Clipboard.setData(ClipboardData(text: 'https://explorehub.app/post/${post.id}'));
-    toast(context, 'Link copied. Paste it anywhere to share.');
+    final s = context.read<AppState>();
+    final social = context.read<SocialState>();
+    final original = post.shared ?? post;
+    final note = TextEditingController();
+    final snippet = original.caption.length > 80 ? '${original.caption.substring(0, 80)}...' : original.caption;
+    final linkText = '${original.userName} on ExploreHub: "$snippet" ${Env.webUrl}';
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      constraints: const BoxConstraints(maxWidth: 560),
+      builder: (c) => Padding(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(c).viewInsets.bottom + 16),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Share', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+          const SizedBox(height: 12),
+          Row(children: [
+            Avatar(s.avatarSeed, name: s.name, radius: 18),
+            const SizedBox(width: 10),
+            Expanded(child: TextField(controller: note, maxLines: 2, minLines: 1, decoration: const InputDecoration(hintText: 'Say something about this (optional)'))),
+          ]),
+          const SizedBox(height: 10),
+          PrimaryButton('Share to my feed', icon: Icons.repeat_rounded, onPressed: () async {
+            Navigator.pop(c);
+            final ok = await s.sharePost(original, note.text.trim());
+            if (ok && context.mounted) toast(context, 'Shared to your feed');
+          }),
+          if (social.buddyList.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text('Send to a buddy', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 86,
+              child: ListView(scrollDirection: Axis.horizontal, children: [
+                for (final t in social.buddyList)
+                  InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      social.send(social.chatWith(t), linkText);
+                      Navigator.pop(c);
+                      toast(context, 'Sent to ${t.name.split(' ').first}');
+                    },
+                    child: SizedBox(
+                      width: 70,
+                      child: Column(children: [
+                        PersonAvatar(t, radius: 24),
+                        const SizedBox(height: 6),
+                        Text(t.name.split(' ').first, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+                      ]),
+                    ),
+                  ),
+              ]),
+            ),
+          ],
+          const SizedBox(height: 8),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.link_rounded),
+            title: const Text('Copy link'),
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: linkText));
+              Navigator.pop(c);
+              toast(context, 'Link copied');
+            },
+          ),
+        ]),
+      ),
+    );
   }
+
+  Future<void> _edit(BuildContext context) async {
+    final ctl = TextEditingController(text: post.caption);
+    final text = await showDialog<String>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Edit post'),
+        content: TextField(controller: ctl, maxLines: 6, minLines: 2, maxLength: 2000),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(c, ctl.text.trim()), child: const Text('Save')),
+        ],
+      ),
+    );
+    if (text != null && text.isNotEmpty && text != post.caption && context.mounted) {
+      final ok = await context.read<AppState>().editPost(post, text);
+      if (ok && context.mounted) toast(context, 'Post updated');
+    }
+  }
+
+  /// The original post inside a re-share.
+  Widget _sharedBox(BuildContext context, Post o) => Container(
+        margin: const EdgeInsets.only(top: 12),
+        decoration: BoxDecoration(color: const Color(0x22000000), borderRadius: BorderRadius.circular(18), border: Border.all(color: C.line)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (o.imageSeed.isNotEmpty)
+            AspectRatio(
+              aspectRatio: 16 / 10,
+              child: Stack(fit: StackFit.expand, children: [
+                AppImage(o.imageSeed, radius: 0),
+                if (o.isVideo) const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 48)),
+              ]),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Avatar(o.userSeed, name: o.userName, radius: 12),
+                const SizedBox(width: 8),
+                Expanded(child: Text(o.userName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5))),
+              ]),
+              const SizedBox(height: 6),
+              Text(o.caption, maxLines: 4, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13.5, height: 1.4)),
+            ]),
+          ),
+        ]),
+      );
 
   void _openAuthor(BuildContext context) {
     final s = context.read<AppState>();
@@ -401,7 +518,7 @@ class PostCard extends StatelessWidget {
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(post.userName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-                    Text(groupName ?? post.time, style: const TextStyle(color: C.muted, fontSize: 11.5)),
+                    Text(groupName ?? (post.edited ? '${post.time} · edited' : post.time), style: const TextStyle(color: C.muted, fontSize: 11.5)),
                   ]),
                 ),
                 PopupMenuButton<String>(
@@ -410,12 +527,19 @@ class PostCard extends StatelessWidget {
                   onSelected: (v) => _menu(context, v),
                   itemBuilder: (_) => [
                     PopupMenuItem(value: 'save', child: Text(saved ? 'Remove from saved' : 'Save post')),
-                    if (mine) const PopupMenuItem(value: 'delete', child: Text('Delete post')) else const PopupMenuItem(value: 'report', child: Text('Report post')),
+                    if (mine) ...const [
+                      PopupMenuItem(value: 'edit', child: Text('Edit post')),
+                      PopupMenuItem(value: 'delete', child: Text('Delete post')),
+                    ] else ...const [
+                      PopupMenuItem(value: 'report', child: Text('Report post')),
+                      PopupMenuItem(value: 'block', child: Text('Block user')),
+                    ],
                   ],
                 ),
               ]),
               const SizedBox(height: 12),
-              Text(post.caption, style: const TextStyle(fontSize: 17, height: 1.45, fontWeight: FontWeight.w600)),
+              Text(post.caption, style: TextStyle(fontSize: post.shared == null ? 17 : 14.5, height: 1.45, fontWeight: post.shared == null ? FontWeight.w600 : FontWeight.w500)),
+              if (post.shared != null) _sharedBox(context, post.shared!),
             ]),
           )
         else
@@ -457,7 +581,7 @@ class PostCard extends StatelessWidget {
                               Flexible(child: Text(post.userName, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
                               if (traveler?.verified ?? false) const Padding(padding: EdgeInsets.only(left: 3), child: Icon(Icons.verified_rounded, size: 13, color: C.primary)),
                             ]),
-                            Text(groupName ?? post.time, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                            Text(groupName ?? (post.edited ? '${post.time} · edited' : post.time), overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11)),
                           ]),
                         ),
                         if (!mine && traveler != null && !social.buddies.contains(traveler.id)) ...[
@@ -483,9 +607,10 @@ class PostCard extends StatelessWidget {
                       onSelected: (v) => _menu(context, v),
                       itemBuilder: (_) => [
                         PopupMenuItem(value: 'save', child: Text(saved ? 'Remove from saved' : 'Save post')),
-                        if (mine)
-                          const PopupMenuItem(value: 'delete', child: Text('Delete post'))
-                        else ...const [
+                        if (mine) ...const [
+                          PopupMenuItem(value: 'edit', child: Text('Edit post')),
+                          PopupMenuItem(value: 'delete', child: Text('Delete post')),
+                        ] else ...const [
                           PopupMenuItem(value: 'report', child: Text('Report post')),
                           PopupMenuItem(value: 'block', child: Text('Block user')),
                         ],
@@ -545,7 +670,7 @@ class PostCard extends StatelessWidget {
               onLong: (d) => _pickReaction(context, d.globalPosition),
             ),
             stat(const Icon(Icons.chat_bubble_outline_rounded, size: 21), '${post.commentCount}', () => _comments(context), tip: 'Comments'),
-            stat(const Icon(Icons.near_me_outlined, size: 21), null, () => _share(context), tip: 'Share'),
+            stat(const Icon(Icons.near_me_outlined, size: 21), post.shareCount > 0 ? '${post.shareCount}' : null, () => _share(context), tip: 'Share'),
             const Spacer(),
             stat(Icon(saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, size: 22, color: saved ? C.primary : C.ink), null,
                 () => s.toggleSavePost(post), tip: 'Save'),
@@ -621,9 +746,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     if (!Backend.on) {
       s.addPost(imageSeed: _picked, caption: caption, placeId: _placeId, isVideo: _video);
     } else {
-      if (_bytes == null) return toast(context, 'Choose a ${_video ? 'video' : 'photo'} first');
       setState(() => _busy = true);
-      final ok = await s.publishPost(bytes: _bytes!, ext: _ext, mime: _mime, caption: caption, placeId: _placeId, isVideo: _video);
+      final ok = await s.publishPost(bytes: _bytes, ext: _ext, mime: _mime, caption: caption, placeId: _placeId, isVideo: _video);
       if (!mounted) return;
       setState(() => _busy = false);
       if (!ok) return;
@@ -649,7 +773,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                               Icon(_video ? Icons.video_library_outlined : Icons.add_photo_alternate_outlined, size: 42, color: C.primary),
                               const SizedBox(height: 8),
-                              Text('Tap to choose a ${_video ? 'video' : 'photo'}', style: const TextStyle(color: C.primary)),
+                              Text('Tap to add a ${_video ? 'video' : 'photo'} (optional)', style: const TextStyle(color: C.primary)),
                             ])
                           : (_video
                               ? const Center(child: Icon(Icons.check_circle_rounded, size: 52, color: C.primary))

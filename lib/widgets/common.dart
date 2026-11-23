@@ -347,7 +347,7 @@ class RatingText extends StatelessWidget {
   Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.star_rounded, color: C.star, size: 16),
         const SizedBox(width: 3),
-        Text(reviews == null ? '$rating' : '$rating ($reviews Reviews)',
+        Text(rating == 0 ? 'New on ExploreHub' : (reviews == null ? '$rating' : '$rating ($reviews Reviews)'),
             style: TextStyle(fontSize: 12, color: color ?? C.muted)),
       ]);
 }

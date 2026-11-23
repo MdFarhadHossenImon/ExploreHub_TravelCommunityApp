@@ -37,8 +37,14 @@ class SocialState extends ChangeNotifier {
       travelers
         ..clear()
         ..addAll(people.where((t) => t.id != Backend.uid));
-      await Future.wait([_loadBuddies(), _loadStories(), _loadChats(), _loadGroups(), _loadTrips(), _loadReactions()]);
+      await Future.wait([_loadBuddies(), _loadStories(), _loadChats(), _loadGroups(), _loadTrips(), _loadReactions(), loadMeetups()]);
       _chatChannel ??= Backend.onNewMessage(_onMessage);
+      Backend.joinPresence((ids) {
+        online
+          ..clear()
+          ..addAll(ids);
+        notifyListeners();
+      });
     } catch (e) {
       say(errText(e));
     }
@@ -49,6 +55,11 @@ class SocialState extends ChangeNotifier {
   void clear() {
     _chatChannel?.unsubscribe();
     _chatChannel = null;
+    Backend.leavePresence();
+    online.clear();
+    meetups.clear();
+    rsvps.clear();
+    _mutuals.clear();
     buddies.clear();
     incoming.clear();
     sent.clear();
@@ -98,10 +109,98 @@ class SocialState extends ChangeNotifier {
   List<Traveler> get requestList => travelers.where((t) => incoming.contains(t.id)).toList();
   List<Traveler> get suggestions =>
       travelers.where((t) => !buddies.contains(t.id) && !incoming.contains(t.id)).toList();
-  List<Traveler> get onlineBuddies => Backend.on ? buddyList : buddyList.where((t) => t.online).toList();
+  // ---------- online status (Supabase Realtime presence) ----------
+  /// Ids of travelers who have the app open right now.
+  final Set<String> online = {};
+  bool isOnline(Traveler t) => Backend.on ? online.contains(t.id) : t.online;
+  List<Traveler> get onlineBuddies => buddyList.where(isOnline).toList();
 
-  /// Buddies you both have (demo shows a sample number).
-  int mutuals(Traveler t) => Backend.on ? 0 : (t.followers % 23) + 2;
+  /// Buddies you both have. Live mode asks the database once per traveler and caches it.
+  final Map<String, int> _mutuals = {};
+  int mutuals(Traveler t) {
+    if (!Backend.on) return (t.followers % 23) + 2;
+    final cached = _mutuals[t.id];
+    if (cached != null) return cached;
+    _mutuals[t.id] = 0;
+    Backend.mutualBuddies(t.id).then((n) {
+      _mutuals[t.id] = n;
+      if (n > 0) notifyListeners();
+    }).catchError((_) {});
+    return 0;
+  }
+
+  // ---------- travel meetups ----------
+  final List<Meetup> meetups = [];
+  /// meetup id -> 'going' | 'interested'
+  final Map<String, String> rsvps = {};
+
+  Future<void> loadMeetups() async {
+    if (!Backend.on || Backend.uid == null) return;
+    final list = await Backend.meetups();
+    final mine = await Backend.myRsvps();
+    meetups
+      ..clear()
+      ..addAll(list);
+    rsvps
+      ..clear()
+      ..addAll(mine);
+    notifyListeners();
+  }
+
+  Future<bool> createMeetup({
+    required String title,
+    required String about,
+    required String location,
+    required DateTime startsAt,
+    String? placeId,
+    int? capacity,
+    Uint8List? cover,
+  }) async {
+    try {
+      String? coverUrl;
+      if (cover != null) coverUrl = await Backend.upload(cover, 'jpg', 'image/jpeg');
+      await Backend.createMeetup(
+          title: title, about: about, location: location, startsAt: startsAt, placeId: placeId, capacity: capacity, coverUrl: coverUrl);
+      await loadMeetups();
+      return true;
+    } catch (e) {
+      say(errText(e));
+      return false;
+    }
+  }
+
+  Future<void> deleteMeetup(Meetup m) async {
+    meetups.remove(m);
+    notifyListeners();
+    await _guard(() => Backend.deleteMeetup(m.id), () => meetups.add(m));
+  }
+
+  /// [status] 'going', 'interested' or null to cancel.
+  Future<void> setRsvp(Meetup m, String? status) async {
+    final before = rsvps[m.id];
+    void count(String? st, int d) {
+      if (st == 'going') m.going += d;
+      if (st == 'interested') m.interested += d;
+    }
+
+    count(before, -1);
+    count(status, 1);
+    if (status == null) {
+      rsvps.remove(m.id);
+    } else {
+      rsvps[m.id] = status;
+    }
+    notifyListeners();
+    await _guard(() => Backend.setRsvp(m.id, status), () {
+      count(status, -1);
+      count(before, 1);
+      if (before == null) {
+        rsvps.remove(m.id);
+      } else {
+        rsvps[m.id] = before;
+      }
+    });
+  }
 
   void acceptRequest(String id) {
     incoming.remove(id);
@@ -235,7 +334,33 @@ class SocialState extends ChangeNotifier {
       ..insert(0, c);
     notifyListeners();
     if (c.id.startsWith('pending-')) return; // sent once the chat id arrives
-    _guard(() => Backend.sendMessage(c.id, text), () => c.messages.remove(m));
+    final conv = c;
+    _guard(() async {
+      final id = await Backend.sendMessage(conv.id, text);
+      final i = conv.messages.indexOf(m);
+      if (i >= 0) conv.messages[i] = Message(m.fromId, m.text, m.time, at: m.at, id: id);
+    }, () => conv.messages.remove(m));
+  }
+
+  /// Deletes one of your own messages for everyone.
+  Future<void> deleteMessage(Conversation c, Message m) async {
+    c = current(c);
+    final i = c.messages.indexOf(m);
+    if (i < 0) return;
+    c.messages.removeAt(i);
+    notifyListeners();
+    if (!Backend.on || m.id == null) return;
+    final conv = c;
+    await _guard(() => Backend.deleteMessage(m.id!), () => conv.messages.insert(i, m));
+  }
+
+  /// Deletes one of your own stories.
+  Future<void> deleteStory(Story st) async {
+    final i = stories.indexOf(st);
+    if (i < 0) return;
+    stories.removeAt(i);
+    notifyListeners();
+    await _guard(() => Backend.deleteStory(st.id), () => stories.insert(i, st));
   }
 
   /// Opens (or creates) a one-to-one chat. Live: the database returns the conversation id.

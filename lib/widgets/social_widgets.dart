@@ -111,7 +111,7 @@ class PersonAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Stack(clipBehavior: Clip.none, children: [
         Avatar(t.seed, name: t.name, radius: radius),
-        if (showOnline && t.online)
+        if (showOnline && context.watch<SocialState>().isOnline(t))
           Positioned(
             right: -1,
             bottom: -1,

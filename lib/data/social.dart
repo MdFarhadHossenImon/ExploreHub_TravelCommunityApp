@@ -64,7 +64,9 @@ class Message {
   final String fromId, text, time;
   final String? imageSeed;
   final DateTime? at;
-  const Message(this.fromId, this.text, this.time, {this.imageSeed, this.at});
+  /// Database id (live mode), used to delete the message.
+  final String? id;
+  const Message(this.fromId, this.text, this.time, {this.imageSeed, this.at, this.id});
 }
 
 class Conversation {

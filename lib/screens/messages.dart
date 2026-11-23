@@ -164,7 +164,7 @@ class ChatScreen extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(conversation.title, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                 Text(
-                  conversation.isGroup ? '${people.length + 1} travelers' : (people.first.online ? 'Active now' : 'Active 2h ago'),
+                  conversation.isGroup ? '${people.length + 1} travelers' : (context.watch<SocialState>().isOnline(people.first) ? 'Active now' : 'Offline'),
                   style: const TextStyle(fontSize: 11.5, color: C.muted, fontWeight: FontWeight.w400),
                 ),
               ]),
@@ -227,7 +227,7 @@ class _ChatViewState extends State<ChatView> {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(cv.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                Text(cv.isGroup ? '${people.length + 1} travelers' : (people.first.online ? 'Active now' : 'Active 2h ago'),
+                Text(cv.isGroup ? '${people.length + 1} travelers' : (context.watch<SocialState>().isOnline(people.first) ? 'Active now' : 'Offline'),
                     style: const TextStyle(color: C.muted, fontSize: 12)),
               ]),
             ),
@@ -281,7 +281,9 @@ class _ChatViewState extends State<ChatView> {
                             padding: const EdgeInsets.only(left: 4, bottom: 2),
                             child: Text(sender!.first, style: const TextStyle(color: C.muted, fontSize: 11)),
                           ),
-                        Container(
+                        GestureDetector(
+                          onLongPress: mine ? () => _confirmDelete(context, cv, m) : null,
+                          child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                           decoration: BoxDecoration(
                             color: mine ? C.primary : C.card,
@@ -290,6 +292,9 @@ class _ChatViewState extends State<ChatView> {
                           ),
                           child: Text(m.text, style: TextStyle(color: mine ? C.on : C.ink, fontSize: 14, height: 1.35)),
                         ),
+                        ),
+                        if (mine && i == cv.messages.length)
+                          const Padding(padding: EdgeInsets.only(top: 3, right: 4), child: Text('Hold a message to delete it', style: TextStyle(color: C.muted, fontSize: 10.5))),
                       ]),
                     ),
                   ),
@@ -326,4 +331,22 @@ class _ChatViewState extends State<ChatView> {
       ),
     ]);
   }
+}
+
+Future<void> _confirmDelete(BuildContext context, Conversation cv, Message m) async {
+  final ok = await showModalBottomSheet<bool>(
+    context: context,
+    constraints: const BoxConstraints(maxWidth: 560),
+    builder: (c) => SafeArea(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        ListTile(
+          leading: const Icon(Icons.delete_outline_rounded, color: C.danger),
+          title: const Text('Delete for everyone', style: TextStyle(color: C.danger)),
+          onTap: () => Navigator.pop(c, true),
+        ),
+        ListTile(leading: const Icon(Icons.close_rounded), title: const Text('Cancel'), onTap: () => Navigator.pop(c, false)),
+      ]),
+    ),
+  );
+  if (ok == true && context.mounted) await context.read<SocialState>().deleteMessage(cv, m);
 }

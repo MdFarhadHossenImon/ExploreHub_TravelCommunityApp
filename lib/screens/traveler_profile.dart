@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
 import '../core/theme.dart';
+import '../data/backend.dart';
 import '../data/mock_data.dart';
+import '../data/models.dart';
 import '../data/social.dart';
 import '../state/app_state.dart';
 import '../state/social_state.dart';
@@ -31,6 +33,21 @@ class TravelerProfileScreen extends StatefulWidget {
 
 class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
   int _tab = 0;
+  /// Live mode: this traveler's own posts, fetched from the database.
+  List<Post>? _theirPosts;
+
+  @override
+  void initState() {
+    super.initState();
+    final t = widget.traveler;
+    if (Backend.on && t.id != meId) {
+      Backend.postsBy(t.id).then((p) {
+        if (mounted) setState(() => _theirPosts = p);
+      }).catchError((_) {
+        if (mounted) setState(() => _theirPosts = []);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +55,9 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
     final social = context.watch<SocialState>();
     final t = widget.traveler;
     final isMe = t.id == meId;
-    final posts = s.posts.where((p) => isMe ? p.userName == s.name : p.userName == t.name).toList();
+    final posts = Backend.on
+        ? (isMe ? s.myPosts : (_theirPosts ?? const <Post>[]))
+        : s.posts.where((p) => isMe ? p.userName == s.name : p.userName == t.name).toList();
     final trips = isMe ? social.trips : social.trips.where((x) => x.buddies.contains(t.id)).toList();
     final wide = Bp.isWide(context);
     final w = MediaQuery.sizeOf(context).width;
@@ -184,8 +203,11 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
     );
 
 
-    // demo photo grid: own posts + a few travel shots
-    final photos = <String>[...posts.map((p) => p.imageSeed), for (var i = 1; i <= 9; i++) '${t.seed}-trip-$i'];
+    // Photo grid: media from this traveler's posts (demo mode adds a few sample shots).
+    final photos = <String>[
+      ...posts.where((p) => p.imageSeed.isNotEmpty && !p.isVideo).map((p) => p.imageSeed),
+      if (!Backend.on) for (var i = 1; i <= 9; i++) '${t.seed}-trip-$i',
+    ];
     final cols = w >= 900 ? 4 : 3;
 
     Widget content;
@@ -205,6 +227,7 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
           children: [for (final p in photos) AppImage(p, radius: 8)],
         ),
       );
+      if (photos.isEmpty) content = const EmptyState(Icons.photo_library_outlined, 'No photos yet', 'Photos from shared journeys show up here.');
     } else {
       content = trips.isEmpty
           ? const EmptyState(Icons.map_outlined, 'No shared trips', 'Trips planned together show up here.')

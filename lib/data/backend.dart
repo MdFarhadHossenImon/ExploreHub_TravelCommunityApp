@@ -189,16 +189,136 @@ class Backend {
 
   static Future<void> createPost({
     required String caption,
-    required String mediaUrl,
+    String mediaUrl = '',
     String? placeId,
     bool isVideo = false,
+    String? sharedPostId,
   }) async {
     await _c.from('posts').insert({
       'caption': caption,
       'media_url': mediaUrl,
       'place_id': placeId,
       'is_video': isVideo,
+      if (sharedPostId != null) 'shared_post_id': sharedPostId,
     });
+  }
+
+  static Future<void> editPost(String postId, String caption) async {
+    await _c.from('posts').update({'caption': caption, 'edited_at': DateTime.now().toUtc().toIso8601String()}).eq('id', postId);
+  }
+
+  /// Posts written by one traveler (for their profile page).
+  static Future<List<Post>> postsBy(String userId) async {
+    final rows = await _c.from('posts_feed').select().eq('user_id', userId).isFilter('group_id', null).order('created_at', ascending: false).limit(60);
+    return rows.map<Post>((r) => Post.fromRow(r)).toList();
+  }
+
+  static Future<int> mutualBuddies(String other) async {
+    final r = await _c.rpc('mutual_buddies', params: {'other': other});
+    return (r as num?)?.toInt() ?? 0;
+  }
+
+  // ---------- meetups ----------
+  static Future<List<Meetup>> meetups() async {
+    final since = DateTime.now().subtract(const Duration(hours: 6)).toUtc().toIso8601String();
+    final rows = await _c.from('meetups_view').select().gte('starts_at', since).order('starts_at').limit(100);
+    return rows.map<Meetup>((r) => Meetup.fromRow(r)).toList();
+  }
+
+  static Future<Map<String, String>> myRsvps() async {
+    final rows = await _c.from('meetup_rsvps').select('meetup_id, status').eq('user_id', uid!);
+    return {for (final r in rows) r['meetup_id'] as String: r['status'] as String};
+  }
+
+  static Future<List<Map<String, dynamic>>> meetupGoing(String meetupId) async {
+    final rows = await _c.from('meetup_rsvps').select('user_id, status, profiles(name, avatar_url)').eq('meetup_id', meetupId).order('created_at');
+    return List<Map<String, dynamic>>.from(rows);
+  }
+
+  static Future<String> createMeetup({
+    required String title,
+    required String about,
+    required String location,
+    required DateTime startsAt,
+    String? placeId,
+    int? capacity,
+    String? coverUrl,
+  }) async {
+    final r = await _c.from('meetups').insert({
+      'title': title,
+      'about': about,
+      'location': location,
+      'starts_at': startsAt.toUtc().toIso8601String(),
+      'place_id': placeId,
+      'capacity': capacity,
+      'cover_url': coverUrl,
+    }).select('id').single();
+    return r['id'] as String;
+  }
+
+  static Future<void> deleteMeetup(String id) async {
+    await _c.from('meetups').delete().eq('id', id);
+  }
+
+  static Future<void> setRsvp(String meetupId, String? status) async {
+    if (status == null) {
+      await _c.from('meetup_rsvps').delete().eq('meetup_id', meetupId).eq('user_id', uid!);
+    } else {
+      await _c.from('meetup_rsvps').upsert({'meetup_id': meetupId, 'user_id': uid, 'status': status});
+    }
+  }
+
+  // ---------- presence & live notifications ----------
+  static RealtimeChannel? _presence;
+
+  /// Joins the shared presence channel. [onSync] gets the ids of everyone online right now.
+  static void joinPresence(void Function(Set<String> online) onSync) {
+    if (_presence != null || uid == null) return;
+    final ch = _c.channel('online-travelers', opts: const RealtimeChannelConfig(self: true));
+    ch.onPresenceSync((_) {
+      final ids = <String>{};
+      for (final s in ch.presenceState()) {
+        for (final p in s.presences) {
+          final id = p.payload['user_id'];
+          if (id is String) ids.add(id);
+        }
+      }
+      onSync(ids);
+    }).subscribe((status, _) async {
+      if (status == RealtimeSubscribeStatus.subscribed) {
+        await ch.track({'user_id': uid, 'at': DateTime.now().toUtc().toIso8601String()});
+      }
+    });
+    _presence = ch;
+  }
+
+  static Future<void> leavePresence() async {
+    final ch = _presence;
+    _presence = null;
+    if (ch != null) await _c.removeChannel(ch);
+  }
+
+  static RealtimeChannel? _notif;
+
+  /// Calls [onNew] whenever a notification for the signed-in user arrives.
+  static void onNotification(void Function() onNew) {
+    if (_notif != null || uid == null) return;
+    _notif = _c
+        .channel('notif-$uid')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'user_id', value: uid),
+          callback: (_) => onNew(),
+        )
+        .subscribe();
+  }
+
+  static Future<void> stopNotifications() async {
+    final ch = _notif;
+    _notif = null;
+    if (ch != null) await _c.removeChannel(ch);
   }
 
   static Future<void> deletePost(String postId) async {
@@ -323,13 +443,24 @@ class Backend {
 
   static Message messageFromRow(Map<String, dynamic> m) {
     final t = DateTime.parse(m['created_at'] as String).toLocal();
-    return Message(m['sender_id'] == uid ? meId : m['sender_id'] as String, m['body'] as String, clock(t), at: t);
+    return Message(m['sender_id'] == uid ? meId : m['sender_id'] as String, m['body'] as String, clock(t), at: t, id: m['id']?.toString());
   }
 
   static Future<String> dmWith(String other) async => await _c.rpc('dm_with', params: {'other': other}) as String;
 
-  static Future<void> sendMessage(String conversationId, String body) async =>
-      _c.from('messages').insert({'conversation_id': conversationId, 'sender_id': uid, 'body': body});
+  /// Sends a message and returns its id.
+  static Future<String> sendMessage(String conversationId, String body) async {
+    final r = await _c.from('messages').insert({'conversation_id': conversationId, 'sender_id': uid, 'body': body}).select('id').single();
+    return r['id'].toString();
+  }
+
+  static Future<void> deleteMessage(String id) async {
+    await _c.from('messages').delete().eq('id', int.parse(id));
+  }
+
+  static Future<void> deleteStory(String id) async {
+    await _c.from('stories').delete().eq('id', id);
+  }
 
   static Future<void> markConversationRead(String conversationId) async => _c
       .from('conversation_members')

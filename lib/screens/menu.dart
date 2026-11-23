@@ -10,6 +10,7 @@ import '../widgets/social_widgets.dart';
 import 'bookings.dart';
 import 'friends.dart';
 import 'groups.dart';
+import 'meetups.dart';
 import 'messages.dart';
 import 'notifications.dart';
 import 'profile.dart';
@@ -31,6 +32,7 @@ class MenuScreen extends StatelessWidget {
       (Icons.people_alt_rounded, const Color(0xFF6FB7E9), 'Travel buddies', social.incoming.isEmpty ? null : '${social.incoming.length} new', () => go(context, const FriendsScreen())),
       (Icons.chat_bubble_rounded, const Color(0xFFB68CF0), 'Messages', social.unreadChats == 0 ? null : '${social.unreadChats} unread', () => go(context, const MessagesScreen())),
       (Icons.groups_rounded, const Color(0xFF7CC08D), 'Groups', '${social.joined.length} joined', () => go(context, const GroupsScreen())),
+      (Icons.event_rounded, const Color(0xFFE76F51), 'Meetups', social.meetups.where((m) => !m.isPast).isEmpty ? null : '${social.meetups.where((m) => !m.isPast).length} upcoming', () => go(context, const MeetupsScreen())),
       (Icons.map_rounded, C.primary, 'Trip planner', '${social.trips.length} plans', () => shellTab.value = 3),
       (Icons.confirmation_number_rounded, const Color(0xFFE9C46A), 'Bookings', null, () => go(context, const Scaffold(body: BookingsScreen()))),
       (Icons.smart_display_rounded, C.danger, 'Watch', null, () => shellTab.value = 2),

@@ -285,6 +285,31 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
                       const SizedBox(width: 8),
                       Text(st.time, style: const TextStyle(color: Colors.white70, fontSize: 12)),
                       const Spacer(),
+                      if (mine)
+                        IconButton(
+                          tooltip: 'Delete story',
+                          onPressed: () async {
+                            _ac.stop();
+                            final ok = await showDialog<bool>(
+                              context: context,
+                              builder: (c) => AlertDialog(
+                                title: const Text('Delete this story?'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                                  FilledButton(style: FilledButton.styleFrom(backgroundColor: C.danger), onPressed: () => Navigator.pop(c, true), child: const Text('Delete')),
+                                ],
+                              ),
+                            );
+                            if (!context.mounted) return;
+                            if (ok == true) {
+                              await context.read<SocialState>().deleteStory(st);
+                              if (context.mounted) Navigator.of(context).maybePop();
+                            } else {
+                              _ac.forward();
+                            }
+                          },
+                          icon: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+                        ),
                       IconButton(onPressed: () => Navigator.of(context).maybePop(), icon: const Icon(Icons.close_rounded, color: Colors.white)),
                     ]),
                     const Spacer(),

@@ -86,6 +86,7 @@ class AppState extends ChangeNotifier {
     } catch (_) {
       name = email.split('@').first;
     }
+    Backend.onNotification(refreshNotifications);
     await refreshAll();
   }
 
@@ -113,6 +114,7 @@ class AppState extends ChangeNotifier {
   void markLoggedOut() {
     loggedIn = false;
     if (Backend.on) {
+      Backend.stopNotifications();
       posts.clear();
       bookings.clear();
       notifications.clear();
@@ -319,18 +321,19 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Real posting: upload the file to Storage, then insert the post row. Returns true on success.
+  /// Real posting: upload the photo or video (if any) to Storage, then insert the post row.
+  /// A post with no media is a text post. Returns true on success.
   Future<bool> publishPost({
-    required Uint8List bytes,
-    required String ext,
-    required String mime,
+    Uint8List? bytes,
+    String ext = 'jpg',
+    String mime = 'image/jpeg',
     required String caption,
     String? placeId,
     bool isVideo = false,
   }) async {
     try {
-      final url = await Backend.upload(bytes, ext, mime);
-      await Backend.createPost(caption: caption, mediaUrl: url, placeId: placeId, isVideo: isVideo);
+      final url = bytes == null ? '' : await Backend.upload(bytes, ext, mime);
+      await Backend.createPost(caption: caption, mediaUrl: url, placeId: placeId, isVideo: bytes != null && isVideo);
       posts..clear()..addAll(await Backend.posts());
       notifyListeners();
       return true;
@@ -338,6 +341,51 @@ class AppState extends ChangeNotifier {
       say(errText(e));
       return false;
     }
+  }
+
+  /// Re-share someone's post to your own feed with an optional note.
+  Future<bool> sharePost(Post p, String note) async {
+    final original = p.shared ?? p;
+    if (!Backend.on) {
+      posts.insert(0, Post(id: 'p${DateTime.now().millisecondsSinceEpoch}', userName: name, userSeed: 'me', imageSeed: '', caption: note.isEmpty ? 'Shared a post' : note, time: 'now', shared: original));
+      notifyListeners();
+      return true;
+    }
+    try {
+      await Backend.createPost(caption: note.isEmpty ? 'Shared a post' : note, sharedPostId: original.id);
+      posts..clear()..addAll(await Backend.posts());
+      notifyListeners();
+      return true;
+    } catch (e) {
+      say(errText(e));
+      return false;
+    }
+  }
+
+  Future<bool> editPost(Post p, String caption) async {
+    final before = p.caption;
+    p.caption = caption;
+    p.edited = true;
+    notifyListeners();
+    if (!Backend.on) return true;
+    try {
+      await Backend.editPost(p.id, caption);
+      return true;
+    } catch (e) {
+      p.caption = before;
+      notifyListeners();
+      say(errText(e));
+      return false;
+    }
+  }
+
+  /// Reloads notifications (called when a new one arrives in real time).
+  Future<void> refreshNotifications() async {
+    if (!Backend.on || Backend.user == null) return;
+    try {
+      notifications..clear()..addAll(await Backend.notifications());
+      notifyListeners();
+    } catch (_) {}
   }
 
   Future<void> deletePost(Post p) async {

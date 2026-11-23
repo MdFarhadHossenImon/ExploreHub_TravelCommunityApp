@@ -122,12 +122,18 @@ class Comment {
 }
 
 class Post {
-  final String id, userName, userSeed, caption, imageSeed, time;
+  final String id, userName, userSeed, imageSeed, time;
+  String caption;
   final String? placeId, videoTitle, userId, groupId;
   final bool isVideo;
   int likes;
   int commentCount;
+  int shareCount;
+  bool edited;
   final List<Comment> comments;
+
+  /// The post this one re-shares, if any.
+  final Post? shared;
 
   Post({
     required this.id,
@@ -144,6 +150,9 @@ class Post {
     this.likes = 0,
     int? commentCount,
     List<Comment>? comments,
+    this.shareCount = 0,
+    this.edited = false,
+    this.shared,
   })  : comments = comments ?? [],
         commentCount = commentCount ?? (comments?.length ?? 0);
 
@@ -158,13 +167,27 @@ class Post {
       userName: r['author_name'] as String? ?? 'Traveler',
       userSeed: r['author_avatar'] as String? ?? '',
       caption: caption,
-      imageSeed: r['media_url'] as String,
+      imageSeed: r['media_url'] as String? ?? '',
       placeId: r['place_id'] as String?,
       isVideo: isVideo,
       videoTitle: isVideo ? caption.split('.').first : null,
       likes: (r['like_count'] as num?)?.toInt() ?? 0,
       commentCount: (r['comment_count'] as num?)?.toInt() ?? 0,
+      shareCount: (r['share_count'] as num?)?.toInt() ?? 0,
+      edited: r['edited_at'] != null,
       time: ago(DateTime.parse(r['created_at'] as String).toLocal()),
+      shared: r['shared_post_id'] == null || r['shared_caption'] == null
+          ? null
+          : Post(
+              id: r['shared_post_id'] as String,
+              userId: r['shared_user_id'] as String?,
+              userName: r['shared_author'] as String? ?? 'Traveler',
+              userSeed: r['shared_author_avatar'] as String? ?? '',
+              caption: r['shared_caption'] as String,
+              imageSeed: r['shared_media'] as String? ?? '',
+              isVideo: r['shared_is_video'] as bool? ?? false,
+              time: '',
+            ),
     );
   }
 }
@@ -325,4 +348,48 @@ String dayLabel(DateTime t) {
   if (diff == 1) return 'Yesterday';
   const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return '${t.day} ${m[t.month - 1]} ${t.year}';
+}
+
+/// A real-world travel meetup that travelers can join.
+class Meetup {
+  final String id, hostId, hostName, hostAvatar, title, about, location;
+  final String? placeId, coverUrl;
+  final DateTime startsAt;
+  final int? capacity;
+  int going, interested;
+
+  Meetup({
+    required this.id,
+    required this.hostId,
+    required this.hostName,
+    required this.hostAvatar,
+    required this.title,
+    required this.about,
+    required this.location,
+    required this.startsAt,
+    this.placeId,
+    this.coverUrl,
+    this.capacity,
+    this.going = 0,
+    this.interested = 0,
+  });
+
+  factory Meetup.fromRow(Map<String, dynamic> r) => Meetup(
+        id: r['id'] as String,
+        hostId: r['host_id'] as String,
+        hostName: r['host_name'] as String? ?? 'Traveler',
+        hostAvatar: r['host_avatar'] as String? ?? '',
+        title: r['title'] as String,
+        about: r['about'] as String? ?? '',
+        location: r['location'] as String? ?? '',
+        placeId: r['place_id'] as String?,
+        coverUrl: r['cover_url'] as String?,
+        startsAt: DateTime.parse(r['starts_at'] as String).toLocal(),
+        capacity: (r['capacity'] as num?)?.toInt(),
+        going: (r['going_count'] as num?)?.toInt() ?? 0,
+        interested: (r['interested_count'] as num?)?.toInt() ?? 0,
+      );
+
+  bool get isPast => startsAt.isBefore(DateTime.now());
+  bool get isFull => capacity != null && going >= capacity!;
 }
