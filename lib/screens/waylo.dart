@@ -117,6 +117,28 @@ class _Guide {
   static List<String> _words(String s) =>
       s.toLowerCase().split(RegExp(r'[\s,.?!।:;()"\x27/-]+')).where((w) => w.length > 1 && !_stop.contains(w)).toList();
 
+  /// True when [a] is [b] with a small typo: 1 edit for short words, 2 for words of 7+ letters (a swap counts as 1).
+  static bool _typo(String a, String b) {
+    final max = a.length >= 7 ? 2 : 1;
+    if ((a.length - b.length).abs() > max) return false;
+    final d = List.generate(a.length + 1, (i) => List<int>.filled(b.length + 1, 0));
+    for (var i = 0; i <= a.length; i++) {
+      d[i][0] = i;
+    }
+    for (var j = 0; j <= b.length; j++) {
+      d[0][j] = j;
+    }
+    for (var i = 1; i <= a.length; i++) {
+      for (var j = 1; j <= b.length; j++) {
+        final c = a[i - 1] == b[j - 1] ? 0 : 1;
+        var v = [d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + c].reduce((x, y) => x < y ? x : y);
+        if (i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1] && d[i - 2][j - 2] + 1 < v) v = d[i - 2][j - 2] + 1;
+        d[i][j] = v;
+      }
+    }
+    return d[a.length][b.length] <= max;
+  }
+
   /// The best guide section for these words and its score; words that appear in fewer sections count more.
   (double, Map<String, dynamic>?) _match(List<String> words) {
     final kws = [for (final s in sections) _words(s['kw'] as String)];
@@ -133,8 +155,14 @@ class _Guide {
       for (final w in words) {
         if (kw.contains(w)) {
           score += weight(w);
-        } else if (w.length > 3 && kw.any((k) => k.length > 3 && (k.startsWith(w) || w.startsWith(k)))) {
-          score += 0.3;
+        } else if (w.length > 3) {
+          // Typos: "feather" finds "feature", "bookign" finds "booking".
+          final near = kw.where((k) => k.length > 3 && _typo(w, k)).toList();
+          if (near.isNotEmpty) {
+            score += 0.8 * weight(near.first);
+          } else if (kw.any((k) => k.length > 3 && (k.startsWith(w) || w.startsWith(k)))) {
+            score += 0.3;
+          }
         }
       }
       if (score > best) {
@@ -193,7 +221,7 @@ class _WayloScreenState extends State<WayloScreen> {
   final _scroll = ScrollController();
   final List<_Msg> _msgs = [];
   bool _busy = false;
-  static bool _aiOff = false; // the server has no AI key: answer app questions with the guide, send the rest to the free live search
+  static bool? _ai; // null until the server answers: true with the AI, false in free mode
 
   @override
   void initState() {
@@ -235,14 +263,14 @@ class _WayloScreenState extends State<WayloScreen> {
     String reply;
     try {
       final guide = await _Guide.load();
-      // Without the AI, app questions are answered here; everything else goes to the free live search
-      // (weather, exchange rates, Wikivoyage / Wikipedia).
-      if (Backend.on && !(_aiOff && guide.isAppQuestion(text))) {
+      // App questions are answered here unless the AI is on; everything else goes to the server,
+      // which uses the AI or, without it, the free live search (weather, rates, Wikivoyage / Wikipedia).
+      if (Backend.on && !(_ai != true && guide.isAppQuestion(text))) {
         final history = [
           for (final m in _msgs.length > 12 ? _msgs.sublist(_msgs.length - 12) : _msgs) {'role': m.me ? 'user' : 'assistant', 'content': m.text}
         ];
         final res = await Backend.waylo(history, lang: isBangla ? 'bn' : 'en');
-        if (res['mode'] == 'free') _aiOff = true;
+        _ai = res['mode'] == 'ai';
         reply = '${res['reply'] ?? ''}';
       } else {
         await Future<void>.delayed(const Duration(milliseconds: 350));
@@ -250,7 +278,7 @@ class _WayloScreenState extends State<WayloScreen> {
       }
     } on PlannerError catch (e) {
       if (e.code == 'not_configured' || e.code == 'server') {
-        if (e.code == 'not_configured') _aiOff = true;
+        if (e.code == 'not_configured') _ai = false;
         reply = (await _Guide.load()).answer(text);
       } else {
         reply = tr(e.message);
