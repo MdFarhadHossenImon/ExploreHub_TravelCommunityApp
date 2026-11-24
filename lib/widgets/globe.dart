@@ -6,6 +6,7 @@ import 'package:flutter/gestures.dart' show PointerScrollEvent;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/material.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../core/theme.dart';
 import '../data/mock_data.dart';
@@ -118,10 +119,13 @@ class _ExploreGlobeState extends State<ExploreGlobe> with TickerProviderStateMix
     super.dispose();
   }
 
+  bool _onScreen = true;
+  final _visKey = UniqueKey();
+
   void _tick(Duration now) {
     final dt = ((now - _prev).inMicroseconds / 1e6).clamp(0.0, .05);
     _prev = now;
-    if (_fly.isAnimating || _lastFocal != null) return;
+    if (!_onScreen || _fly.isAnimating || _lastFocal != null) return;
     var changed = false;
     if (_vLon.abs() > .5 || _vLat.abs() > .5) {
       _lon += _vLon * dt;
@@ -294,18 +298,24 @@ class _ExploreGlobeState extends State<ExploreGlobe> with TickerProviderStateMix
                     setState(() => _zoom = (_zoom * (e.scrollDelta.dy > 0 ? .9 : 1.1)).clamp(.8, 9.0));
                   }
                 },
-                child: CustomPaint(
-                  size: size,
-                  painter: _GlobePainter(
-                    world: _world,
-                    places: pts,
-                    lon: _lon,
-                    lat: _lat,
-                    radius: r,
-                    zoom: _zoom,
-                    selected: _sel,
-                    pin: _sel != null && !_fly.isAnimating ? _pin.value : 0,
-                    hits: _hits,
+                child: RepaintBoundary(
+                  child: VisibilityDetector(
+                    key: _visKey,
+                    onVisibilityChanged: (v) => _onScreen = v.visibleFraction > 0.05,
+                    child: CustomPaint(
+                      size: size,
+                      painter: _GlobePainter(
+                        world: _world,
+                        places: pts,
+                        lon: _lon,
+                        lat: _lat,
+                        radius: r,
+                        zoom: _zoom,
+                        selected: _sel,
+                        pin: _sel != null && !_fly.isAnimating ? _pin.value : 0,
+                        hits: _hits,
+                      ),
+                    ),
                   ),
                 ),
               ),

@@ -108,7 +108,21 @@ class _HomeScreenState extends State<HomeScreen> {
             if (list.isEmpty)
               const Padding(padding: EdgeInsets.all(24), child: EmptyState(Icons.search_off_rounded, 'No places here yet', 'Try another category.'))
             else
-              for (final p in list.take(12)) _PlaceCard(p),
+              LayoutBuilder(builder: (context, box) {
+                final shown = list.take(12).toList();
+                final cols = box.maxWidth >= 1000 ? 3 : (box.maxWidth >= 600 ? 2 : 1);
+                if (cols == 1) return Column(children: [for (final p in shown) _PlaceCard(p)]);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Column(children: [
+                    for (var i = 0; i < shown.length; i += cols)
+                      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        for (var j = i; j < i + cols; j++)
+                          Expanded(child: j < shown.length ? Padding(padding: const EdgeInsets.symmetric(horizontal: 0), child: _PlaceCard(shown[j], compact: true)) : const SizedBox()),
+                      ]),
+                  ]),
+                );
+              }),
             if (list.length > 12)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -369,7 +383,8 @@ class _Service extends StatelessWidget {
 
 class _PlaceCard extends StatelessWidget {
   final Place p;
-  const _PlaceCard(this.p);
+  final bool compact;
+  const _PlaceCard(this.p, {this.compact = false});
 
   Widget _tag(Widget child) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -381,7 +396,7 @@ class _PlaceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final saved = context.watch<AppState>().savedPlaces.contains(p.id);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      padding: compact ? const EdgeInsets.fromLTRB(8, 0, 8, 14) : const EdgeInsets.fromLTRB(16, 0, 16, 14),
       child: GestureDetector(
         onTap: () => go(context, PlaceDetailScreen(place: p)),
         child: SizedBox(

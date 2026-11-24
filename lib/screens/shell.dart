@@ -64,12 +64,10 @@ class Shell extends StatelessWidget {
     return ValueListenableBuilder<int>(
       valueListenable: shellTab,
       builder: (context, i, _) {
-        final body = IndexedStack(index: i, children: const [
-          CommunityScreen(),
-          HomeScreen(),
-          WatchScreen(),
-          TripsHubScreen(),
-          MenuScreen(),
+        const tabs = [CommunityScreen(), HomeScreen(), WatchScreen(), TripsHubScreen(), MenuScreen()];
+        // Hidden tabs stay alive (instant switching) but their animations are paused.
+        final body = IndexedStack(index: i, children: [
+          for (var n = 0; n < tabs.length; n++) TickerMode(enabled: n == i, child: tabs[n]),
         ]);
         if (Bp.isWide(context)) {
           return Scaffold(body: Row(children: [_SideRail(index: i), Expanded(child: body)]));

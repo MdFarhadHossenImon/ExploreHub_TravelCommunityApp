@@ -11,14 +11,28 @@ String money(num v) => '\$${v == v.roundToDouble() ? v.toInt() : v.toStringAsFix
 const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 String fmtDate(DateTime d) => '${d.day} ${_months[d.month - 1]} ${d.year}';
 
-Future<T?> go<T>(BuildContext c, Widget w) =>
-    Navigator.of(c).push<T>(MaterialPageRoute<T>(builder: (_) => w));
+/// Quick page transition: a short fade with a slight upward slide (200 ms in, 150 ms back).
+class FastRoute<T> extends PageRouteBuilder<T> {
+  FastRoute(Widget page)
+      : super(
+          transitionDuration: const Duration(milliseconds: 200),
+          reverseTransitionDuration: const Duration(milliseconds: 150),
+          pageBuilder: (_, __, ___) => page,
+          transitionsBuilder: (_, a, __, child) {
+            final t = CurvedAnimation(parent: a, curve: Curves.easeOutCubic);
+            return FadeTransition(
+              opacity: t,
+              child: SlideTransition(position: Tween(begin: const Offset(0, .03), end: Offset.zero).animate(t), child: child),
+            );
+          },
+        );
+}
 
-void goRoot(BuildContext c, Widget w) => Navigator.of(c)
-    .pushAndRemoveUntil(MaterialPageRoute(builder: (_) => w), (r) => false);
+Future<T?> go<T>(BuildContext c, Widget w) => Navigator.of(c).push<T>(FastRoute<T>(w));
 
-void toast(BuildContext c, String m) =>
-    ScaffoldMessenger.of(c).showSnackBar(SnackBar(content: Text(m), behavior: SnackBarBehavior.floating));
+void goRoot(BuildContext c, Widget w) => Navigator.of(c).pushAndRemoveUntil(FastRoute(w), (r) => false);
+
+void toast(BuildContext c, String m) => ScaffoldMessenger.of(c).showSnackBar(SnackBar(content: Text(m), behavior: SnackBarBehavior.floating));
 
 IconData modeIcon(String m) {
   switch (m) {
@@ -86,7 +100,11 @@ const _men = ['carlos', 'tanvir', 'sam', 'arjun', 'rahim', 'pema', 'andi', 'yous
 String previewAvatar(String seed) {
   final k = seed.toLowerCase();
   final w = _women.indexOf(k), m = _men.indexOf(k);
-  final i = w >= 0 ? (w * 2) % 24 : m >= 0 ? (m * 2 + 1) % 24 : _hash(k) % 24;
+  final i = w >= 0
+      ? (w * 2) % 24
+      : m >= 0
+          ? (m * 2 + 1) % 24
+          : _hash(k) % 24;
   return 'assets/demo/a$i.jpg';
 }
 
@@ -174,14 +192,8 @@ class PrimaryButton extends StatelessWidget {
       height: 50,
       width: double.infinity,
       child: outlined
-          ? OutlinedButton(
-              onPressed: onPressed,
-              style: OutlinedButton.styleFrom(foregroundColor: C.primary, side: const BorderSide(color: C.primary), shape: shape),
-              child: text)
-          : FilledButton(
-              onPressed: onPressed,
-              style: FilledButton.styleFrom(backgroundColor: C.primary, foregroundColor: C.on, shape: shape),
-              child: text),
+          ? OutlinedButton(onPressed: onPressed, style: OutlinedButton.styleFrom(foregroundColor: C.primary, side: const BorderSide(color: C.primary), shape: shape), child: text)
+          : FilledButton(onPressed: onPressed, style: FilledButton.styleFrom(backgroundColor: C.primary, foregroundColor: C.on, shape: shape), child: text),
     );
   }
 }
@@ -193,8 +205,7 @@ class LabeledField extends StatelessWidget {
   final TextInputType? keyboard;
   final String? Function(String?)? validator;
   final int maxLines;
-  const LabeledField(this.label, this.hint,
-      {super.key, this.controller, this.obscure = false, this.keyboard, this.validator, this.maxLines = 1});
+  const LabeledField(this.label, this.hint, {super.key, this.controller, this.obscure = false, this.keyboard, this.validator, this.maxLines = 1});
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -331,8 +342,7 @@ class SectionHeader extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 22, 16, 12),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-          if (onSeeAll != null)
-            GestureDetector(onTap: onSeeAll, child: const Text('See All', style: TextStyle(color: C.primary, fontSize: 13))),
+          if (onSeeAll != null) GestureDetector(onTap: onSeeAll, child: const Text('See All', style: TextStyle(color: C.primary, fontSize: 13))),
         ]),
       );
 }
@@ -347,8 +357,7 @@ class RatingText extends StatelessWidget {
   Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.star_rounded, color: C.star, size: 16),
         const SizedBox(width: 3),
-        Text(rating == 0 ? 'New on ExploreHub' : (reviews == null ? '$rating' : '$rating ($reviews Reviews)'),
-            style: TextStyle(fontSize: 12, color: color ?? C.muted)),
+        Text(rating == 0 ? 'New on ExploreHub' : (reviews == null ? '$rating' : '$rating ($reviews Reviews)'), style: TextStyle(fontSize: 12, color: color ?? C.muted)),
       ]);
 }
 

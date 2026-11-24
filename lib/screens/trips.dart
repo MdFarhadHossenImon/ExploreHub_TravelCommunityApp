@@ -32,12 +32,21 @@ class TripsHubScreen extends StatelessWidget {
           automaticallyImplyLeading: false,
           centerTitle: !wide,
           title: const Text('Trips'),
-          bottom: const TabBar(
-            indicatorColor: C.primary,
-            labelColor: C.primary,
-            unselectedLabelColor: C.muted,
-            dividerColor: C.line,
-            tabs: [Tab(text: 'Trip plans'), Tab(text: 'Bookings')],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(kTextTabBarHeight),
+            child: Align(
+              alignment: wide ? Alignment.centerLeft : Alignment.center,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: const TabBar(
+                  indicatorColor: C.primary,
+                  labelColor: C.primary,
+                  unselectedLabelColor: C.muted,
+                  dividerColor: Colors.transparent,
+                  tabs: [Tab(text: 'Trip plans'), Tab(text: 'Bookings')],
+                ),
+              ),
+            ),
           ),
         ),
         body: const TabBarView(children: [_PlansTab(), BookingsScreen(embedded: true)]),
