@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import '../core/i18n.dart';
+import '../screens/phrasebook.dart';
 import 'package:http/http.dart' as http;
 
 import '../core/theme.dart';
@@ -199,6 +200,14 @@ class _EssentialsCardState extends State<EssentialsCard> {
         row(Icons.directions_car_outlined, 'Driving', i['drives'] == null ? null : 'Drive on the ${(i['drives'] as String).toLowerCase().contains('left') ? 'left' : 'right'}'),
         row(Icons.translate_rounded, 'Language', i['languages'] as String?),
         row(Icons.account_balance_outlined, 'Capital', i['capital'] as String?),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: OutlinedButton.icon(
+            onPressed: () => go(context, PhrasebookScreen(country: widget.country)),
+            icon: const Icon(Icons.record_voice_over_rounded, size: 18),
+            label: Text(tr('Phrasebook: useful local phrases')),
+          ),
+        ),
         Padding(
           padding: EdgeInsets.only(bottom: 10),
           child: Text(tr('Sources: Wikidata, exchange rates by open.er-api.com. Always double-check before you travel.'), style: TextStyle(fontSize: 10, color: C.muted)),

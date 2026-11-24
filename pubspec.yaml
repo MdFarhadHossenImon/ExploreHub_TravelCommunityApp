@@ -23,6 +23,7 @@ dependencies:
   geolocator: ^13.0.2
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
+  flutter_tts: ^4.2.5
 
 dev_dependencies:
   flutter_test:
@@ -36,6 +37,7 @@ flutter:
     - assets/demo/
     - assets/google_fonts/
     - assets/world.json
+    - assets/phrasebook.json
   fonts:
     - family: NotoSansBengali
       fonts:
