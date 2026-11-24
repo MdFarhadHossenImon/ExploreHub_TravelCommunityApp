@@ -345,6 +345,7 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
                       ),
                     ],
                     const SizedBox(height: 14),
+                    if (mine) _ViewersPill(key: ValueKey(st.id), storyId: st.id, pause: _ac.stop, resume: _ac.forward),
                     if (!mine)
                       Row(children: [
                         Expanded(
@@ -384,5 +385,127 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
     toast(context, 'Sent to ${t.first}');
     FocusScope.of(context).unfocus();
     _ac.forward();
+  }
+}
+
+
+/// "N viewers" pill on your own story; tap to see who watched it, Facebook style.
+class _ViewersPill extends StatefulWidget {
+  final String storyId;
+  final VoidCallback pause;
+  final TickerFuture Function({double? from}) resume;
+  const _ViewersPill({super.key, required this.storyId, required this.pause, required this.resume});
+  @override
+  State<_ViewersPill> createState() => _ViewersPillState();
+}
+
+class _ViewersPillState extends State<_ViewersPill> {
+  List<(String, String, String, DateTime)>? _viewers;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (!Backend.on) {
+      // Demo: a few sample travelers.
+      final now = DateTime.now();
+      setState(() => _viewers = [
+            for (var i = 0; i < travelers.length && i < 4; i++)
+              (travelers[i].id, travelers[i].name, travelers[i].seed, now.subtract(Duration(minutes: 7 * (i + 1))))
+          ]);
+      return;
+    }
+    try {
+      final v = await Backend.storyViewers(widget.storyId);
+      if (mounted) setState(() => _viewers = v);
+    } catch (_) {
+      if (mounted) setState(() => _viewers = const []);
+    }
+  }
+
+  String _ago(DateTime t) {
+    final d = DateTime.now().difference(t);
+    if (d.inMinutes < 1) return 'just now';
+    if (d.inMinutes < 60) return '${d.inMinutes}m ago';
+    return '${d.inHours}h ago';
+  }
+
+  Future<void> _open() async {
+    widget.pause();
+    await _load();
+    if (!mounted) return;
+    final v = _viewers ?? const [];
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      constraints: const BoxConstraints(maxWidth: 560),
+      builder: (c) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: .5,
+        minChildSize: .3,
+        maxChildSize: .9,
+        builder: (c, scroll) => Column(children: [
+          const SizedBox(height: 10),
+          Container(width: 40, height: 4, decoration: BoxDecoration(color: C.line, borderRadius: BorderRadius.circular(2))),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+            child: Row(children: [
+              const Icon(Icons.visibility_rounded, color: C.primary, size: 20),
+              const SizedBox(width: 8),
+              Text('${v.length} ${v.length == 1 ? 'viewer' : 'viewers'}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+            ]),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: v.isEmpty
+                ? const EmptyState(Icons.visibility_off_outlined, 'No views yet', 'When travelers watch your story, they show up here.')
+                : ListView.builder(
+                    controller: scroll,
+                    itemCount: v.length,
+                    itemBuilder: (c, i) => ListTile(
+                      leading: Avatar(v[i].$3, name: v[i].$2, radius: 20),
+                      title: Text(v[i].$2, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text(_ago(v[i].$4), style: const TextStyle(fontSize: 12, color: C.muted)),
+                    ),
+                  ),
+          ),
+        ]),
+      ),
+    );
+    if (mounted) widget.resume();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final v = _viewers;
+    final shown = (v ?? const []).take(3).toList();
+    return GestureDetector(
+      onTap: _open,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(20)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.visibility_rounded, color: Colors.white, size: 18),
+          const SizedBox(width: 6),
+          Text(v == null ? '...' : '${v.length}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+          if (shown.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 16.0 * shown.length + 8,
+              height: 24,
+              child: Stack(children: [
+                for (var i = 0; i < shown.length; i++)
+                  Positioned(left: 16.0 * i, child: CircleAvatar(radius: 12, backgroundColor: Colors.black, child: Avatar(shown[i].$3, name: shown[i].$2, radius: 11))),
+              ]),
+            ),
+          ],
+          const SizedBox(width: 4),
+          const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white, size: 18),
+        ]),
+      ),
+    );
   }
 }

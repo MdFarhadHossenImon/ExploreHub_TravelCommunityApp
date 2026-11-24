@@ -248,7 +248,9 @@ class SocialState extends ChangeNotifier {
   void markSeen(String id) {
     if (!seenStories.add(id)) return;
     notifyListeners();
-    _guard(() => Backend.markStorySeen(id));
+    // Your own views don't count toward your viewer list.
+    final own = stories.any((st) => st.id == id && st.travelerId == meId);
+    if (!own) _guard(() => Backend.markStorySeen(id));
   }
 
   /// Demo story (sample image).

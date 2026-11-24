@@ -439,6 +439,25 @@ class Backend {
   static Future<Set<String>> seenStories() async =>
       (await _c.from('story_views').select('story_id').eq('user_id', uid!)).map<String>((r) => r['story_id'] as String).toSet();
 
+  /// Who viewed one of my stories (newest first). Only the story owner can read these.
+  static Future<List<(String, String, String, DateTime)>> storyViewers(String storyId) async {
+    final rows = await _c
+        .from('story_views')
+        .select('user_id, seen_at, viewer:profiles!story_views_user_id_fkey(name, avatar_url)')
+        .eq('story_id', storyId)
+        .neq('user_id', uid!)
+        .order('seen_at', ascending: false);
+    return [
+      for (final r in rows)
+        (
+          r['user_id'] as String,
+          ((r['viewer'] as Map?)?['name'] as String?) ?? 'Traveler',
+          ((r['viewer'] as Map?)?['avatar_url'] as String?) ?? '',
+          DateTime.parse(r['seen_at'] as String).toLocal(),
+        )
+    ];
+  }
+
   static Future<void> markStorySeen(String id) async =>
       _c.from('story_views').upsert({'story_id': id, 'user_id': uid});
 

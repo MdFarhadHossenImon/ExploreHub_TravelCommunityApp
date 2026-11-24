@@ -93,6 +93,10 @@ Future<void> openNotification(BuildContext context, AppNotification n) async {
     // Older notifications without a target: open the closest screen.
     if (!context.mounted) return;
     switch (n.kind) {
+      case 'like':
+      case 'comment':
+      case 'community':
+        toast(context, 'This post is no longer available');
       case 'buddy':
       case 'follow':
         go(context, const FriendsScreen());
