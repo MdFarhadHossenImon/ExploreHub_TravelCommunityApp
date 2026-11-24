@@ -150,6 +150,8 @@ class _SideRail extends StatelessWidget {
           const SizedBox(height: 18),
           for (var n = 0; n < _dests.length; n++) item(n),
           const Spacer(),
+          CircleAction(Icons.explore_rounded, () => go(context, const WayloScreen()), tooltip: 'Waylo'),
+          const SizedBox(height: 10),
           CircleAction(Icons.search_rounded, () => go(context, const GlobalSearchScreen()), tooltip: tr('Search')),
           const SizedBox(height: 10),
           CircleAction(Icons.chat_bubble_rounded, () => go(context, const MessagesScreen()), badge: social.unreadChats, tooltip: tr('Messages')),
@@ -219,34 +221,40 @@ class _PillBar extends StatelessWidget {
 
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-        child: Container(
-          height: 64,
-          decoration: BoxDecoration(
-            color: const Color(0xF2152827),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: C.line),
-            boxShadow: const [BoxShadow(color: Color(0x66000000), blurRadius: 24, offset: Offset(0, 8))],
-          ),
-          child: Row(children: [
-            tab(0),
-            tab(1),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Material(
-                color: C.primary,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: () => go(context, const CreatePostScreen()),
-                  child: const SizedBox(width: 50, height: 50, child: Icon(Icons.add_rounded, color: C.on, size: 28)),
-                ),
+      child: Center(
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+            child: Container(
+              height: 64,
+              decoration: BoxDecoration(
+                color: const Color(0xF2152827),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(color: C.line),
+                boxShadow: const [BoxShadow(color: Color(0x66000000), blurRadius: 24, offset: Offset(0, 8))],
               ),
+              child: Row(children: [
+                tab(0),
+                tab(1),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Material(
+                    color: C.primary,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () => go(context, const CreatePostScreen()),
+                      child: const SizedBox(width: 50, height: 50, child: Icon(Icons.add_rounded, color: C.on, size: 28)),
+                    ),
+                  ),
+                ),
+                tab(3),
+                tab(4),
+              ]),
             ),
-            tab(3),
-            tab(4),
-          ]),
+          ),
         ),
       ),
     );

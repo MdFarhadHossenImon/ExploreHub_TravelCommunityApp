@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'core/i18n.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -107,8 +108,22 @@ class _ExploreHubAppState extends State<ExploreHubApp> {
       navigatorKey: navKey,
       scaffoldMessengerKey: messengerKey,
       theme: buildTheme(),
+      scrollBehavior: const _AppScroll(),
       home: const SplashScreen(),
       builder: (context, child) => Listener(onPointerUp: (_) => markUserGesture(), child: OfflineBanner(child: child!)),
     );
   }
+}
+
+/// Lets mouse and trackpad users drag side-scrolling rows (stories, chips, cards) on desktop web.
+class _AppScroll extends MaterialScrollBehavior {
+  const _AppScroll();
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.invertedStylus,
+      };
 }

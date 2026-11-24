@@ -143,15 +143,41 @@ class AppImage extends StatelessWidget {
       child: SizedBox(
         width: width,
         height: height,
-        child: Image.network(
-          seed.startsWith('http') ? seed : 'https://picsum.photos/seed/$seed/800/600',
-          fit: fit,
-          loadingBuilder: (c, child, p) => p == null ? child : fallback,
-          errorBuilder: (c, e, s) => fallback,
-        ),
+        child: LayoutBuilder(builder: (context, box) {
+          // Ask the photo server for roughly the size we draw, not the full 1200 px original.
+          final w = box.maxWidth.isFinite ? box.maxWidth : (width ?? 600);
+          final px = w * MediaQuery.devicePixelRatioOf(context);
+          return Image.network(
+            seed.startsWith('http') ? sizedImageUrl(seed, px) : 'https://picsum.photos/seed/$seed/800/600',
+            fit: fit,
+            gaplessPlayback: true,
+            frameBuilder: (c, child, frame, sync) => sync
+                ? child
+                : Stack(fit: StackFit.passthrough, children: [
+                    if (frame == null) fallback,
+                    AnimatedOpacity(opacity: frame == null ? 0 : 1, duration: const Duration(milliseconds: 260), curve: Curves.easeOut, child: child),
+                  ]),
+            errorBuilder: (c, e, s) => fallback,
+          );
+        }),
       ),
     );
   }
+}
+
+/// Wikimedia photos come in standard thumbnail widths; pick the smallest one that is sharp at [px].
+String sizedImageUrl(String url, double px) {
+  const steps = [330, 500, 960, 1280];
+  final want = steps.firstWhere((s) => s >= px, orElse: () => steps.last);
+  if (url.contains('commons.wikimedia.org/wiki/Special:FilePath/')) {
+    final u = Uri.parse(url);
+    return u.replace(queryParameters: {...u.queryParameters, 'width': '$want'}).toString();
+  }
+  final m = RegExp(r'/(\d+)px-').firstMatch(url);
+  if (m != null && url.contains('wikimedia.org') && int.parse(m.group(1)!) > want) {
+    return url.replaceFirst(m.group(0)!, '/${want}px-');
+  }
+  return url;
 }
 
 class Avatar extends StatelessWidget {
@@ -193,7 +219,10 @@ class PrimaryButton extends StatelessWidget {
       height: 50,
       width: double.infinity,
       child: outlined
-          ? OutlinedButton(onPressed: onPressed, style: OutlinedButton.styleFrom(foregroundColor: C.primary, side: const BorderSide(color: C.primary), shape: shape), child: text)
+          ? OutlinedButton(
+              onPressed: onPressed,
+              style: OutlinedButton.styleFrom(foregroundColor: C.primary, side: const BorderSide(color: C.primary), shape: shape),
+              child: text)
           : FilledButton(onPressed: onPressed, style: FilledButton.styleFrom(backgroundColor: C.primary, foregroundColor: C.on, shape: shape), child: text),
     );
   }
@@ -358,7 +387,8 @@ class RatingText extends StatelessWidget {
   Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.star_rounded, color: C.star, size: 16),
         const SizedBox(width: 3),
-        Text(rating == 0 ? tr('New on ExploreHub') : (reviews == null ? '$rating' : '$rating ($reviews ${tr('Reviews')})'), style: TextStyle(fontSize: 12, color: color ?? C.muted)),
+        Text(rating == 0 ? tr('New on ExploreHub') : (reviews == null ? '$rating' : '$rating ($reviews ${tr('Reviews')})'),
+            style: TextStyle(fontSize: 12, color: color ?? C.muted)),
       ]);
 }
 
