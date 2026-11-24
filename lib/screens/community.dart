@@ -490,22 +490,39 @@ class PostCard extends StatelessWidget {
           child: child,
         );
 
-    Widget stat(Widget icon, String? count, VoidCallback onTap, {String tip = '', GestureLongPressStartCallback? onLong}) => GestureDetector(
-          onLongPressStart: onLong,
-          child: Tooltip(
-            message: tip,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  icon,
-                  if (count != null) ...[const SizedBox(width: 5), Text(count, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13))],
-                ]),
+    Widget stat(Widget icon, String? count, VoidCallback onTap, {String tip = '', GestureLongPressStartCallback? onLong, VoidCallback? onCount}) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GestureDetector(
+              onLongPressStart: onLong,
+              child: Tooltip(
+                message: tip,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: onTap,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(8, 8, onCount == null ? 8 : 2, 8),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      icon,
+                      if (count != null && onCount == null) ...[const SizedBox(width: 5), Text(count, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13))],
+                    ]),
+                  ),
+                ),
               ),
             ),
-          ),
+            if (count != null && onCount != null)
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: onCount,
+                child: Tooltip(
+                  message: 'See who reacted',
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
+                    child: Text(count, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, decoration: TextDecoration.underline, decorationStyle: TextDecorationStyle.dotted)),
+                  ),
+                ),
+              ),
+          ],
         );
 
     return Padding(
@@ -699,6 +716,7 @@ class PostCard extends StatelessWidget {
               () => _tapLike(context),
               tip: 'Like (hold to react)',
               onLong: (d) => _pickReaction(context, d.globalPosition),
+              onCount: post.likes > 0 ? () => showReactions(context, post) : null,
             ),
             stat(const Icon(Icons.chat_bubble_outline_rounded, size: 21), '${post.commentCount}', () => _comments(context), tip: 'Comments'),
             stat(const Icon(Icons.near_me_outlined, size: 21), post.shareCount > 0 ? '${post.shareCount}' : null, () => _share(context), tip: 'Share'),
@@ -913,4 +931,78 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           const Text('Posts tagged with a place count toward your traveler level.', style: TextStyle(color: C.muted, fontSize: 12)),
         ]),
       );
+}
+
+
+/// Facebook-style "who reacted" sheet: tabs per reaction, then the people.
+Future<void> showReactions(BuildContext context, Post post) async {
+  List<(String, String, String, String)> rows; // user id, name, avatar, emoji
+  try {
+    if (Backend.on) {
+      rows = await Backend.postReactions(post.id);
+    } else {
+      const em = ['❤️', '😍', '🧭', '❤️', '😂', '❤️'];
+      rows = [for (var i = 0; i < travelers.length && i < 6; i++) (travelers[i].id, travelers[i].name, travelers[i].seed, em[i])];
+    }
+  } catch (e) {
+    if (context.mounted) toast(context, errText(e));
+    return;
+  }
+  if (!context.mounted) return;
+  final counts = <String, int>{};
+  for (final r in rows) {
+    counts[r.$4] = (counts[r.$4] ?? 0) + 1;
+  }
+  final tabs = ['All', ...(counts.keys.toList()..sort((a, b) => counts[b]!.compareTo(counts[a]!)))];
+  await showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    constraints: const BoxConstraints(maxWidth: 560),
+    builder: (c) => DefaultTabController(
+      length: tabs.length,
+      child: SizedBox(
+        height: MediaQuery.sizeOf(c).height * .6,
+        child: Column(children: [
+          const SizedBox(height: 10),
+          Container(width: 40, height: 4, decoration: BoxDecoration(color: C.line, borderRadius: BorderRadius.circular(2))),
+          TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: [for (final t in tabs) Tab(text: t == 'All' ? 'All ${rows.length}' : '$t ${counts[t]}')],
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: rows.isEmpty
+                ? const EmptyState(Icons.favorite_border_rounded, 'No reactions yet', 'Be the first to react.')
+                : TabBarView(children: [
+                    for (final t in tabs)
+                      ListView(children: [
+                        for (final r in rows.where((r) => t == 'All' || r.$4 == t))
+                          ListTile(
+                            leading: Stack(clipBehavior: Clip.none, children: [
+                              Avatar(r.$3, name: r.$2, radius: 20),
+                              Positioned(right: -4, bottom: -4, child: Text(r.$4, style: const TextStyle(fontSize: 15))),
+                            ]),
+                            title: Text(r.$1 == Backend.uid ? '${r.$2} (you)' : r.$2, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            onTap: r.$1 == Backend.uid
+                                ? null
+                                : () {
+                                    final known = travelers.where((x) => x.id == r.$1);
+                                    Navigator.pop(c);
+                                    if (known.isNotEmpty) {
+                                      go(context, TravelerProfileScreen(traveler: known.first));
+                                    } else if (Backend.on) {
+                                      Backend.fetchTraveler(r.$1).then((tr) {
+                                        if (tr != null && context.mounted) go(context, TravelerProfileScreen(traveler: tr));
+                                      });
+                                    }
+                                  },
+                          ),
+                      ]),
+                  ]),
+          ),
+        ]),
+      ),
+    ),
+  );
 }

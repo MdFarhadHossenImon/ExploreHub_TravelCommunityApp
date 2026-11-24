@@ -148,6 +148,25 @@ class Backend {
     return {for (final r in rows) r['post_id'] as String: r['emoji'] as String? ?? '❤️'};
   }
 
+  /// Everyone who reacted to a post, newest first: (user id, name, avatar, emoji).
+  static Future<List<(String, String, String, String)>> postReactions(String postId) async {
+    final rows = await _c
+        .from('likes')
+        .select('user_id, emoji, created_at, who:profiles!likes_user_id_fkey(name, avatar_url)')
+        .eq('post_id', postId)
+        .order('created_at', ascending: false)
+        .limit(500);
+    return [
+      for (final r in rows)
+        (
+          r['user_id'] as String,
+          ((r['who'] as Map?)?['name'] as String?) ?? 'Traveler',
+          ((r['who'] as Map?)?['avatar_url'] as String?) ?? '',
+          (r['emoji'] as String?) ?? '❤️',
+        )
+    ];
+  }
+
   static Future<void> setReaction(String postId, String emoji) async {
     await _c.from('likes').upsert({'post_id': postId, 'user_id': uid, 'emoji': emoji});
   }
