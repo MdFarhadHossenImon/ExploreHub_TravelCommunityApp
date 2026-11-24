@@ -646,23 +646,30 @@ class Backend {
     });
   }
 
-  /// AI trip planner (Edge Function `ai-planner`). Returns {plan, remaining} or throws [PlannerError].
-  static Future<Map<String, dynamic>> aiPlan({required String destination, required int days, required double budget, required String currency, String style = ''}) async {
+  /// Free trip planner (Edge Function `free-planner`, built on keyless public APIs).
+  static Future<Map<String, dynamic>> freePlan({
+    required String placeId,
+    required int days,
+    required double budget,
+    required String currency,
+    required DateTime start,
+    List<String> interests = const [],
+  }) async {
     try {
-      final res = await _c.functions.invoke('ai-planner', body: {
-        'destination': destination,
+      final res = await _c.functions.invoke('free-planner', body: {
+        'place_id': placeId,
         'days': days,
         'budget': budget,
         'currency': currency,
-        'style': style,
+        'start': start.toIso8601String().substring(0, 10),
+        'interests': interests,
         'lang': isBangla ? 'bn' : 'en',
       });
       return Map<String, dynamic>.from(res.data as Map);
     } on FunctionException catch (e) {
       final d = e.details;
-      final code = d is Map ? (d['error'] ?? '').toString() : '';
       final msg = d is Map ? (d['message'] ?? '').toString() : '';
-      throw PlannerError(code.isEmpty ? 'server' : code, msg.isEmpty ? 'The planner is busy. Please try again.' : msg);
+      throw PlannerError('server', msg.isEmpty ? 'The planner is busy. Please try again.' : msg);
     }
   }
 

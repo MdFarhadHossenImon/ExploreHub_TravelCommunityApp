@@ -24,11 +24,11 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
   int _days = 3;
   String _currency = 'BDT';
   final _budget = TextEditingController(text: '15000');
-  final _style = TextEditingController();
+  final Set<String> _interests = {};
+  DateTime _start = DateTime.now().add(const Duration(days: 7));
   bool _busy = false;
   String? _error;
   Map<String, dynamic>? _plan;
-  int? _remaining;
 
   Future<void> _make() async {
     final p = placeById(_place);
@@ -41,23 +41,23 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
       final Map<String, dynamic> r;
       if (!Backend.on) {
         await Future<void>.delayed(const Duration(milliseconds: 600));
-        r = {'plan': _demoPlan(p.name, _days, _currency), 'remaining': 4};
+        r = {'plan': _demoPlan(p.name, _days, _currency)};
       } else {
-        r = await Backend.aiPlan(
-          destination: '${p.name}, ${p.country}',
+        r = await Backend.freePlan(
+          placeId: p.id,
           days: _days,
           budget: double.tryParse(_budget.text.trim()) ?? 0,
           currency: _currency,
-          style: _style.text.trim(),
+          start: _start,
+          interests: _interests.toList(),
         );
       }
       if (!mounted) return;
       setState(() {
         _plan = Map<String, dynamic>.from(r['plan'] as Map);
-        _remaining = (r['remaining'] as num?)?.toInt();
       });
     } on PlannerError catch (e) {
-      if (mounted) setState(() => _error = e.code == 'not_configured' ? tr('The AI planner is not switched on yet. Please try again later.') : tr(e.message));
+      if (mounted) setState(() => _error = tr(e.message));
     } catch (e) {
       if (mounted) setState(() => _error = errText(e));
     } finally {
@@ -87,7 +87,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
     final t = context.read<SocialState>().createTrip(
           title: (plan['title'] as String?)?.trim().isNotEmpty == true ? plan['title'] as String : '${placeById(_place).name} trip',
           placeId: _place,
-          start: DateTime.now().add(const Duration(days: 14)),
+          start: _start,
           days: days.length,
           budget: usd,
         );
@@ -105,7 +105,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
   Widget build(BuildContext context) {
     final p = placeById(_place);
     return ScreenScaffold(
-      title: tr('AI trip planner'),
+      title: tr('Smart trip planner'),
       maxWidth: 760,
       bottom: _plan != null
           ? PrimaryButton('Save as my trip', icon: Icons.bookmark_add_rounded, onPressed: _save)
@@ -115,7 +115,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
           child: Row(children: [
             const Icon(Icons.auto_awesome_rounded, color: C.primary),
             const SizedBox(width: 10),
-            Expanded(child: Text(tr('Tell us where, how long and your budget. AI builds a day-by-day plan you can save as a trip and edit.'), style: const TextStyle(fontSize: 13, color: C.muted))),
+            Expanded(child: Text(tr('Tell us where, when and your budget. We build a free day-by-day plan with nearby sights, weather and costs. Save it as a trip and edit.'), style: const TextStyle(fontSize: 13, color: C.muted))),
           ]),
         ),
         const SizedBox(height: 14),
@@ -148,7 +148,31 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
             ),
           ),
         ]),
-        LabeledField('What do you like? (optional)', 'e.g. hiking, street food, slow pace', controller: _style),
+        Panel(
+          onTap: _busy
+              ? null
+              : () async {
+                  final d = await showDatePicker(context: context, firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 730)), initialDate: _start);
+                  if (d != null) setState(() => _start = d);
+                },
+          child: Row(children: [
+            const Icon(Icons.event_rounded, color: C.primary),
+            const SizedBox(width: 10),
+            Expanded(child: Text(tr('Start date'))),
+            Text(fmtDate(_start), style: const TextStyle(fontWeight: FontWeight.w700)),
+          ]),
+        ),
+        const SizedBox(height: 14),
+        Text(tr('What do you like? (optional)'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final i in const [('nature', 'Nature'), ('history', 'History'), ('faith', 'Religious sites'), ('sight', 'Landmarks')])
+            FilterChip(
+              label: Text(tr(i.$2)),
+              selected: _interests.contains(i.$1),
+              onSelected: _busy ? null : (v) => setState(() => v ? _interests.add(i.$1) : _interests.remove(i.$1)),
+            ),
+        ]),
         if (_error != null)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -187,7 +211,6 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
       Text('${plan['summary'] ?? ''}', style: const TextStyle(color: C.muted, height: 1.4)),
       const SizedBox(height: 8),
       Text(trf('Estimated total: {0}', [amt(plan['total_estimate'] as num?)]), style: const TextStyle(color: C.primary, fontWeight: FontWeight.w800)),
-      if (_remaining != null) Text(trf('{0} plans left today', ['$_remaining']), style: const TextStyle(fontSize: 12, color: C.muted)),
       const SizedBox(height: 10),
       for (final d in days)
         Padding(
@@ -200,6 +223,15 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
                 Expanded(child: Text('${d['title'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w800))),
                 Text(amt(d['cost'] as num?), style: const TextStyle(color: C.muted, fontSize: 12)),
               ]),
+              if ('${d['weather'] ?? ''}'.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, left: 38),
+                  child: Row(children: [
+                    const Icon(Icons.wb_cloudy_outlined, size: 14, color: C.muted),
+                    const SizedBox(width: 4),
+                    Expanded(child: Text('${d['weather']}', style: const TextStyle(fontSize: 12, color: C.muted))),
+                  ]),
+                ),
               const SizedBox(height: 8),
               for (final it in (d['items'] as List).cast<Map>())
                 Padding(
@@ -231,7 +263,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
           ),
       ],
       const SizedBox(height: 8),
-      Text(tr('AI plans can be wrong. Check prices and opening times before you go.'), style: const TextStyle(fontSize: 11.5, color: C.muted)),
+      Text(trf('Built from {0}. Costs are estimates; check prices and opening times before you go.', [((plan['sources'] as List?) ?? const ['Wikidata', 'OpenStreetMap']).join(', ')]), style: const TextStyle(fontSize: 11.5, color: C.muted)),
       const SizedBox(height: 20),
     ];
   }

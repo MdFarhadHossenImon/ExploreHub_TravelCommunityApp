@@ -1042,4 +1042,11 @@ const _bn = <String, String>{
   'The planner is busy. Please try again.': 'প্ল্যানার এখন ব্যস্ত। আবার চেষ্টা করুন।',
   'The planner could not make a plan for this request.': 'এই অনুরোধে প্ল্যান বানানো গেল না।',
   'Please sign in.': 'অনুগ্রহ করে সাইন ইন করুন।',
+  'Smart trip planner': 'স্মার্ট ট্রিপ প্ল্যানার',
+  'Days and budget in, a free day-by-day plan out.': 'দিন আর বাজেট দিন, ফ্রিতে দিন ধরে ধরে প্ল্যান পান।',
+  'Tell us where, when and your budget. We build a free day-by-day plan with nearby sights, weather and costs. Save it as a trip and edit.': 'কোথায়, কবে আর কত বাজেট বলুন। আশেপাশের দর্শনীয় জায়গা, আবহাওয়া আর খরচসহ ফ্রিতে দিন ধরে ধরে প্ল্যান বানিয়ে দেব। ট্রিপ হিসেবে সেভ করে বদলাতে পারবেন।',
+  'Start date': 'শুরুর তারিখ',
+  'Religious sites': 'ধর্মীয় স্থান',
+  'Landmarks': 'দর্শনীয় স্থাপনা',
+  'Built from {0}. Costs are estimates; check prices and opening times before you go.': '{0} থেকে তৈরি। খরচ আনুমানিক; যাওয়ার আগে দাম আর খোলার সময় যাচাই করে নিন।',
 };

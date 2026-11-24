@@ -97,9 +97,9 @@ class _PlansTab extends StatelessWidget {
             const SizedBox(width: 14),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(tr('AI trip planner'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+                Text(tr('Smart trip planner'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
                 const SizedBox(height: 2),
-                Text(tr('Tell AI your days and budget, get a ready plan.'), style: const TextStyle(color: C.muted, fontSize: 12.5)),
+                Text(tr('Days and budget in, a free day-by-day plan out.'), style: const TextStyle(color: C.muted, fontSize: 12.5)),
               ]),
             ),
             const Icon(Icons.chevron_right_rounded, color: C.muted),
