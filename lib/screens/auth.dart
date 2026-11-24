@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show OAuthProvider;
+import 'package:supabase_flutter/supabase_flutter.dart' show OAuthProvider, AuthException;
 
 import '../core/responsive.dart';
 import '../core/theme.dart';
@@ -128,7 +128,20 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _busy = true);
     try {
       if (Backend.on) {
-        await Backend.signIn(_email0.text.trim(), _pass0.text);
+        try {
+          await Backend.signIn(_email0.text.trim(), _pass0.text);
+        } on AuthException catch (e) {
+          if (!e.message.toLowerCase().contains('not confirmed')) rethrow;
+          // Account exists but the email was never verified: send a fresh code and ask for it.
+          try {
+            await Backend.resendSignupCode(_email0.text.trim());
+          } catch (_) {}
+          if (mounted) {
+            toast(context, 'Verify your email first. We sent you a new 6-digit code.');
+            go(context, OtpScreen(email: _email0.text.trim()));
+          }
+          return;
+        }
         if (mounted) await _enterApp(context);
       } else {
         context.read<AppState>().login(_email0.text.trim());
@@ -387,7 +400,7 @@ class _OtpScreenState extends State<OtpScreen> {
     final mm = (_left ~/ 60).toString().padLeft(2, '0');
     final ss = (_left % 60).toString().padLeft(2, '0');
     return ScreenScaffold(
-      title: Backend.on ? 'Check your email' : 'Verify OTP',
+      title: 'Verify your email',
       maxWidth: 440,
       body: ListView(padding: const EdgeInsets.all(20), children: [
         const SizedBox(height: 12),
@@ -395,14 +408,10 @@ class _OtpScreenState extends State<OtpScreen> {
           !Backend.on
               ? 'Enter the code sent to ${widget.email}. (Demo: any 6 digits work.)'
               : widget.resetFlow
-                  ? 'We emailed ${widget.email}. Open the link in that email to set a new password, or enter the 6-digit code if the email shows one.'
-                  : 'We emailed ${widget.email}. Open the confirmation link in that email to activate your account, then come back and log in. If the email shows a 6-digit code, you can enter it here instead.',
+                  ? 'We sent a 6-digit code to ${widget.email}. Enter it below to set a new password. Check your spam folder if you do not see it.'
+                  : 'We sent a 6-digit code to ${widget.email}. Enter it below to activate your account. Check your spam folder if you do not see it.',
           style: const TextStyle(color: C.muted, fontSize: 13, height: 1.5),
         ),
-        if (Backend.on && !widget.resetFlow) ...[
-          const SizedBox(height: 16),
-          PrimaryButton('I confirmed my email, log in', outlined: true, onPressed: () => goRoot(context, const LoginScreen())),
-        ],
         const SizedBox(height: 32),
         TextField(
           controller: _code,
