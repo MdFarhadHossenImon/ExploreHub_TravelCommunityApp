@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/i18n.dart';
 import 'live_sos.dart';
+import 'passport.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -55,6 +56,7 @@ class MenuScreen extends StatelessWidget {
       (Icons.bookmark_rounded, const Color(0xFFE88DB0), 'Saved', null, () => go(context, const SavedPlacesScreen())),
       (Icons.badge_rounded, const Color(0xFF8FB3AC), 'Local guides', null, () => go(context, const GuidesScreen())),
       (Icons.share_location_rounded, const Color(0xFFE5484D), 'Live location & SOS', null, () => go(context, const LiveMapScreen())),
+      (Icons.menu_book_rounded, const Color(0xFF9DB4F0), 'Travel passport', null, () => go(context, PassportScreen(name: s.name, saidCountries: s.countries))),
       (Icons.notifications_rounded, const Color(0xFFF4A261), 'Notifications', s.unread == 0 ? null : '${s.unread} new', () => go(context, const NotificationsScreen())),
     ];
     return Scaffold(

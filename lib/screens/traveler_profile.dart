@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/i18n.dart';
+import 'passport.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -201,7 +202,12 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
             Row(children: [
               Icon(Icons.menu_book_rounded, size: 18, color: C.primary),
               SizedBox(width: 6),
-              Text(tr('Passport stamps'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              Expanded(child: Text(tr('Passport stamps'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15))),
+              TextButton.icon(
+                onPressed: () => go(context, PassportScreen(userId: isMe ? null : t.id, name: t.name, saidCountries: t.countries)),
+                icon: const Icon(Icons.public_rounded, size: 17),
+                label: Text(tr('Open passport')),
+              ),
             ]),
             const SizedBox(height: 12),
             Wrap(spacing: 10, runSpacing: 10, children: [

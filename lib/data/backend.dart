@@ -627,6 +627,13 @@ class Backend {
     return rows.map(SameTimeMatch.fromRow).toList();
   }
 
+  /// Travel passport stats for a traveler (null = you); [year] null = all time.
+  static Future<Map<String, dynamic>> passport(String? userId, int? year) async {
+    final r = await Offline.row('passport:${userId ?? 'me'}:${year ?? 'all'}',
+        () async => Map<String, dynamic>.from(await _c.rpc('travel_passport', params: {'p_user': userId, 'p_year': year}) as Map));
+    return r ?? {};
+  }
+
   // ---- live location & SOS ----
   static Future<void> shareLocation(double lat, double lng, double? accuracy, DateTime until) async => _c.from('live_locations').upsert({
         'user_id': uid,
