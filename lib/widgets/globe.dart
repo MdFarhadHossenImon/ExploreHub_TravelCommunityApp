@@ -16,16 +16,26 @@ import 'common.dart';
 const _deg = math.pi / 180;
 
 /// Country outlines (Natural Earth 1:110m, public domain), loaded once.
+class _Country {
+  final String name;
+  final double lon, lat; // degrees, label point
+  final int rank; // 2 = largest countries ... 7 = smallest
+  const _Country(this.name, this.lon, this.lat, this.rank);
+}
+
 class _World {
   final List<Float32List> lonSin, lonCos, latSin, latCos; // per ring, per point
-  _World(this.lonSin, this.lonCos, this.latSin, this.latCos);
+  final List<_Country> countries;
+  _World(this.lonSin, this.lonCos, this.latSin, this.latCos, this.countries);
 
   static _World? _cache;
   static Future<_World> load() async {
     if (_cache != null) return _cache!;
     final data = jsonDecode(await rootBundle.loadString('assets/world.json')) as List;
     final ls = <Float32List>[], lc = <Float32List>[], ps = <Float32List>[], pc = <Float32List>[];
+    final countries = <_Country>[];
     for (final c in data) {
+      countries.add(_Country(c['n'] as String, (c['x'] as num).toDouble(), (c['y'] as num).toDouble(), (c['k'] as num).toInt()));
       for (final r in (c['r'] as List)) {
         final flat = (r as List).cast<num>();
         final n = flat.length ~/ 2;
@@ -43,7 +53,7 @@ class _World {
         pc.add(d);
       }
     }
-    return _cache = _World(ls, lc, ps, pc);
+    return _cache = _World(ls, lc, ps, pc, countries..sort((a, b) => a.rank.compareTo(b.rank)));
   }
 }
 
@@ -129,23 +139,94 @@ class _ExploreGlobeState extends State<ExploreGlobe> with TickerProviderStateMix
 
   double get _radiusFactor => .42;
 
-  void _flyTo(Place p) {
+  void _flyTo(Place p) => _flyToPoint(p.lng!, p.lat!, math.max(_zoom, 2.4), p);
+
+  void _flyToPoint(double lng, double lat, double zoom, Place? p) {
     _fLon0 = _lon;
     _fLat0 = _lat;
     _fZ0 = _zoom;
-    var d = (p.lng! - _lon) % 360;
+    var d = (lng - _lon) % 360;
     if (d > 180) d -= 360;
     if (d < -180) d += 360;
     _fLon1 = _lon + d;
-    _fLat1 = p.lat!.clamp(-75.0, 75.0);
-    _fZ1 = math.max(_zoom, 2.4);
+    _fLat1 = lat.clamp(-75.0, 75.0);
+    _fZ1 = zoom;
     _vLon = _vLat = 0;
+    _lastTouch = DateTime.now();
     setState(() {
       _sel = p;
       _panel = false;
     });
     _pin.value = 0;
     _fly.forward(from: 0);
+  }
+
+  bool _searching = false;
+
+  Widget _searchBox(List<Place> pts) {
+    final countries = _world?.countries ?? const <_Country>[];
+    return Material(
+      color: C.card,
+      elevation: 8,
+      borderRadius: BorderRadius.circular(16),
+      child: Autocomplete<Object>(
+        displayStringForOption: (o) => o is Place ? o.name : (o as _Country).name,
+        optionsBuilder: (v) {
+          final q = v.text.trim().toLowerCase();
+          if (q.length < 2) return const <Object>[];
+          final cs = countries.where((c) => c.name.toLowerCase().startsWith(q)).take(3);
+          final ps = pts.where((p) => p.name.toLowerCase().contains(q) || p.location.toLowerCase().contains(q) || p.country.toLowerCase().startsWith(q)).take(12);
+          return [...cs, ...ps];
+        },
+        optionsViewBuilder: (context, select, opts) => Align(
+          alignment: Alignment.topLeft,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Material(
+              color: C.card,
+              elevation: 8,
+              borderRadius: BorderRadius.circular(14),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 340, maxWidth: 520),
+                child: ListView(padding: EdgeInsets.zero, shrinkWrap: true, children: [
+                  for (final o in opts)
+                    ListTile(
+                      dense: true,
+                      leading: Icon(o is Place ? Icons.place_rounded : Icons.flag_rounded, color: C.primary),
+                      title: Text(o is Place ? o.name : (o as _Country).name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text(o is Place ? o.where : 'Country', style: const TextStyle(fontSize: 11.5)),
+                      onTap: () => select(o),
+                    ),
+                ]),
+              ),
+            ),
+          ),
+        ),
+        onSelected: (o) {
+          FocusManager.instance.primaryFocus?.unfocus();
+          setState(() => _searching = false);
+          if (o is Place) {
+            _flyTo(o);
+          } else if (o is _Country) {
+            _flyToPoint(o.lon, o.lat, o.rank <= 3 ? 1.9 : 2.8, null);
+          }
+        },
+        fieldViewBuilder: (context, ctl, focus, submit) => TextField(
+          controller: ctl,
+          focusNode: focus,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Search a place or country',
+            prefixIcon: const Icon(Icons.search_rounded),
+            suffixIcon: IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => setState(() => _searching = false)),
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            filled: false,
+          ),
+        ),
+      ),
+    );
   }
 
   void _tap(Offset pos) {
@@ -230,9 +311,11 @@ class _ExploreGlobeState extends State<ExploreGlobe> with TickerProviderStateMix
               ),
             ),
           ),
+          if (widget.fullscreen && !_searching) Positioned(right: 10, top: 10, child: _roundBtn(Icons.search_rounded, () => setState(() => _searching = true))),
+          if (widget.fullscreen && _searching) Positioned(left: 60, right: 10, top: 6, child: _searchBox(pts)),
           Positioned(
             right: 10,
-            top: 10,
+            top: widget.fullscreen ? 70 : 10,
             child: Column(children: [
               _roundBtn(Icons.add_rounded, () => setState(() => _zoom = (_zoom * 1.4).clamp(.8, 9.0))),
               const SizedBox(height: 8),
@@ -263,10 +346,11 @@ class _ExploreGlobeState extends State<ExploreGlobe> with TickerProviderStateMix
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 300),
                 opacity: _panel ? 1 : 0,
-                child: _PlacePanel(_sel!, onClose: () => setState(() {
-                  _sel = null;
-                  _panel = false;
-                })),
+                child: _PlacePanel(_sel!,
+                    onClose: () => setState(() {
+                          _sel = null;
+                          _panel = false;
+                        })),
               ),
             ),
         ]);
@@ -356,7 +440,8 @@ class _GlobePainter extends CustomPainter {
     final sp = math.sin(lat * _deg), cp = math.cos(lat * _deg);
 
     // atmosphere glow + ocean
-    canvas.drawCircle(c, r * 1.08, Paint()..shader = RadialGradient(colors: [C.primary.withValues(alpha: .22), C.primary.withValues(alpha: 0)], stops: const [.86, 1]).createShader(Rect.fromCircle(center: c, radius: r * 1.08)));
+    canvas.drawCircle(c, r * 1.08,
+        Paint()..shader = RadialGradient(colors: [C.primary.withValues(alpha: .22), C.primary.withValues(alpha: 0)], stops: const [.86, 1]).createShader(Rect.fromCircle(center: c, radius: r * 1.08)));
     canvas.drawCircle(
       c,
       r,
@@ -433,8 +518,11 @@ class _GlobePainter extends CustomPainter {
       c,
       r,
       Paint()
-        ..shader = RadialGradient(center: const Alignment(-.3, -.35), radius: 1.05, colors: [Colors.white.withValues(alpha: .10), Colors.transparent, Colors.black.withValues(alpha: .45)], stops: const [0, .55, 1])
-            .createShader(Rect.fromCircle(center: c, radius: r)),
+        ..shader = RadialGradient(
+            center: const Alignment(-.3, -.35),
+            radius: 1.05,
+            colors: [Colors.white.withValues(alpha: .10), Colors.transparent, Colors.black.withValues(alpha: .45)],
+            stops: const [0, .55, 1]).createShader(Rect.fromCircle(center: c, radius: r)),
     );
 
     // places
@@ -459,26 +547,68 @@ class _GlobePainter extends CustomPainter {
     }
     canvas.restore();
 
-    // labels: most popular first, skip overlaps
-    final budget = (8 + zoom * zoom * 6).round().clamp(8, 70);
-    visible.sort((x, y) => (y.$1.popularity ?? (y.$1.rating * 1000).round()).compareTo(x.$1.popularity ?? (x.$1.rating * 1000).round()));
     final taken = <Rect>[];
-    var shown = 0;
-    for (final (p, o, cosc) in visible) {
-      if (shown >= budget || cosc < .35) continue;
-      if (selected?.id == p.id) continue;
-      final tp = _labels.putIfAbsent(
-        p.id,
-        () => TextPainter(
-          text: TextSpan(text: p.name.length > 22 ? '${p.name.substring(0, 21)}…' : p.name, style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w600, shadows: [Shadow(blurRadius: 3, color: Colors.black)])),
-          textDirection: TextDirection.ltr,
-        )..layout(),
-      );
-      final rect = Rect.fromLTWH(o.dx + 5, o.dy - tp.height / 2, tp.width, tp.height).inflate(2);
-      if (rect.right > size.width || rect.left < 0 || taken.any((t) => t.overlaps(rect))) continue;
-      taken.add(rect);
-      tp.paint(canvas, Offset(o.dx + 6, o.dy - tp.height / 2));
-      shown++;
+
+    // country names: strongest when zoomed out, fade away as you zoom in
+    final cAlpha = ((2.4 - zoom) / 1.0).clamp(0.0, 1.0);
+    if (w != null && cAlpha > 0) {
+      final maxRank = zoom < 1.15 ? 4 : (zoom < 1.6 ? 5 : 7);
+      canvas.saveLayer(Offset.zero & size, Paint()..color = Colors.white.withValues(alpha: cAlpha));
+      for (final ct in w.countries) {
+        if (ct.rank > maxRank) continue;
+        final la = ct.lat * _deg, dl = ct.lon * _deg - lon * _deg;
+        final cosc = sp * math.sin(la) + cp * math.cos(la) * math.cos(dl);
+        if (cosc < .3) continue;
+        final o = Offset(c.dx + r * math.cos(la) * math.sin(dl), c.dy - r * (cp * math.sin(la) - sp * math.cos(la) * math.cos(dl)));
+        final tp = _labels.putIfAbsent(
+          'c:${ct.name}',
+          () => TextPainter(
+            text: TextSpan(
+              text: ct.name.toUpperCase(),
+              style: TextStyle(
+                  color: const Color(0xFFF7EBDD).withValues(alpha: .85),
+                  fontSize: ct.rank <= 3 ? 10.5 : 9,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                  shadows: const [Shadow(blurRadius: 3, color: Colors.black)]),
+            ),
+            textDirection: TextDirection.ltr,
+          )..layout(),
+        );
+        final rect = Rect.fromCenter(center: o, width: tp.width, height: tp.height).inflate(3);
+        if (rect.left < 0 || rect.right > size.width || taken.any((t) => t.overlaps(rect))) continue;
+        taken.add(rect);
+        tp.paint(canvas, rect.topLeft + const Offset(3, 3));
+      }
+      canvas.restore();
+    }
+
+    // place names: fade in as you zoom in, most popular first, skip overlaps
+    final pAlpha = ((zoom - 1.4) / .7).clamp(0.0, 1.0);
+    if (pAlpha > 0) {
+      final budget = (6 + zoom * zoom * 5).round().clamp(6, 70);
+      visible.sort((x, y) => (y.$1.popularity ?? (y.$1.rating * 1000).round()).compareTo(x.$1.popularity ?? (x.$1.rating * 1000).round()));
+      canvas.saveLayer(Offset.zero & size, Paint()..color = Colors.white.withValues(alpha: pAlpha));
+      var shown = 0;
+      for (final (p, o, cosc) in visible) {
+        if (shown >= budget || cosc < .35) continue;
+        if (selected?.id == p.id) continue;
+        final tp = _labels.putIfAbsent(
+          p.id,
+          () => TextPainter(
+            text: TextSpan(
+                text: p.name.length > 22 ? '${p.name.substring(0, 21)}…' : p.name,
+                style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w600, shadows: [Shadow(blurRadius: 3, color: Colors.black)])),
+            textDirection: TextDirection.ltr,
+          )..layout(),
+        );
+        final rect = Rect.fromLTWH(o.dx + 5, o.dy - tp.height / 2, tp.width, tp.height).inflate(2);
+        if (rect.right > size.width || rect.left < 0 || taken.any((t) => t.overlaps(rect))) continue;
+        taken.add(rect);
+        tp.paint(canvas, Offset(o.dx + 6, o.dy - tp.height / 2));
+        shown++;
+      }
+      canvas.restore();
     }
 
     // selected place: ripple + dropping pin
@@ -562,14 +692,6 @@ class GlobeScreen extends StatelessWidget {
             builder: (context, box) => Stack(children: [
               ExploreGlobe(height: box.maxHeight, fullscreen: true),
               const Positioned(left: 8, top: 8, child: BackCircle()),
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 16,
-                child: IgnorePointer(
-                  child: Text('${places.length} places', textAlign: TextAlign.center, style: const TextStyle(color: C.muted, fontWeight: FontWeight.w600)),
-                ),
-              ),
             ]),
           ),
         ),
