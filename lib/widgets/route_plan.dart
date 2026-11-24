@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/env.dart';
@@ -115,24 +116,24 @@ class _RoutePlanViewState extends State<RoutePlanView> {
           const SizedBox(width: 10),
           Expanded(
             child: Text.rich(TextSpan(children: [
-              const TextSpan(text: 'Starting from  ', style: TextStyle(color: C.muted, fontSize: 12.5)),
+              TextSpan(text: tr('Starting from  '), style: TextStyle(color: C.muted, fontSize: 12.5)),
               TextSpan(text: _origin?.name ?? '...', style: const TextStyle(fontWeight: FontWeight.w700)),
             ])),
           ),
-          TextButton.icon(onPressed: _pickOrigin, icon: const Icon(Icons.edit_location_alt_rounded, size: 18), label: const Text('Change')),
+          TextButton.icon(onPressed: _pickOrigin, icon: const Icon(Icons.edit_location_alt_rounded, size: 18), label: Text(tr('Change'))),
         ]),
       ),
       const SizedBox(height: 14),
       if (_failed)
-        const Text('Could not build the route right now. Pull down to try again later.', style: TextStyle(color: C.muted))
+        Text(tr('Could not build the route right now. Pull down to try again later.'), style: TextStyle(color: C.muted))
       else if (items == null)
-        const Padding(
+        Padding(
           padding: EdgeInsets.all(24),
           child: Center(
             child: Column(children: [
               CircularProgressIndicator(color: C.primary),
               SizedBox(height: 10),
-              Text('Finding the road and the towns on the way...', style: TextStyle(color: C.muted, fontSize: 12)),
+              Text(tr('Finding the road and the towns on the way...'), style: TextStyle(color: C.muted, fontSize: 12)),
             ]),
           ),
         )
@@ -143,7 +144,7 @@ class _RoutePlanViewState extends State<RoutePlanView> {
               ? _StopNode(items[i], first: i == 0, last: i == items.length - 1)
               : _LegEdge(items[i], place: widget.place, showTickets: items.indexWhere((e) => e['t'] == 'leg' && e['mode'] == items[i]['mode']) == i),
         const SizedBox(height: 10),
-        const Text('Road distances and driving times: OpenStreetMap (OSRM). Bus time is an estimate with stops; flight time is from the distance.', style: TextStyle(color: C.muted, fontSize: 10.5)),
+        Text(tr('Road distances and driving times: OpenStreetMap (OSRM). Bus time is an estimate with stops; flight time is from the distance.'), style: TextStyle(color: C.muted, fontSize: 10.5)),
       ],
     ]);
   }
@@ -166,8 +167,8 @@ class _Summary extends StatelessWidget {
             child: Column(children: [
               Icon(i, color: C.primary, size: 20),
               const SizedBox(height: 4),
-              Text(big, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-              Text(small, style: const TextStyle(color: C.muted, fontSize: 11)),
+              Text(tr(big), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              Text(tr(small), style: const TextStyle(color: C.muted, fontSize: 11)),
             ]),
           ),
         );
@@ -259,7 +260,7 @@ class _LegEdge extends StatelessWidget {
               Row(children: [
                 Icon(icon, size: 18, color: mode == 'flight' ? const Color(0xFF5B8DEF) : C.primary),
                 const SizedBox(width: 8),
-                Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(tr(label), style: const TextStyle(fontWeight: FontWeight.w700)),
                 const Spacer(),
                 Text('≈ ${_dur(l['min'] as num)}', style: const TextStyle(fontWeight: FontWeight.w800, color: C.primary)),
               ]),
@@ -280,7 +281,7 @@ class _LegEdge extends StatelessWidget {
                     style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 10)),
                     onPressed: () => go(context, TransportScreen(type: mode == 'flight' ? 'flight' : 'bus', to: mode == 'flight' ? (l['to'] as String?) : place.hub)),
                     icon: Icon(mode == 'flight' ? Icons.flight_rounded : Icons.confirmation_number_rounded, size: 15),
-                    label: Text(mode == 'flight' ? 'Find flights' : 'Buses & trains', style: const TextStyle(fontSize: 12)),
+                    label: Text(mode == 'flight' ? tr('Find flights') : tr('Buses & trains'), style: const TextStyle(fontSize: 12)),
                   ),
                 ),
               ],
@@ -320,9 +321,9 @@ class _OriginPickerState extends State<_OriginPicker> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Where do you start from?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+              Text(tr('Where do you start from?'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
               const SizedBox(height: 12),
-              TextField(autofocus: true, onChanged: _search, decoration: const InputDecoration(hintText: 'Type a city, e.g. Chattogram', prefixIcon: Icon(Icons.search_rounded))),
+              TextField(autofocus: true, onChanged: _search, decoration: InputDecoration(hintText: tr('Type a city, e.g. Chattogram'), prefixIcon: Icon(Icons.search_rounded))),
               const SizedBox(height: 8),
               Expanded(
                 child: ListView(children: [

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:http/http.dart' as http;
 
 import '../core/theme.dart';
@@ -90,8 +91,8 @@ class _WeatherCardState extends State<WeatherCard> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('${_wmo(code)} right now', style: const TextStyle(fontWeight: FontWeight.w600)),
-                      Text('Wind ${(cur['wind_speed_10m'] as num).round()} km/h · Humidity ${(cur['relative_humidity_2m'] as num).round()}%',
+                      Text(trf('{0} right now', [_wmo(code)]), style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(trf('Wind {0} km/h · Humidity {1}%', [(cur['wind_speed_10m'] as num).round(), (cur['relative_humidity_2m'] as num).round()]),
                           style: const TextStyle(fontSize: 12, color: C.muted)),
                     ]),
                   ),
@@ -101,7 +102,7 @@ class _WeatherCardState extends State<WeatherCard> {
                   for (var i = 0; i < days; i++)
                     Expanded(
                       child: Column(children: [
-                        Text(i == 0 ? 'Today' : _wd[DateTime.parse(daily['time'][i] as String).weekday - 1], style: const TextStyle(fontSize: 11.5, color: C.muted)),
+                        Text(i == 0 ? tr('Today') : _wd[DateTime.parse(daily['time'][i] as String).weekday - 1], style: const TextStyle(fontSize: 11.5, color: C.muted)),
                         const SizedBox(height: 4),
                         Icon(_wmoIcon((daily['weather_code'][i] as num).toInt()), size: 20, color: C.primary),
                         const SizedBox(height: 4),
@@ -112,7 +113,7 @@ class _WeatherCardState extends State<WeatherCard> {
                     ),
                 ]),
                 const SizedBox(height: 6),
-                const Text('Weather data: Open-Meteo.com', style: TextStyle(fontSize: 10, color: C.muted)),
+                Text(tr('Weather data: Open-Meteo.com'), style: TextStyle(fontSize: 10, color: C.muted)),
               ]);
             }),
     );
@@ -175,8 +176,8 @@ class _EssentialsCardState extends State<EssentialsCard> {
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Icon(icon, size: 18, color: C.primary),
               const SizedBox(width: 10),
-              SizedBox(width: 92, child: Text(label, style: const TextStyle(fontSize: 12.5, color: C.muted))),
-              Expanded(child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
+              SizedBox(width: 92, child: Text(tr(label), style: const TextStyle(fontSize: 12.5, color: C.muted))),
+              Expanded(child: Text(tr(value), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
             ]),
           );
     final code = i['currency_code'] as String?;
@@ -198,9 +199,9 @@ class _EssentialsCardState extends State<EssentialsCard> {
         row(Icons.directions_car_outlined, 'Driving', i['drives'] == null ? null : 'Drive on the ${(i['drives'] as String).toLowerCase().contains('left') ? 'left' : 'right'}'),
         row(Icons.translate_rounded, 'Language', i['languages'] as String?),
         row(Icons.account_balance_outlined, 'Capital', i['capital'] as String?),
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(bottom: 10),
-          child: Text('Sources: Wikidata, exchange rates by open.er-api.com. Always double-check before you travel.', style: TextStyle(fontSize: 10, color: C.muted)),
+          child: Text(tr('Sources: Wikidata, exchange rates by open.er-api.com. Always double-check before you travel.'), style: TextStyle(fontSize: 10, color: C.muted)),
         ),
       ]),
     );
@@ -240,7 +241,7 @@ class NearbyStrip extends StatelessWidget {
     if (list.isEmpty) return const SizedBox.shrink();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const SizedBox(height: 18),
-      const Text('Nearby places', style: TextStyle(fontWeight: FontWeight.w600)),
+      Text(tr('Nearby places'), style: TextStyle(fontWeight: FontWeight.w600)),
       const SizedBox(height: 8),
       SizedBox(
         height: 150,

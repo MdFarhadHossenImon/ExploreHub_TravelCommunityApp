@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/theme.dart';
@@ -10,7 +11,7 @@ import '../widgets/common.dart';
 String _ymd(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
 Future<void> openLink(BuildContext context, String url) async {
-  if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication) && context.mounted) toast(context, 'Could not open the link');
+  if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication) && context.mounted) toast(context, tr('Could not open the link'));
 }
 
 /// Real hotels, hostels and guest houses near a destination (OpenStreetMap data),
@@ -107,7 +108,7 @@ class _StaysScreenState extends State<StaysScreen> {
           controller: ctl,
           focusNode: focus,
           decoration: InputDecoration(
-            hintText: _place == null ? 'Where are you staying? e.g. Cox\'s Bazar' : '${_place!.name}, ${_place!.country}',
+            hintText: _place == null ? tr('Where are you staying? e.g. Cox\'s Bazar') : '${_place!.name}, ${_place!.country}',
             prefixIcon: const Icon(Icons.place_outlined),
           ),
         ),
@@ -119,7 +120,7 @@ class _StaysScreenState extends State<StaysScreen> {
     final shown = (_stays ?? const <Stay>[]).where((s) => _kind.isEmpty || s.kind == _kind).toList();
     final nights = _out.difference(_in).inDays;
     return ScreenScaffold(
-      title: 'Hotels & stays',
+      title: tr('Hotels & stays'),
       body: RefreshIndicator(
         color: C.primary,
         onRefresh: () async {
@@ -177,9 +178,9 @@ class _StaysScreenState extends State<StaysScreen> {
             const EmptyState(Icons.hotel_rounded, 'No listed stays nearby', 'Nothing is mapped near this spot yet. Use "Compare prices" above to search hotels in the area.')
           else ...[
             Row(children: [
-              Text('${_stays!.length} places to stay', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+              Text(trf('{0} places to stay', [_stays!.length]), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
               const Spacer(),
-              const Text('near the destination', style: TextStyle(color: C.muted, fontSize: 12)),
+              Text(tr('near the destination'), style: TextStyle(color: C.muted, fontSize: 12)),
             ]),
             const SizedBox(height: 8),
             if (kinds.length > 1)
@@ -190,7 +191,7 @@ class _StaysScreenState extends State<StaysScreen> {
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: ChoiceChip(
-                        label: Text(k.isEmpty ? 'All' : Stay(id: '', name: '', kind: k, lat: 0, lng: 0).kindLabel),
+                        label: Text(k.isEmpty ? tr('All') : Stay(id: '', name: '', kind: k, lat: 0, lng: 0).kindLabel),
                         selected: _kind == k,
                         onSelected: (_) => setState(() => _kind = k),
                       ),
@@ -199,9 +200,9 @@ class _StaysScreenState extends State<StaysScreen> {
               ),
             const SizedBox(height: 10),
             for (final s in shown) _StayCard(s, bookingUrl: _bookingUrl('${s.name}, ${_place!.location.isEmpty ? _place!.country : _place!.location}')),
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(top: 6),
-              child: Text('Listings © OpenStreetMap contributors. Prices and availability come from the booking site.', style: TextStyle(color: C.muted, fontSize: 11)),
+              child: Text(tr('Listings © OpenStreetMap contributors. Prices and availability come from the booking site.'), style: TextStyle(color: C.muted, fontSize: 11)),
             ),
           ],
         ]),
@@ -232,7 +233,7 @@ class _StayCard extends StatelessWidget {
             style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 10), side: const BorderSide(color: C.line)),
             onPressed: () => openLink(context, url),
             icon: Icon(i, size: 16),
-            label: Text(label, style: const TextStyle(fontSize: 12.5)),
+            label: Text(tr(label), style: const TextStyle(fontSize: 12.5)),
           ),
         );
     final web = s.website == null ? null : (s.website!.startsWith('http') ? s.website! : 'https://${s.website}');
@@ -274,13 +275,13 @@ class _StayCard extends StatelessWidget {
               child: FilledButton(
                 style: FilledButton.styleFrom(backgroundColor: C.primary, padding: const EdgeInsets.symmetric(horizontal: 14)),
                 onPressed: () => openLink(context, bookingUrl),
-                child: const Text('Check price', style: TextStyle(fontSize: 12.5)),
+                child: Text(tr('Check price'), style: TextStyle(fontSize: 12.5)),
               ),
             ),
             const SizedBox(width: 8),
-            if (s.phone != null) act(Icons.call_rounded, 'Call', 'tel:${s.phone!.split(';').first.replaceAll(' ', '')}'),
-            if (web != null) act(Icons.language_rounded, 'Website', web),
-            act(Icons.map_rounded, 'Map', 'https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lng}'),
+            if (s.phone != null) act(Icons.call_rounded, tr('Call'), 'tel:${s.phone!.split(';').first.replaceAll(' ', '')}'),
+            if (web != null) act(Icons.language_rounded, tr('Website'), web),
+            act(Icons.map_rounded, tr('Map'), 'https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lng}'),
           ]),
         ),
       ]),

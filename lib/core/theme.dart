@@ -46,7 +46,7 @@ ThemeData buildTheme() {
     canvasColor: C.bg,
     dividerColor: C.line,
   );
-  final text = GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(bodyColor: C.ink, displayColor: C.ink);
+  final text = GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(bodyColor: C.ink, displayColor: C.ink, fontFamilyFallback: const ['NotoSansBengali']);
   return base.copyWith(
     textTheme: text,
     appBarTheme: AppBarTheme(

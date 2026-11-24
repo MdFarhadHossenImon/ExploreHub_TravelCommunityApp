@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme.dart';
@@ -116,23 +117,23 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
           padding: EdgeInsets.fromLTRB(16, 18, 16, MediaQuery.of(c).viewInsets.bottom + 16),
           child: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Add an expense', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+              Text(tr('Add an expense'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
               const SizedBox(height: 12),
               LabeledField('What for', 'e.g. Boat hire, dinner, hostel', controller: title),
               LabeledField('Amount (USD)', 'e.g. 45', controller: amount, keyboard: const TextInputType.numberWithOptions(decimal: true)),
-              const Text('Paid by', style: TextStyle(fontWeight: FontWeight.w500)),
+              Text(tr('Paid by'), style: TextStyle(fontWeight: FontWeight.w500)),
               const SizedBox(height: 6),
               Wrap(spacing: 8, runSpacing: 8, children: [
                 for (final m in members)
-                  ChoiceChip(label: Text(m.$2), selected: paidBy == m.$1, onSelected: (_) => set(() => paidBy = m.$1)),
+                  ChoiceChip(label: Text(tr(m.$2)), selected: paidBy == m.$1, onSelected: (_) => set(() => paidBy = m.$1)),
               ]),
               const SizedBox(height: 12),
-              const Text('Split between', style: TextStyle(fontWeight: FontWeight.w500)),
+              Text(tr('Split between'), style: TextStyle(fontWeight: FontWeight.w500)),
               const SizedBox(height: 6),
               Wrap(spacing: 8, runSpacing: 8, children: [
                 for (final m in members)
                   FilterChip(
-                    label: Text(m.$2),
+                    label: Text(tr(m.$2)),
                     selected: split.contains(m.$1),
                     onSelected: (v) => set(() => v ? split.add(m.$1) : (split.length > 1 ? split.remove(m.$1) : null)),
                   ),
@@ -147,7 +148,7 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
     if (ok != true) return;
     final value = double.tryParse(amount.text.trim().replaceAll(',', ''));
     if (title.text.trim().isEmpty || value == null || value <= 0) {
-      if (mounted) toast(context, 'Add a name and an amount above 0');
+      if (mounted) toast(context, tr('Add a name and an amount above 0'));
       return;
     }
     final splitList = split.length == members.length ? <String>[] : split.toList();
@@ -183,7 +184,7 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
     final total = _items.fold<double>(0, (a, e) => a + e.amount);
     final me = Backend.uid ?? meId;
     return ScreenScaffold(
-      title: 'Trip expenses',
+      title: tr('Trip expenses'),
       bottom: PrimaryButton('Add expense', icon: Icons.add_rounded, onPressed: () => _add(members)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -194,12 +195,12 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                   child: Row(children: [
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        const Text('Total spent', style: TextStyle(color: C.muted, fontSize: 12.5)),
+                        Text(tr('Total spent'), style: TextStyle(color: C.muted, fontSize: 12.5)),
                         Text('\$${total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
                       ]),
                     ),
                     Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                      const Text('Your balance', style: TextStyle(color: C.muted, fontSize: 12.5)),
+                      Text(tr('Your balance'), style: TextStyle(color: C.muted, fontSize: 12.5)),
                       Text(
                         (bal[me] ?? 0) >= 0 ? '+\$${(bal[me] ?? 0).toStringAsFixed(2)}' : '-\$${(-(bal[me] ?? 0)).toStringAsFixed(2)}',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: (bal[me] ?? 0) >= 0 ? const Color(0xFF30A46C) : C.danger),
@@ -208,10 +209,10 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                   ]),
                 ),
                 const SizedBox(height: 14),
-                const Text('Settle up', style: TextStyle(fontWeight: FontWeight.w700)),
+                Text(tr('Settle up'), style: TextStyle(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 6),
                 if (settle.isEmpty)
-                  const Text('Everyone is even.', style: TextStyle(color: C.muted))
+                  Text(tr('Everyone is even.'), style: TextStyle(color: C.muted))
                 else
                   for (final s in settle)
                     ListTile(
@@ -221,7 +222,7 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                       trailing: Text('\$${s.$3.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w700)),
                     ),
                 const SizedBox(height: 14),
-                const Text('Expenses', style: TextStyle(fontWeight: FontWeight.w700)),
+                Text(tr('Expenses'), style: TextStyle(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 6),
                 if (_items.isEmpty)
                   const Padding(
@@ -243,7 +244,7 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                       trailing: Text('\$${e.amount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ),
-                if (_items.isNotEmpty) const Text('Swipe left on an expense to delete it.', style: TextStyle(fontSize: 11.5, color: C.muted)),
+                if (_items.isNotEmpty) Text(tr('Swipe left on an expense to delete it.'), style: TextStyle(fontSize: 11.5, color: C.muted)),
               ]),
             ),
     );
@@ -358,7 +359,7 @@ class _TripPackingScreenState extends State<TripPackingScreen> {
     final cats = <String>['Documents', 'Electronics', 'Health', 'Clothes', 'Other'];
     final packed = _items.where((i) => i.done).length;
     return ScreenScaffold(
-      title: 'Packing list',
+      title: tr('Packing list'),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -373,7 +374,7 @@ class _TripPackingScreenState extends State<TripPackingScreen> {
                       child: LinearProgressIndicator(value: _items.isEmpty ? 0 : packed / _items.length, minHeight: 8, color: C.primary, backgroundColor: C.line),
                     ),
                     const SizedBox(height: 6),
-                    const Text('Shared with everyone on this trip.', style: TextStyle(fontSize: 12, color: C.muted)),
+                    Text(tr('Shared with everyone on this trip.'), style: TextStyle(fontSize: 12, color: C.muted)),
                   ]),
                 ),
                 const SizedBox(height: 12),
@@ -381,7 +382,7 @@ class _TripPackingScreenState extends State<TripPackingScreen> {
                   Expanded(
                     child: TextField(
                       controller: _new,
-                      decoration: const InputDecoration(hintText: 'Add an item'),
+                      decoration: InputDecoration(hintText: tr('Add an item')),
                       onSubmitted: (_) => _addOne(),
                     ),
                   ),
@@ -389,7 +390,7 @@ class _TripPackingScreenState extends State<TripPackingScreen> {
                   DropdownButton<String>(
                     value: _cat,
                     underline: const SizedBox(),
-                    items: [for (final c in cats) DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13)))],
+                    items: [for (final c in cats) DropdownMenuItem(value: c, child: Text(tr(c), style: const TextStyle(fontSize: 13)))],
                     onChanged: (v) => setState(() => _cat = v ?? 'Other'),
                   ),
                   IconButton(onPressed: _addOne, icon: const Icon(Icons.add_circle_rounded, color: C.primary)),
@@ -400,12 +401,12 @@ class _TripPackingScreenState extends State<TripPackingScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () => _addMany(_essentials),
                       icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-                      label: const Text('Add travel essentials'),
+                      label: Text(tr('Add travel essentials')),
                     ),
                   ),
                 for (final c in cats)
                   if (_items.any((i) => i.category == c)) ...[
-                    Padding(padding: const EdgeInsets.only(top: 16, bottom: 4), child: Text(c, style: const TextStyle(fontWeight: FontWeight.w700, color: C.muted))),
+                    Padding(padding: const EdgeInsets.only(top: 16, bottom: 4), child: Text(tr(c), style: const TextStyle(fontWeight: FontWeight.w700, color: C.muted))),
                     for (final i in _items.where((i) => i.category == c))
                       CheckboxListTile(
                         contentPadding: EdgeInsets.zero,
@@ -413,7 +414,7 @@ class _TripPackingScreenState extends State<TripPackingScreen> {
                         value: i.done,
                         onChanged: (_) => _toggle(i),
                         title: Text(i.title, style: TextStyle(decoration: i.done ? TextDecoration.lineThrough : null, color: i.done ? C.muted : C.ink)),
-                        secondary: IconButton(tooltip: 'Remove', onPressed: () => _remove(i), icon: const Icon(Icons.close_rounded, size: 18, color: C.muted)),
+                        secondary: IconButton(tooltip: tr('Remove'), onPressed: () => _remove(i), icon: const Icon(Icons.close_rounded, size: 18, color: C.muted)),
                       ),
                   ],
               ]),

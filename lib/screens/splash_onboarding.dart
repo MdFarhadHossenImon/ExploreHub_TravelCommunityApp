@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 
 import 'package:provider/provider.dart';
 
@@ -125,7 +126,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: SafeArea(
                           child: TextButton(
                             onPressed: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const WelcomeScreen())),
-                            child: const Text('Skip', style: TextStyle(color: Colors.white)),
+                            child: Text(tr('Skip'), style: TextStyle(color: Colors.white)),
                           ),
                         ),
                       ),

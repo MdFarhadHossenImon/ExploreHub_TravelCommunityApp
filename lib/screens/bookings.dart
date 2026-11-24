@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -28,7 +29,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
       appBar: widget.embedded
           ? null
           : AppBar(
-              title: const Text('Bookings'),
+              title: Text(tr('Bookings')),
               automaticallyImplyLeading: false,
               leading: Navigator.canPop(context) ? const BackCircle() : null,
               leadingWidth: 56,
@@ -41,7 +42,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
             child: SegmentedButton<bool>(
               style: SegmentedButton.styleFrom(selectedBackgroundColor: C.primary, selectedForegroundColor: C.on),
               showSelectedIcon: false,
-              segments: const [ButtonSegment(value: true, label: Text('Upcoming')), ButtonSegment(value: false, label: Text('History'))],
+              segments: [ButtonSegment(value: true, label: Text(tr('Upcoming'))), ButtonSegment(value: false, label: Text(tr('History')))],
               selected: {_upcoming},
               onSelectionChanged: (v) => setState(() => _upcoming = v.first),
             ),
@@ -80,7 +81,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                           Row(children: [
                             Text(fmtDate(b.start), style: const TextStyle(fontSize: 12)),
                             const Spacer(),
-                            TextButton(onPressed: () => go(context, BookingDetailScreen(booking: b)), child: const Text('See detail')),
+                            TextButton(onPressed: () => go(context, BookingDetailScreen(booking: b)), child: Text(tr('See detail'))),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(color: b.status == 'Cancelled' ? C.danger : b.status == 'Completed' ? C.muted : C.primary, borderRadius: BorderRadius.circular(8)),
@@ -106,24 +107,24 @@ class BookingDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final b = context.watch<AppState>().bookings.firstWhere((x) => x.id == booking.id);
     return ScreenScaffold(
-      title: 'Order Detail',
+      title: tr('Order Detail'),
       bottom: b.status == 'Upcoming'
           ? PrimaryButton('Cancel booking', outlined: true, onPressed: () async {
               final ok = await showDialog<bool>(
                 context: context,
                 builder: (c) => AlertDialog(
-                  title: const Text('Cancel this booking?'),
-                  content: const Text('Refunds follow the operator policy. This cannot be undone.'),
+                  title: Text(tr('Cancel this booking?')),
+                  content: Text(tr('Refunds follow the operator policy. This cannot be undone.')),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep booking')),
-                    FilledButton(style: FilledButton.styleFrom(backgroundColor: C.danger), onPressed: () => Navigator.pop(c, true), child: const Text('Cancel booking')),
+                    TextButton(onPressed: () => Navigator.pop(c, false), child: Text(tr('Keep booking'))),
+                    FilledButton(style: FilledButton.styleFrom(backgroundColor: C.danger), onPressed: () => Navigator.pop(c, true), child: Text(tr('Cancel booking'))),
                   ],
                 ),
               );
               if (ok == true && context.mounted) {
                 try {
                   await context.read<AppState>().cancelBooking(b);
-                  if (context.mounted) toast(context, 'Booking cancelled');
+                  if (context.mounted) toast(context, tr('Booking cancelled'));
                 } catch (e) {
                   if (context.mounted) toast(context, errText(e));
                 }

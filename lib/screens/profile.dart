@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
 import '../core/theme.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/lang_switch.dart';
 import '../widgets/pull_refresh.dart';
 import 'auth.dart';
 import 'community.dart';
@@ -21,20 +23,20 @@ class ProfileScreen extends StatelessWidget {
   Widget _tile(IconData icon, String title, VoidCallback? onTap, {String? trailing, Color? color}) => ListTile(
         contentPadding: EdgeInsets.zero,
         leading: Icon(icon, color: color ?? C.muted),
-        title: Text(title, style: TextStyle(fontSize: 14, color: color)),
-        trailing: trailing == null ? null : Text(trailing, style: const TextStyle(color: C.muted, fontSize: 12.5)),
+        title: Text(tr(title), style: TextStyle(fontSize: 14, color: color)),
+        trailing: trailing == null ? null : Text(tr(trailing), style: const TextStyle(color: C.muted, fontSize: 12.5)),
         onTap: onTap,
       );
 
   Widget _h(String t) => Padding(
         padding: const EdgeInsets.only(top: 18, bottom: 4),
-        child: Text(t, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+        child: Text(tr(t), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
       );
 
   Widget _stat(String v, String l) => Expanded(
         child: Column(children: [
           Text(v, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-          Text(l, style: const TextStyle(color: C.muted, fontSize: 12)),
+          Text(tr(l), style: const TextStyle(color: C.muted, fontSize: 12)),
         ]),
       );
 
@@ -44,7 +46,7 @@ class ProfileScreen extends StatelessWidget {
     final mine = s.myPosts;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings & privacy'),
+        title: Text(tr('Settings & privacy')),
         automaticallyImplyLeading: false,
         leading: standalone ? const BackCircle() : null,
         leadingWidth: standalone ? 56 : null,
@@ -73,55 +75,55 @@ class ProfileScreen extends StatelessWidget {
                 itemCount: mine.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (c, i) => GestureDetector(
-                  onTap: () => go(context, Scaffold(appBar: AppBar(title: const Text('My post')), body: SingleChildScrollView(child: PostCard(mine[i])))),
+                  onTap: () => go(context, Scaffold(appBar: AppBar(title: Text(tr('My post'))), body: SingleChildScrollView(child: PostCard(mine[i])))),
                   child: AppImage(mine[i].imageSeed, width: 90, height: 90, radius: 12),
                 ),
               ),
             ),
           ],
           _h('My Account'),
-          _tile(Icons.person_outline_rounded, 'Personal information', () {
+          _tile(Icons.person_outline_rounded, tr('Personal information'), () {
             final ctl = TextEditingController(text: s.name);
             showDialog(
               context: context,
               builder: (c) => AlertDialog(
-                title: const Text('Edit name'),
+                title: Text(tr('Edit name')),
                 content: TextField(controller: ctl),
                 actions: [
-                  TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
+                  TextButton(onPressed: () => Navigator.pop(c), child: Text(tr('Cancel'))),
                   FilledButton(
                     onPressed: () {
                       if (ctl.text.trim().isNotEmpty) s.updateName(ctl.text.trim());
                       Navigator.pop(c);
                     },
-                    child: const Text('Save'),
+                    child: Text(tr('Save')),
                   ),
                 ],
               ),
             );
           }),
-          _tile(Icons.language_rounded, 'Language', () {
+          _tile(Icons.language_rounded, tr('Language'), () {
             showModalBottomSheet(
               context: context,
               builder: (c) => SafeArea(
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  for (final l in ['English (US)', 'Bangla', 'Hindi', 'Spanish', 'Japanese'])
+                  for (final l in const [('en', 'English'), ('bn', 'বাংলা')])
                     ListTile(
-                      title: Text(l),
-                      trailing: l == s.language ? const Icon(Icons.check_rounded, color: C.primary) : null,
+                      title: Text(l.$2),
+                      trailing: l.$1 == appLang.value ? const Icon(Icons.check_rounded, color: C.primary) : null,
                       onTap: () {
-                        s.setLanguage(l);
                         Navigator.pop(c);
+                        switchLang(context, l.$1);
                       },
                     ),
                 ]),
               ),
             );
-          }, trailing: s.language),
-          _tile(Icons.bookmark_border_rounded, 'Saved places', () => go(context, const SavedPlacesScreen())),
+          }, trailing: isBangla ? 'বাংলা' : 'English'),
+          _tile(Icons.bookmark_border_rounded, tr('Saved places'), () => go(context, const SavedPlacesScreen())),
           _tile(
               Icons.shield_outlined,
-              'Privacy Policy',
+              tr('Privacy Policy'),
               () => go(
                   context,
                   const _InfoScreen('Privacy Policy', [
@@ -132,7 +134,7 @@ class ProfileScreen extends StatelessWidget {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             secondary: const Icon(Icons.notifications_none_rounded, color: C.muted),
-            title: const Text('Push Notifications', style: TextStyle(fontSize: 14)),
+            title: Text(tr('Push Notifications'), style: TextStyle(fontSize: 14)),
             value: s.push,
             activeColor: C.ok,
             onChanged: s.setPush,
@@ -140,7 +142,7 @@ class ProfileScreen extends StatelessWidget {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             secondary: const Icon(Icons.local_offer_outlined, color: C.muted),
-            title: const Text('Promotional Notifications', style: TextStyle(fontSize: 14)),
+            title: Text(tr('Promotional Notifications'), style: TextStyle(fontSize: 14)),
             value: s.promo,
             activeColor: C.ok,
             onChanged: s.setPromo,
@@ -148,7 +150,7 @@ class ProfileScreen extends StatelessWidget {
           _h('More'),
           _tile(
               Icons.help_outline_rounded,
-              'Help Center',
+              tr('Help Center'),
               () => go(
                   context,
                   const _InfoScreen('Help Center', [
@@ -156,14 +158,14 @@ class ProfileScreen extends StatelessWidget {
                     ('Can I cancel?', 'Open Trips, choose See detail, then Cancel booking. Refunds follow each operator policy.'),
                     ('How do I share photos?', 'Go to Community and tap Share trip.'),
                   ]))),
-          _tile(Icons.logout_rounded, 'Log Out', () async {
+          _tile(Icons.logout_rounded, tr('Log Out'), () async {
             final ok = await showDialog<bool>(
               context: context,
               builder: (c) => AlertDialog(
-                title: const Text('Log out of ExploreHub?'),
+                title: Text(tr('Log out of ExploreHub?')),
                 actions: [
-                  TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Stay')),
-                  FilledButton(style: FilledButton.styleFrom(backgroundColor: C.danger), onPressed: () => Navigator.pop(c, true), child: const Text('Log out')),
+                  TextButton(onPressed: () => Navigator.pop(c, false), child: Text(tr('Stay'))),
+                  FilledButton(style: FilledButton.styleFrom(backgroundColor: C.danger), onPressed: () => Navigator.pop(c, true), child: Text(tr('Log out'))),
                 ],
               ),
             );
@@ -173,15 +175,15 @@ class ProfileScreen extends StatelessWidget {
               if (context.mounted) goRoot(context, const WelcomeScreen());
             }
           }, color: C.danger),
-          _tile(Icons.delete_forever_outlined, 'Delete account', () async {
+          _tile(Icons.delete_forever_outlined, tr('Delete account'), () async {
             final ok = await showDialog<bool>(
               context: context,
               builder: (c) => AlertDialog(
-                title: const Text('Delete your account?'),
-                content: const Text('This permanently deletes your profile, posts, comments, saved items and bookings. It cannot be undone.'),
+                title: Text(tr('Delete your account?')),
+                content: Text(tr('This permanently deletes your profile, posts, comments, saved items and bookings. It cannot be undone.')),
                 actions: [
-                  TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep account')),
-                  FilledButton(style: FilledButton.styleFrom(backgroundColor: C.danger), onPressed: () => Navigator.pop(c, true), child: const Text('Delete forever')),
+                  TextButton(onPressed: () => Navigator.pop(c, false), child: Text(tr('Keep account'))),
+                  FilledButton(style: FilledButton.styleFrom(backgroundColor: C.danger), onPressed: () => Navigator.pop(c, true), child: Text(tr('Delete forever'))),
                 ],
               ),
             );
@@ -209,7 +211,7 @@ class SavedPlacesScreen extends StatelessWidget {
     final ids = context.watch<AppState>().savedPlaces;
     final list = places.where((p) => ids.contains(p.id)).toList();
     return ScreenScaffold(
-      title: 'Saved places',
+      title: tr('Saved places'),
       body: list.isEmpty
           ? const EmptyState(Icons.bookmark_border_rounded, 'Nothing saved yet', 'Tap the bookmark on any place to keep it for later.')
           : ListView.separated(
@@ -232,9 +234,9 @@ class _InfoScreen extends StatelessWidget {
         title: title,
         body: ListView(padding: const EdgeInsets.all(20), children: [
           for (final s in sections) ...[
-            Text(s.$1, style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(tr(s.$1), style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
-            Text(s.$2, style: const TextStyle(color: C.muted, height: 1.6)),
+            Text(tr(s.$2), style: const TextStyle(color: C.muted, height: 1.6)),
             const SizedBox(height: 18),
           ],
         ]),

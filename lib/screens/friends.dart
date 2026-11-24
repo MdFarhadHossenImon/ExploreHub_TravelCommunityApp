@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -62,16 +63,16 @@ class _FriendsScreenState extends State<FriendsScreen> {
                           Row(children: [
                             LevelBadge(t),
                             const SizedBox(width: 6),
-                            Flexible(child: Text('${social.mutuals(t)} mutual · ${t.placesVisited} places', overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 12.5))),
+                            Flexible(child: Text(trf('{0} mutual · {1} places', [social.mutuals(t), t.placesVisited]), overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 12.5))),
                           ]),
                           const SizedBox(height: 10),
                           Row(children: [
-                            FilledButton(onPressed: () => social.acceptRequest(t.id), child: const Text('Confirm')),
+                            FilledButton(onPressed: () => social.acceptRequest(t.id), child: Text(tr('Confirm'))),
                             const SizedBox(width: 8),
                             OutlinedButton(
                               style: OutlinedButton.styleFrom(foregroundColor: C.ink, side: const BorderSide(color: C.line)),
                               onPressed: () => social.declineRequest(t.id),
-                              child: const Text('Delete'),
+                              child: Text(tr('Delete')),
                             ),
                           ]),
                         ]),
@@ -84,10 +85,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
       case 2:
         final going = travelers.where((t) => _dest == null ? t.nextTrip != null : t.nextTrip == _dest).toList();
         body = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Find travelers heading to the same place as you, split costs and explore together.', style: TextStyle(color: C.muted, fontSize: 13, height: 1.4)),
+          Text(tr('Find travelers heading to the same place as you, split costs and explore together.'), style: TextStyle(color: C.muted, fontSize: 13, height: 1.4)),
           const SizedBox(height: 12),
           Wrap(spacing: 8, runSpacing: 8, children: [
-            ChoiceChip(label: const Text('Anywhere'), selected: _dest == null, onSelected: (_) => setState(() => _dest = null)),
+            ChoiceChip(label: Text(tr('Anywhere')), selected: _dest == null, onSelected: (_) => setState(() => _dest = null)),
             for (final p in places.where((p) => travelers.any((t) => t.nextTrip == p.id))) ChoiceChip(label: Text(p.name), selected: _dest == p.id, onSelected: (_) => setState(() => _dest = p.id)),
           ]),
           const SizedBox(height: 14),
@@ -104,11 +105,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     const SizedBox(height: 4),
                     Pill('Going to ${placeById(t.nextTrip!).name}', icon: Icons.flight_takeoff_rounded),
                     const SizedBox(height: 4),
-                    Text('From ${t.home}', style: const TextStyle(color: C.muted, fontSize: 12)),
+                    Text(trf('From {0}', [t.home]), style: const TextStyle(color: C.muted, fontSize: 12)),
                   ]),
                 ),
                 IconButton(
-                  tooltip: 'Message',
+                  tooltip: tr('Message'),
                   onPressed: () => go(context, ChatScreen(conversation: social.chatWith(t))),
                   icon: const Icon(Icons.chat_bubble_outline_rounded, color: C.primary),
                 ),
@@ -126,14 +127,14 @@ class _FriendsScreenState extends State<FriendsScreen> {
               subtitle: Text(t.home, style: const TextStyle(color: C.muted, fontSize: 12.5)),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                 IconButton(
-                  tooltip: 'Message',
+                  tooltip: tr('Message'),
                   onPressed: () => go(context, ChatScreen(conversation: social.chatWith(t))),
                   icon: const Icon(Icons.chat_bubble_outline_rounded, color: C.primary),
                 ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_horiz_rounded, color: C.muted),
                   onSelected: (_) => social.removeBuddy(t.id),
-                  itemBuilder: (_) => const [PopupMenuItem(value: 'remove', child: Text('Remove buddy'))],
+                  itemBuilder: (_) => [PopupMenuItem(value: 'remove', child: Text(tr('Remove buddy')))],
                 ),
               ]),
             ),
@@ -141,7 +142,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(leading: const BackCircle(), leadingWidth: 56, title: const Text('Travel buddies')),
+      appBar: AppBar(leading: const BackCircle(), leadingWidth: 56, title: Text(tr('Travel buddies'))),
       body: Constrained(
         maxWidth: Bp.isDesktop(context) ? 1000 : 760,
         child: PullRefresh(

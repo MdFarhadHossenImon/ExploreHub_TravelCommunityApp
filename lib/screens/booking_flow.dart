@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme.dart';
@@ -98,11 +99,11 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
 
   void _next() {
     if (_step == 0) {
-      if (_name.text.trim().isEmpty || _phone.text.trim().length < 6) return toast(context, 'Add a name and a valid phone number');
+      if (_name.text.trim().isEmpty || _phone.text.trim().length < 6) return toast(context, tr('Add a name and a valid phone number'));
       if (_start == null) return toast(context, 'Pick your ${_single ? 'travel' : 'check-in'} date');
-      if (!_single && _end == null) return toast(context, 'Pick your check-out date');
+      if (!_single && _end == null) return toast(context, tr('Pick your check-out date'));
     }
-    if (_step == 1 && _option == null) return toast(context, 'Select an option to continue');
+    if (_step == 1 && _option == null) return toast(context, tr('Select an option to continue'));
     setState(() => _step++);
   }
 
@@ -170,7 +171,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       );
 
   List<Widget> _stepOne() => [
-        const Text('Traveler information', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+        Text(tr('Traveler information'), style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
         const SizedBox(height: 12),
         LabeledField('Full name', 'As on your ID', controller: _name),
         LabeledField('Phone number', '+880 1XXX XXXXXX', controller: _phone, keyboard: TextInputType.phone),
@@ -188,7 +189,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           ],
         ]),
         const SizedBox(height: 14),
-        const Text('Payment method', style: TextStyle(fontSize: 13, color: C.muted)),
+        Text(tr('Payment method'), style: TextStyle(fontSize: 13, color: C.muted)),
         const SizedBox(height: 6),
         InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -199,7 +200,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                 for (final m in ['Mastercard', 'Visa', 'bKash', 'Nagad', 'Pay at arrival'])
                   ListTile(
                     leading: Icon(m == 'Pay at arrival' ? Icons.payments_outlined : Icons.credit_card_rounded),
-                    title: Text(m),
+                    title: Text(tr(m)),
                     trailing: m == _payment ? const Icon(Icons.check_rounded, color: C.primary) : null,
                     onTap: () {
                       setState(() => _payment = m);
@@ -221,14 +222,14 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           ),
         ),
         const SizedBox(height: 18),
-        const Text('Note', style: TextStyle(fontWeight: FontWeight.w600)),
+        Text(tr('Note'), style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         const Text('- Free for children under 3 years old\n- Free date change up to 48 hours before departure',
             style: TextStyle(color: C.muted, fontSize: 12.5, height: 1.6)),
       ];
 
   Widget _dateBox(String label, DateTime? v, VoidCallback onTap) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(fontSize: 13, color: C.muted)),
+        Text(tr(label), style: const TextStyle(fontSize: 13, color: C.muted)),
         const SizedBox(height: 6),
         InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -273,7 +274,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                 ),
                 Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                   Text(money(o.price), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-                  const Text('per person', style: TextStyle(fontSize: 10.5, color: C.muted)),
+                  Text(tr('per person'), style: TextStyle(fontSize: 10.5, color: C.muted)),
                   const SizedBox(height: 8),
                   Icon(_option == o ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded, color: C.primary),
                 ]),
@@ -285,13 +286,13 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
   Widget _row(String l, String v, {bool bold = false, Color? color}) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(l, style: TextStyle(color: bold ? C.ink : C.muted, fontWeight: bold ? FontWeight.w600 : FontWeight.w400)),
+          Text(tr(l), style: TextStyle(color: bold ? C.ink : C.muted, fontWeight: bold ? FontWeight.w600 : FontWeight.w400)),
           Text(v, style: TextStyle(fontWeight: bold ? FontWeight.w700 : FontWeight.w500, color: color, fontSize: bold ? 16 : 13)),
         ]),
       );
 
   List<Widget> _stepThree() => [
-        const Text('Book ticket', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+        Text(tr('Book ticket'), style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(16),
@@ -308,9 +309,9 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
             _row('Apps fee', '5%'),
             if (_discount > 0) _row('Promo', '-${money(_subtotal * _discount)}', color: C.ok),
             Row(children: [
-              Expanded(child: TextField(controller: _promo, decoration: const InputDecoration(hintText: 'Promo code', isDense: true))),
+              Expanded(child: TextField(controller: _promo, decoration: InputDecoration(hintText: tr('Promo code'), isDense: true))),
               const SizedBox(width: 8),
-              TextButton(onPressed: _applyPromo, child: const Text('Apply')),
+              TextButton(onPressed: _applyPromo, child: Text(tr('Apply'))),
             ]),
             if (_promoMsg != null)
               Align(alignment: Alignment.centerLeft, child: Padding(
@@ -324,10 +325,10 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       ];
 
   Widget _success(Booking b) => ScreenScaffold(
-        title: 'Booking confirmed',
+        title: tr('Booking confirmed'),
         onBack: () => openTab(context, 3),
         bottom: Row(children: [
-          Expanded(child: PrimaryButton('Download Ticket', onPressed: () => toast(context, 'Ticket saved (demo)'))),
+          Expanded(child: PrimaryButton('Download Ticket', onPressed: () => toast(context, tr('Ticket saved (demo)')))),
           const SizedBox(width: 12),
           Expanded(child: PrimaryButton('Back Home', outlined: true, onPressed: () => openTab(context, 1))),
         ]),
@@ -336,7 +337,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           const SizedBox(height: 20),
           const Icon(Icons.check_circle_rounded, color: C.ok, size: 64),
           const SizedBox(height: 8),
-          const Center(child: Text('You are all set!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600))),
+          Center(child: Text(tr('You are all set!'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600))),
           const SizedBox(height: 4),
           Center(child: Text('Reference ${b.ref}', style: const TextStyle(color: C.muted))),
           const SizedBox(height: 18),
@@ -366,11 +367,11 @@ class TicketCard extends StatelessWidget {
           const Divider(height: 24),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Start', style: TextStyle(color: C.muted, fontSize: 11)),
+              Text(tr('Start'), style: TextStyle(color: C.muted, fontSize: 11)),
               Text(fmtDate(booking.start), style: const TextStyle(fontWeight: FontWeight.w500)),
             ]),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              const Text('End', style: TextStyle(color: C.muted, fontSize: 11)),
+              Text(tr('End'), style: TextStyle(color: C.muted, fontSize: 11)),
               Text(fmtDate(booking.end), style: const TextStyle(fontWeight: FontWeight.w500)),
             ]),
           ]),

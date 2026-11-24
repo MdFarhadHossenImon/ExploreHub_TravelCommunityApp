@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/levels.dart';
@@ -164,12 +165,12 @@ class BuddyButton extends StatelessWidget {
       shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
     );
     return filled
-        ? FilledButton.icon(style: style, onPressed: tap, icon: Icon(icon, size: 17), label: Text(label))
+        ? FilledButton.icon(style: style, onPressed: tap, icon: Icon(icon, size: 17), label: Text(tr(label)))
         : OutlinedButton.icon(
             style: style.copyWith(foregroundColor: const WidgetStatePropertyAll(C.ink), side: const WidgetStatePropertyAll(BorderSide(color: C.line))),
             onPressed: tap,
             icon: Icon(icon, size: 17),
-            label: Text(label));
+            label: Text(tr(label)));
   }
 }
 
@@ -192,7 +193,7 @@ class ComposerCard extends StatelessWidget {
               child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Icon(i, color: c, size: 20),
                 const SizedBox(width: 6),
-                Flexible(child: Text(l, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5, color: C.muted, fontWeight: FontWeight.w600))),
+                Flexible(child: Text(tr(l), overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5, color: C.muted, fontWeight: FontWeight.w600))),
               ]),
             ),
           ),
@@ -210,7 +211,7 @@ class ComposerCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                 decoration: BoxDecoration(color: C.bg, borderRadius: BorderRadius.circular(24), border: Border.all(color: C.line)),
-                child: Text(hint, style: const TextStyle(color: C.muted, fontSize: 13.5)),
+                child: Text(tr(hint), style: const TextStyle(color: C.muted, fontSize: 13.5)),
               ),
             ),
           ),
@@ -243,12 +244,12 @@ class ShortcutTile extends StatelessWidget {
           child: Row(children: [
             leading,
             const SizedBox(width: 12),
-            Expanded(child: Text(label, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14))),
+            Expanded(child: Text(tr(label), overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14))),
             if (trailing != null)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(color: C.danger, borderRadius: BorderRadius.circular(10)),
-                child: Text(trailing!, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                child: Text(tr(trailing!), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
               ),
           ]),
         ),
@@ -281,7 +282,7 @@ class Pill extends StatelessWidget {
         decoration: BoxDecoration(color: color.withOpacity(.14), borderRadius: BorderRadius.circular(20)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           if (icon != null) ...[Icon(icon, size: 13, color: color), const SizedBox(width: 4)],
-          Text(text, style: TextStyle(color: color, fontSize: 11.5, fontWeight: FontWeight.w600)),
+          Text(tr(text), style: TextStyle(color: color, fontSize: 11.5, fontWeight: FontWeight.w600)),
         ]),
       );
 }
@@ -358,7 +359,7 @@ class LevelCard extends StatelessWidget {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(l.name, style: TextStyle(color: l.color, fontWeight: FontWeight.w800, fontSize: 16)),
-                Text('${lp.places} ${lp.places == 1 ? 'place' : 'places'} · ${lp.countries} ${lp.countries == 1 ? 'country' : 'countries'} · ${lp.continents} ${lp.continents == 1 ? 'continent' : 'continents'}',
+                Text('${lp.places} ${lp.places == 1 ? 'place' : tr('places')} · ${lp.countries} ${lp.countries == 1 ? 'country' : 'countries'} · ${lp.continents} ${lp.continents == 1 ? 'continent' : 'continents'}',
                     style: const TextStyle(color: C.muted, fontSize: 12)),
               ]),
             ),
@@ -386,10 +387,10 @@ void showLevelGuide(BuildContext context, LevelProgress lp) {
     constraints: const BoxConstraints(maxWidth: 560),
     builder: (c) => SafeArea(
       child: ListView(shrinkWrap: true, padding: const EdgeInsets.fromLTRB(16, 16, 16, 20), children: [
-        const Text('Traveler levels', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+        Text(tr('Traveler levels'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
         const SizedBox(height: 6),
-        const Text(
-            'Levels are earned, not claimed. Every different place you post from counts once: tag a listed destination, or choose "Another place" and type the place and its country.',
+        Text(
+            tr('Levels are earned, not claimed. Every different place you post from counts once: tag a listed destination, or choose "Another place" and type the place and its country.'),
             style: TextStyle(color: C.muted, fontSize: 13, height: 1.45)),
         const SizedBox(height: 12),
         for (final l in travelerLevels)

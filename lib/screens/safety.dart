@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/theme.dart';
@@ -38,9 +39,9 @@ class _SafetyCenterScreenState extends State<SafetyCenterScreen> {
 
   @override
   Widget build(BuildContext context) => ScreenScaffold(
-        title: 'Safety center',
+        title: tr('Safety center'),
         body: ListView(padding: const EdgeInsets.all(16), children: [
-          const Text('Emergency numbers', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+          Text(tr('Emergency numbers'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
           const SizedBox(height: 8),
           if (Backend.on)
             Autocomplete<String>(
@@ -50,33 +51,33 @@ class _SafetyCenterScreenState extends State<SafetyCenterScreen> {
               fieldViewBuilder: (c, ctrl, focus, submit) => TextField(
                 controller: ctrl,
                 focusNode: focus,
-                decoration: const InputDecoration(hintText: 'Type a country', prefixIcon: Icon(Icons.public_rounded)),
+                decoration: InputDecoration(hintText: tr('Type a country'), prefixIcon: Icon(Icons.public_rounded)),
               ),
             ),
           EssentialsCard(_country, key: ValueKey(_country)),
           if (!Backend.on)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(top: 8),
-              child: Text('Bangladesh: 999 for police, fire and ambulance. Most of Europe: 112. USA and Canada: 911.', style: TextStyle(height: 1.4)),
+              child: Text(tr('Bangladesh: 999 for police, fire and ambulance. Most of Europe: 112. USA and Canada: 911.'), style: TextStyle(height: 1.4)),
             ),
           const SizedBox(height: 22),
-          const Text('Travel smart', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+          Text(tr('Travel smart'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
           for (final t in _tips)
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: CircleAvatar(backgroundColor: C.card, child: Icon(t.$1, color: C.primary)),
-              title: Text(t.$2, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(t.$3, style: const TextStyle(fontSize: 12.5, color: C.muted)),
+              title: Text(tr(t.$2), style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(tr(t.$3), style: const TextStyle(fontSize: 12.5, color: C.muted)),
             ),
           const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.line)),
-            child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Icon(Icons.flag_rounded, color: C.danger),
               SizedBox(width: 12),
               Expanded(
-                child: Text('Report someone: tap the ••• menu on their post and choose Report or Block. We review every report.',
+                child: Text(tr('Report someone: tap the ••• menu on their post and choose Report or Block. We review every report.'),
                     style: TextStyle(fontSize: 13, height: 1.4)),
               ),
             ]),

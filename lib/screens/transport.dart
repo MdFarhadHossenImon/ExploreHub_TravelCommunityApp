@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 
 import '../core/theme.dart';
 import '../data/backend.dart';
@@ -71,8 +72,8 @@ Widget _linkButton(BuildContext context, String label, String url, {bool primary
         width: double.infinity,
         height: 44,
         child: primary
-            ? FilledButton.icon(style: FilledButton.styleFrom(backgroundColor: C.primary), onPressed: () => openLink(context, url), icon: Icon(icon, size: 18), label: Text(label))
-            : OutlinedButton.icon(style: OutlinedButton.styleFrom(side: const BorderSide(color: C.line)), onPressed: () => openLink(context, url), icon: Icon(icon, size: 18), label: Text(label)),
+            ? FilledButton.icon(style: FilledButton.styleFrom(backgroundColor: C.primary), onPressed: () => openLink(context, url), icon: Icon(icon, size: 18), label: Text(tr(label)))
+            : OutlinedButton.icon(style: OutlinedButton.styleFrom(side: const BorderSide(color: C.line)), onPressed: () => openLink(context, url), icon: Icon(icon, size: 18), label: Text(tr(label))),
       ),
     );
 
@@ -142,7 +143,7 @@ class _FlightSearchState extends State<_FlightSearch> {
   }
 
   Widget _airportField(String label, Airport? v, ValueChanged<Airport> on) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: C.muted)),
+        Text(tr(label), style: const TextStyle(fontSize: 12, color: C.muted)),
         const SizedBox(height: 4),
         Autocomplete<Airport>(
           key: ValueKey('$label-${v?.iata}'),
@@ -177,7 +178,7 @@ class _FlightSearchState extends State<_FlightSearch> {
           fieldViewBuilder: (context, ctl, focus, submit) => TextField(
             controller: ctl,
             focusNode: focus,
-            decoration: const InputDecoration(hintText: 'City or airport code', prefixIcon: Icon(Icons.local_airport_rounded), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12)),
+            decoration: InputDecoration(hintText: tr('City or airport code'), prefixIcon: Icon(Icons.local_airport_rounded), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12)),
           ),
         ),
       ]);
@@ -196,7 +197,7 @@ class _FlightSearchState extends State<_FlightSearch> {
           Align(
             alignment: Alignment.centerRight,
             child: IconButton(
-              tooltip: 'Swap',
+              tooltip: tr('Swap'),
               onPressed: () => setState(() {
                 final x = _from;
                 _from = _to;
@@ -222,7 +223,7 @@ class _FlightSearchState extends State<_FlightSearch> {
           ]),
           const SizedBox(height: 14),
           PrimaryButton('Search flights', icon: Icons.flight_rounded, onPressed: () {
-            if (!ok) return toast(context, 'Pick two different airports');
+            if (!ok) return toast(context, tr('Pick two different airports'));
             setState(() => _searched = true);
           }),
         ]),
@@ -253,15 +254,15 @@ class _FlightSearchState extends State<_FlightSearch> {
             ]),
           ]),
         ),
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(bottom: 10),
-          child: Text('Live fares and seats', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          child: Text(tr('Live fares and seats'), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
         ),
         _linkButton(context, 'Google Flights', 'https://www.google.com/travel/flights?q=${Uri.encodeComponent('Flights from ${_from!.iata} to ${_to!.iata} on $d one way $_pax adults')}',
             primary: true),
         _linkButton(context, 'Skyscanner', 'https://www.skyscanner.net/transport/flights/${_from!.iata.toLowerCase()}/${_to!.iata.toLowerCase()}/$yymmdd/?adultsv2=$_pax'),
         _linkButton(context, 'Kayak', 'https://www.kayak.com/flights/${_from!.iata}-${_to!.iata}/$d?sort=bestflight_a${_pax > 1 ? '&adults=$_pax' : ''}'),
-        const Text('Flight time is an estimate from the distance. Fares come from the booking site.', style: TextStyle(color: C.muted, fontSize: 11)),
+        Text(tr('Flight time is an estimate from the distance. Fares come from the booking site.'), style: TextStyle(color: C.muted, fontSize: 11)),
       ],
     ]);
   }
@@ -270,7 +271,7 @@ class _FlightSearchState extends State<_FlightSearch> {
 Widget _fact(IconData i, String t) => Row(mainAxisSize: MainAxisSize.min, children: [
       Icon(i, size: 16, color: C.muted),
       const SizedBox(width: 5),
-      Text(t, style: const TextStyle(fontSize: 12.5)),
+      Text(tr(t), style: const TextStyle(fontSize: 12.5)),
     ]);
 
 // ---------------------------------------------------------------- trains and buses
@@ -339,14 +340,14 @@ class _GroundSearchState extends State<_GroundSearch> {
     final st = _stations;
     return Expanded(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: C.muted)),
+        Text(tr(label), style: const TextStyle(fontSize: 12, color: C.muted)),
         const SizedBox(height: 4),
         DropdownButtonFormField<String>(
           value: st.contains(v) ? v : null,
           isExpanded: true,
           menuMaxHeight: 420,
           decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
-          items: [for (final c in st) DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))],
+          items: [for (final c in st) DropdownMenuItem(value: c, child: Text(tr(c), overflow: TextOverflow.ellipsis))],
           onChanged: (x) => setState(() {
             on(x!);
             _searched = false;
@@ -369,7 +370,7 @@ class _GroundSearchState extends State<_GroundSearch> {
           Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
             _drop('From', _from, (v) => _from = v),
             IconButton(
-              tooltip: 'Swap',
+              tooltip: tr('Swap'),
               onPressed: () => setState(() {
                 final x = _from;
                 _from = _to;
@@ -383,7 +384,7 @@ class _GroundSearchState extends State<_GroundSearch> {
           _dateField(context, _date, (x) => setState(() => _date = x)),
           const SizedBox(height: 14),
           PrimaryButton(_train ? 'Find trains' : 'Find buses', icon: modeIcon(widget.type), onPressed: () {
-            if (_from == _to || _to.isEmpty) return toast(context, 'Pick two different places');
+            if (_from == _to || _to.isEmpty) return toast(context, tr('Pick two different places'));
             setState(() => _searched = true);
           }),
         ]),
@@ -403,7 +404,7 @@ class _GroundSearchState extends State<_GroundSearch> {
         const SizedBox(height: 4),
         if (_train) ...[
           _linkButton(context, 'Check times & buy on Rail Sheba', 'https://eticket.railway.gov.bd/', primary: true, icon: Icons.confirmation_number_rounded),
-          const Text('Tickets for Bangladesh Railway are sold only on the official Rail Sheba site and app. Times change with each season, so check the live schedule there.',
+          Text(tr('Tickets for Bangladesh Railway are sold only on the official Rail Sheba site and app. Times change with each season, so check the live schedule there.'),
               style: TextStyle(color: C.muted, fontSize: 11.5)),
         ] else ...[
           _linkButton(context, 'See seats & fares on Shohoz', 'https://www.shohoz.com/bus-tickets', primary: true, icon: Icons.confirmation_number_rounded),
@@ -414,12 +415,12 @@ class _GroundSearchState extends State<_GroundSearch> {
       const SizedBox(height: 18),
       _card(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Traveling outside Bangladesh?', style: TextStyle(fontWeight: FontWeight.w700)),
+          Text(tr('Traveling outside Bangladesh?'), style: TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           Row(children: [
-            Expanded(child: TextField(controller: _wFrom, decoration: const InputDecoration(hintText: 'From, e.g. Bangkok'))),
+            Expanded(child: TextField(controller: _wFrom, decoration: InputDecoration(hintText: tr('From, e.g. Bangkok')))),
             const SizedBox(width: 8),
-            Expanded(child: TextField(controller: _wTo, decoration: const InputDecoration(hintText: 'To, e.g. Chiang Mai'))),
+            Expanded(child: TextField(controller: _wTo, decoration: InputDecoration(hintText: tr('To, e.g. Chiang Mai')))),
           ]),
           const SizedBox(height: 10),
           OutlinedButtonTheme(
@@ -448,7 +449,7 @@ class _GroundSearchState extends State<_GroundSearch> {
   }
 
   void _world(String url) {
-    if (_wFrom.text.trim().isEmpty || _wTo.text.trim().isEmpty) return toast(context, 'Type where you are going from and to');
+    if (_wFrom.text.trim().isEmpty || _wTo.text.trim().isEmpty) return toast(context, tr('Type where you are going from and to'));
     openLink(context, url);
   }
 }
@@ -508,7 +509,7 @@ class _BusCard extends StatelessWidget {
               Text('${b.ac ? 'AC coaches  ·  ' : ''}Also runs to ${b.routes.take(6).join(', ')}', style: const TextStyle(color: C.muted, fontSize: 11.5), maxLines: 2, overflow: TextOverflow.ellipsis),
             ]),
           ),
-          if (b.website != null) IconButton(tooltip: 'Website', onPressed: () => openLink(context, b.website!), icon: const Icon(Icons.language_rounded, color: C.primary)),
+          if (b.website != null) IconButton(tooltip: tr('Website'), onPressed: () => openLink(context, b.website!), icon: const Icon(Icons.language_rounded, color: C.primary)),
         ]),
       );
 }

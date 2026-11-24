@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -76,9 +77,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ]),
           const SizedBox(height: 14),
         ],
-        Text('${_greeting()}, $first', style: const TextStyle(color: C.muted, fontSize: 13.5, fontWeight: FontWeight.w600)),
+        Text('${tr(_greeting())}, $first', style: const TextStyle(color: C.muted, fontSize: 13.5, fontWeight: FontWeight.w600)),
         const SizedBox(height: 2),
-        Text('Your travel circle', style: TextStyle(fontSize: wide ? 30 : 25, fontWeight: FontWeight.w800, letterSpacing: -.6, height: 1.1)),
+        Text(tr('Your travel circle'), style: TextStyle(fontSize: wide ? 30 : 25, fontWeight: FontWeight.w800, letterSpacing: isBangla ? 0 : -.6, height: 1.1)),
       ]),
     );
 
@@ -100,7 +101,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: _filter == f ? C.ink : C.line),
                 ),
-                child: Text(f, style: TextStyle(color: _filter == f ? C.bg : C.muted, fontWeight: FontWeight.w700, fontSize: 13)),
+                child: Text(tr(f), style: TextStyle(color: _filter == f ? C.bg : C.muted, fontWeight: FontWeight.w700, fontSize: 13)),
               ),
             ),
           ),
@@ -200,7 +201,7 @@ class PostCard extends StatelessWidget {
             height: MediaQuery.of(c).size.height * 0.7,
             child: Column(children: [
               Container(width: 40, height: 4, margin: const EdgeInsets.only(top: 10), decoration: BoxDecoration(color: C.line, borderRadius: BorderRadius.circular(2))),
-              const Padding(padding: EdgeInsets.all(14), child: Text('Comments', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16))),
+              Padding(padding: EdgeInsets.all(14), child: Text(tr('Comments'), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16))),
               const Divider(height: 1),
               Expanded(
                 child: post.comments.isEmpty
@@ -233,7 +234,7 @@ class PostCard extends StatelessWidget {
                   child: Row(children: [
                     Avatar(s.avatarSeed, name: s.name, radius: 16),
                     const SizedBox(width: 8),
-                    Expanded(child: TextField(controller: ctl, decoration: const InputDecoration(hintText: 'Write a comment...', isDense: true))),
+                    Expanded(child: TextField(controller: ctl, decoration: InputDecoration(hintText: tr('Write a comment...'), isDense: true))),
                     IconButton(
                       icon: const Icon(Icons.send_rounded, color: C.primary),
                       onPressed: () {
@@ -257,9 +258,9 @@ class PostCard extends StatelessWidget {
     if (v == 'report') {
       final reason = await showDialog<String>(
         context: context,
-        builder: (c) => SimpleDialog(title: const Text('Report this post'), children: [
+        builder: (c) => SimpleDialog(title: Text(tr('Report this post')), children: [
           for (final r in const ['Spam or scam', 'Nudity or sexual content', 'Hate or harassment', 'Violence', 'False travel information', 'Something else'])
-            SimpleDialogOption(onPressed: () => Navigator.pop(c, r), child: Text(r)),
+            SimpleDialogOption(onPressed: () => Navigator.pop(c, r), child: Text(tr(r))),
         ]),
       );
       if (reason != null) await s.reportPost(post, reason);
@@ -268,10 +269,10 @@ class PostCard extends StatelessWidget {
         context: context,
         builder: (c) => AlertDialog(
           title: Text('Block ${post.userName}?'),
-          content: const Text('You will no longer see their posts.'),
+          content: Text(tr('You will no longer see their posts.')),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Block')),
+            TextButton(onPressed: () => Navigator.pop(c, false), child: Text(tr('Cancel'))),
+            FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(tr('Block'))),
           ],
         ),
       );
@@ -280,10 +281,10 @@ class PostCard extends StatelessWidget {
       final ok = await showDialog<bool>(
         context: context,
         builder: (c) => AlertDialog(
-          title: const Text('Delete this post?'),
+          title: Text(tr('Delete this post?')),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-            FilledButton(style: FilledButton.styleFrom(backgroundColor: C.danger), onPressed: () => Navigator.pop(c, true), child: const Text('Delete')),
+            TextButton(onPressed: () => Navigator.pop(c, false), child: Text(tr('Cancel'))),
+            FilledButton(style: FilledButton.styleFrom(backgroundColor: C.danger), onPressed: () => Navigator.pop(c, true), child: Text(tr('Delete'))),
           ],
         ),
       );
@@ -310,22 +311,22 @@ class PostCard extends StatelessWidget {
       builder: (c) => Padding(
         padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(c).viewInsets.bottom + 16),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Share', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+          Text(tr('Share'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
           const SizedBox(height: 12),
           Row(children: [
             Avatar(s.avatarSeed, name: s.name, radius: 18),
             const SizedBox(width: 10),
-            Expanded(child: TextField(controller: note, maxLines: 2, minLines: 1, decoration: const InputDecoration(hintText: 'Say something about this (optional)'))),
+            Expanded(child: TextField(controller: note, maxLines: 2, minLines: 1, decoration: InputDecoration(hintText: tr('Say something about this (optional)')))),
           ]),
           const SizedBox(height: 10),
           PrimaryButton('Share to my feed', icon: Icons.repeat_rounded, onPressed: () async {
             Navigator.pop(c);
             final ok = await s.sharePost(original, note.text.trim());
-            if (ok && context.mounted) toast(context, 'Shared to your feed');
+            if (ok && context.mounted) toast(context, tr('Shared to your feed'));
           }),
           if (social.buddyList.isNotEmpty) ...[
             const SizedBox(height: 16),
-            const Text('Send to a buddy', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+            Text(tr('Send to a buddy'), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
             const SizedBox(height: 8),
             SizedBox(
               height: 86,
@@ -354,11 +355,11 @@ class PostCard extends StatelessWidget {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.link_rounded),
-            title: const Text('Copy link'),
+            title: Text(tr('Copy link')),
             onTap: () {
               Clipboard.setData(ClipboardData(text: linkText));
               Navigator.pop(c);
-              toast(context, 'Link copied');
+              toast(context, tr('Link copied'));
             },
           ),
         ]),
@@ -371,17 +372,17 @@ class PostCard extends StatelessWidget {
     final text = await showDialog<String>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('Edit post'),
+        title: Text(tr('Edit post')),
         content: TextField(controller: ctl, maxLines: 6, minLines: 2, maxLength: 2000),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(c, ctl.text.trim()), child: const Text('Save')),
+          TextButton(onPressed: () => Navigator.pop(c), child: Text(tr('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(c, ctl.text.trim()), child: Text(tr('Save'))),
         ],
       ),
     );
     if (text != null && text.isNotEmpty && text != post.caption && context.mounted) {
       final ok = await context.read<AppState>().editPost(post, text);
-      if (ok && context.mounted) toast(context, 'Post updated');
+      if (ok && context.mounted) toast(context, tr('Post updated'));
     }
   }
 
@@ -451,7 +452,7 @@ class PostCard extends StatelessWidget {
                     child: InkWell(
                       customBorder: const CircleBorder(),
                       onTap: () => Navigator.of(c).pop(r.$1),
-                      child: Padding(padding: const EdgeInsets.all(6), child: Text(r.$1, style: const TextStyle(fontSize: 28))),
+                      child: Padding(padding: const EdgeInsets.all(6), child: Text(tr(r.$1), style: const TextStyle(fontSize: 28))),
                     ),
                   ),
               ]),
@@ -514,7 +515,7 @@ class PostCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 onTap: onCount,
                 child: Tooltip(
-                  message: 'See who reacted',
+                  message: tr('See who reacted'),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
                     child: Text(count, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
@@ -548,17 +549,17 @@ class PostCard extends StatelessWidget {
                   ]),
                 ),
                 PopupMenuButton<String>(
-                  tooltip: 'More',
+                  tooltip: tr('More'),
                   icon: const Icon(Icons.more_horiz_rounded, color: C.muted),
                   onSelected: (v) => _menu(context, v),
                   itemBuilder: (_) => [
-                    PopupMenuItem(value: 'save', child: Text(saved ? 'Remove from saved' : 'Save post')),
-                    if (mine) ...const [
-                      PopupMenuItem(value: 'edit', child: Text('Edit post')),
-                      PopupMenuItem(value: 'delete', child: Text('Delete post')),
-                    ] else ...const [
-                      PopupMenuItem(value: 'report', child: Text('Report post')),
-                      PopupMenuItem(value: 'block', child: Text('Block user')),
+                    PopupMenuItem(value: 'save', child: Text(saved ? tr('Remove from saved') : tr('Save post'))),
+                    if (mine) ...[
+                      PopupMenuItem(value: 'edit', child: Text(tr('Edit post'))),
+                      PopupMenuItem(value: 'delete', child: Text(tr('Delete post'))),
+                    ] else ...[
+                      PopupMenuItem(value: 'report', child: Text(tr('Report post'))),
+                      PopupMenuItem(value: 'block', child: Text(tr('Block user'))),
                     ],
                   ],
                 ),
@@ -640,17 +641,17 @@ class PostCard extends StatelessWidget {
                       color: const Color(0xB3101E1D),
                       shape: const CircleBorder(),
                       child: PopupMenuButton<String>(
-                        tooltip: 'More',
+                        tooltip: tr('More'),
                         icon: const Icon(Icons.more_horiz_rounded, color: Colors.white),
                         onSelected: (v) => _menu(context, v),
                         itemBuilder: (_) => [
-                          PopupMenuItem(value: 'save', child: Text(saved ? 'Remove from saved' : 'Save post')),
-                          if (mine) ...const [
-                            PopupMenuItem(value: 'edit', child: Text('Edit post')),
-                            PopupMenuItem(value: 'delete', child: Text('Delete post')),
-                          ] else ...const [
-                            PopupMenuItem(value: 'report', child: Text('Report post')),
-                            PopupMenuItem(value: 'block', child: Text('Block user')),
+                          PopupMenuItem(value: 'save', child: Text(saved ? tr('Remove from saved') : tr('Save post'))),
+                          if (mine) ...[
+                            PopupMenuItem(value: 'edit', child: Text(tr('Edit post'))),
+                            PopupMenuItem(value: 'delete', child: Text(tr('Delete post'))),
+                          ] else ...[
+                            PopupMenuItem(value: 'report', child: Text(tr('Report post'))),
+                            PopupMenuItem(value: 'block', child: Text(tr('Block user'))),
                           ],
                         ],
                       ),
@@ -703,10 +704,10 @@ class PostCard extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.fromLTRB(10, 7, 12, 7),
                             decoration: BoxDecoration(color: C.primary, borderRadius: BorderRadius.circular(30)),
-                            child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                            child: Row(mainAxisSize: MainAxisSize.min, children: [
                               Icon(Icons.directions_rounded, size: 16, color: C.on),
                               SizedBox(width: 4),
-                              Text('Route', style: TextStyle(color: C.on, fontWeight: FontWeight.w800, fontSize: 12.5)),
+                              Text(tr('Route'), style: TextStyle(color: C.on, fontWeight: FontWeight.w800, fontSize: 12.5)),
                             ]),
                           ),
                         ),
@@ -749,7 +750,7 @@ class PostCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(10, 6, 10, 0),
             child: GestureDetector(
               onTap: () => _comments(context),
-              child: Text('View ${post.commentCount} comment${post.commentCount == 1 ? '' : 's'}', style: const TextStyle(color: C.muted, fontSize: 13)),
+              child: Text(isBangla ? '${post.commentCount}টি কমেন্ট দেখুন' : 'View ${post.commentCount} comment${post.commentCount == 1 ? '' : 's'}', style: const TextStyle(color: C.muted, fontSize: 13)),
             ),
           ),
       ]),
@@ -787,19 +788,19 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     var bytes = await f.readAsBytes();
     var compressed = false;
     if (_video && bytes.length > maxPickVideoBytes) {
-      if (mounted) toast(context, 'Video is too large. Pick one up to 250 MB.');
+      if (mounted) toast(context, tr('Video is too large. Pick one up to 250 MB.'));
       return;
     }
     if (bytes.length > maxUploadBytes) {
       if (!_video || kIsWeb) {
-        if (mounted) toast(context, _video ? 'On the web, videos can be up to 50 MB. Use the app for bigger videos (up to 250 MB).' : 'Photo is too large (max 50 MB).');
+        if (mounted) toast(context, _video ? tr('On the web, videos can be up to 50 MB. Use the app for bigger videos (up to 250 MB).') : tr('Photo is too large (max 50 MB).'));
         return;
       }
       setState(() => _compressing = true);
       final small = await compressVideo(f.path);
       if (mounted) setState(() => _compressing = false);
       if (small == null) {
-        if (mounted) toast(context, "Couldn't shrink this video under 50 MB. Try a shorter clip.");
+        if (mounted) toast(context, tr("Couldn't shrink this video under 50 MB. Try a shorter clip."));
         return;
       }
       bytes = small;
@@ -817,7 +818,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Future<void> _post() async {
     final s = context.read<AppState>();
     final caption = _caption.text.trim();
-    if (caption.isEmpty) return toast(context, 'Write a short caption');
+    if (caption.isEmpty) return toast(context, tr('Write a short caption'));
     if (!Backend.on) {
       s.addPost(imageSeed: _picked, caption: caption, placeId: _placeId == _otherPlace ? null : _placeId, isVideo: _video);
     } else {
@@ -825,7 +826,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       final other = _placeId == _otherPlace;
       if (other && (_otherName.text.trim().length < 2 || _otherCountry.length < 2)) {
         setState(() => _busy = false);
-        return toast(context, 'Type the place name and country');
+        return toast(context, tr('Type the place name and country'));
       }
       final ok = await s.publishPost(
           bytes: _bytes,
@@ -841,12 +842,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       if (!ok) return;
     }
     Navigator.pop(context);
-    toast(context, 'Posted to the community');
+    toast(context, tr('Posted to the community'));
   }
 
   @override
   Widget build(BuildContext context) => ScreenScaffold(
-        title: widget.checkIn ? 'Check in' : 'Create post',
+        title: widget.checkIn ? tr('Check in') : tr('Create post'),
         bottom: PrimaryButton(_busy ? 'Posting...' : 'Post', icon: Icons.send_rounded, onPressed: _busy || _compressing ? null : _post),
         body: ListView(padding: const EdgeInsets.all(16), children: [
           AspectRatio(
@@ -858,17 +859,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       decoration: BoxDecoration(color: C.primary.withOpacity(.08), borderRadius: BorderRadius.circular(16)),
                       clipBehavior: Clip.antiAlias,
                       child: _compressing
-                          ? const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                               CircularProgressIndicator(color: C.primary),
                               SizedBox(height: 12),
-                              Text('Compressing video...', style: TextStyle(color: C.primary)),
+                              Text(tr('Compressing video...'), style: TextStyle(color: C.primary)),
                             ])
                           : _bytes == null
                               ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                                   Icon(_video ? Icons.video_library_outlined : Icons.add_photo_alternate_outlined, size: 42, color: C.primary),
                                   const SizedBox(height: 8),
                                   Text('Tap to add a ${_video ? 'video' : 'photo'} (optional)', style: const TextStyle(color: C.primary)),
-                                  if (_video) const Padding(padding: EdgeInsets.only(top: 4), child: Text('Up to 250 MB in the app, 50 MB on the web', style: TextStyle(color: C.muted, fontSize: 12))),
+                                  if (_video) Padding(padding: EdgeInsets.only(top: 4), child: Text(tr('Up to 250 MB in the app, 50 MB on the web'), style: TextStyle(color: C.muted, fontSize: 12))),
                                 ])
                               : (_video ? const Center(child: Icon(Icons.check_circle_rounded, size: 52, color: C.primary)) : Image.memory(_bytes!, fit: BoxFit.cover)),
                     ),
@@ -897,9 +898,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ],
           const SizedBox(height: 12),
           SegmentedButton<bool>(
-            segments: const [
-              ButtonSegment(value: false, label: Text('Photo'), icon: Icon(Icons.image_outlined)),
-              ButtonSegment(value: true, label: Text('Video'), icon: Icon(Icons.videocam_outlined)),
+            segments: [
+              ButtonSegment(value: false, label: Text(tr('Photo')), icon: Icon(Icons.image_outlined)),
+              ButtonSegment(value: true, label: Text(tr('Video')), icon: Icon(Icons.videocam_outlined)),
             ],
             selected: {_video},
             onSelectionChanged: (v) => setState(() {
@@ -909,21 +910,21 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ),
           const SizedBox(height: 16),
           LabeledField('Caption', 'Tell travelers what to know', controller: _caption, maxLines: 3),
-          const Text('Tag a place', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(tr('Tag a place'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
           DropdownButtonFormField<String?>(
             value: _placeId,
             isExpanded: true,
-            hint: const Text('Optional'),
+            hint: Text(tr('Optional')),
             items: [
               for (final p in places) DropdownMenuItem(value: p.id, child: Text('${p.name}, ${p.country}', overflow: TextOverflow.ellipsis)),
-              const DropdownMenuItem(value: _otherPlace, child: Text('Another place (type it in)')),
+              DropdownMenuItem(value: _otherPlace, child: Text(tr('Another place (type it in)'))),
             ],
             onChanged: (v) => setState(() => _placeId = v),
           ),
           if (_placeId == _otherPlace) ...[
             const SizedBox(height: 10),
-            TextField(controller: _otherName, decoration: const InputDecoration(labelText: 'Place name', hintText: 'e.g. Bichanakandi, Sylhet')),
+            TextField(controller: _otherName, decoration: InputDecoration(labelText: tr('Place name'), hintText: tr('e.g. Bichanakandi, Sylhet'))),
             const SizedBox(height: 10),
             Autocomplete<String>(
               optionsBuilder: (v) => v.text.isEmpty ? const Iterable<String>.empty() : knownCountries.where((c) => c.toLowerCase().startsWith(v.text.toLowerCase())),
@@ -932,12 +933,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 controller: ctl,
                 focusNode: focus,
                 onChanged: (v) => _otherCountry = v.trim(),
-                decoration: const InputDecoration(labelText: 'Country', hintText: 'Start typing, e.g. Bangladesh'),
+                decoration: InputDecoration(labelText: tr('Country'), hintText: tr('Start typing, e.g. Bangladesh')),
               ),
             ),
           ],
           const SizedBox(height: 8),
-          const Text('Posts tagged with a place count toward your traveler level.', style: TextStyle(color: C.muted, fontSize: 12)),
+          Text(tr('Posts tagged with a place count toward your traveler level.'), style: TextStyle(color: C.muted, fontSize: 12)),
         ]),
       );
 }
@@ -989,7 +990,7 @@ Future<void> showReactions(BuildContext context, Post post) async {
                           ListTile(
                             leading: Stack(clipBehavior: Clip.none, children: [
                               Avatar(r.$3, name: r.$2, radius: 20),
-                              Positioned(right: -4, bottom: -4, child: Text(r.$4, style: const TextStyle(fontSize: 15))),
+                              Positioned(right: -4, bottom: -4, child: Text(tr(r.$4), style: const TextStyle(fontSize: 15))),
                             ]),
                             title: Text(r.$1 == Backend.uid ? '${r.$2} (you)' : r.$2, style: const TextStyle(fontWeight: FontWeight.w600)),
                             onTap: r.$1 == Backend.uid

@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -31,14 +32,14 @@ class GuideBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final col = g.verified ? const Color(0xFF2EB67D) : C.primary;
-    if (compact) return Tooltip(message: g.verified ? 'Verified guide' : 'Guide', child: Icon(g.verified ? Icons.workspace_premium_rounded : Icons.badge_rounded, size: 15, color: col));
+    if (compact) return Tooltip(message: g.verified ? tr('Verified guide') : tr('Guide'), child: Icon(g.verified ? Icons.workspace_premium_rounded : Icons.badge_rounded, size: 15, color: col));
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: col.withValues(alpha: .15), borderRadius: BorderRadius.circular(20), border: Border.all(color: col.withValues(alpha: .6))),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(g.verified ? Icons.workspace_premium_rounded : Icons.badge_rounded, size: 15, color: col),
         const SizedBox(width: 5),
-        Text(g.verified ? 'Verified guide' : 'Guide', style: TextStyle(color: col, fontWeight: FontWeight.w700, fontSize: 12)),
+        Text(g.verified ? tr('Verified guide') : tr('Guide'), style: TextStyle(color: col, fontWeight: FontWeight.w700, fontSize: 12)),
       ]),
     );
   }
@@ -78,7 +79,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
   }
 
   Future<void> _message(Guide g) async {
-    if (g.userId == null) return toast(context, 'This guide has no chat yet');
+    if (g.userId == null) return toast(context, tr('This guide has no chat yet'));
     final t = await Backend.fetchTraveler(g.userId!);
     if (!mounted || t == null) return;
     go(context, ChatScreen(conversation: context.read<SocialState>().chatWith(t)));
@@ -91,7 +92,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
     final local = c == null ? list : list.where((g) => g.base == c).toList();
     final shown = local.isEmpty ? list : local;
     return ScreenScaffold(
-      title: 'Travel guides',
+      title: tr('Travel guides'),
       body: RefreshIndicator(
         color: C.primary,
         onRefresh: _refresh,
@@ -113,7 +114,7 @@ class _GuidesScreenState extends State<GuidesScreen> {
           Row(children: [
             Text('${shown.length} guide${shown.length == 1 ? '' : 's'}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
             const Spacer(),
-            FilterChip(label: const Text('Verified only'), selected: _verifiedOnly, onSelected: (v) => setState(() => _verifiedOnly = v)),
+            FilterChip(label: Text(tr('Verified only')), selected: _verifiedOnly, onSelected: (v) => setState(() => _verifiedOnly = v)),
           ]),
           const SizedBox(height: 8),
           if (c != null && local.isEmpty && list.isNotEmpty)
@@ -150,7 +151,7 @@ class _BecomeGuideCard extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(g == null ? 'Become a guide' : (g.verified ? 'You are a verified guide' : 'You are listed as a guide'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+            Text(g == null ? tr('Become a guide') : (g.verified ? tr('You are a verified guide') : tr('You are listed as a guide')), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
             const SizedBox(height: 2),
             Text(
               g == null
@@ -165,11 +166,11 @@ class _BecomeGuideCard extends StatelessWidget {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: C.primary, visualDensity: VisualDensity.compact),
             onPressed: () async {
-              if (!Backend.on || Backend.uid == null) return toast(context, 'Sign in to become a guide');
+              if (!Backend.on || Backend.uid == null) return toast(context, tr('Sign in to become a guide'));
               await go(context, GuideSignupScreen(existing: g));
               onChanged();
             },
-            child: Text(g == null ? 'Sign up' : 'Edit'),
+            child: Text(g == null ? tr('Sign up') : tr('Edit')),
           ),
           if (g != null && !g.verified)
             TextButton(
@@ -177,7 +178,7 @@ class _BecomeGuideCard extends StatelessWidget {
                 await go(context, const GuideVerifyScreen());
                 onChanged();
               },
-              child: const Text('Get verified'),
+              child: Text(tr('Get verified')),
             ),
         ]),
       ]),
@@ -212,23 +213,23 @@ class _GuideCard extends StatelessWidget {
             ),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Text(money(g.pricePerDay), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17, color: C.primary)),
-              const Text('per day', style: TextStyle(fontSize: 10.5, color: C.muted)),
+              Text(tr('per day'), style: TextStyle(fontSize: 10.5, color: C.muted)),
             ]),
           ]),
           if (g.areas != null && g.areas!.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Text('Guides in ${g.areas}', style: const TextStyle(fontSize: 12.5)),
+            Text(trf('Guides in {0}', [g.areas]), style: const TextStyle(fontSize: 12.5)),
           ],
           if (g.bio.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(g.bio, style: const TextStyle(fontSize: 12.5, color: C.muted, height: 1.5)),
           ],
           const SizedBox(height: 10),
-          Text('Speaks ${g.languages.join(', ')}', style: const TextStyle(fontSize: 11.5)),
+          Text(trf('Speaks {0}', [g.languages.join(', ')]), style: const TextStyle(fontSize: 11.5)),
           const SizedBox(height: 10),
           Row(children: [
             if (g.userId != null && g.userId != Backend.uid)
-              Expanded(child: OutlinedButton.icon(onPressed: onMessage, icon: const Icon(Icons.chat_bubble_rounded, size: 16), label: const Text('Message'))),
+              Expanded(child: OutlinedButton.icon(onPressed: onMessage, icon: const Icon(Icons.chat_bubble_rounded, size: 16), label: Text(tr('Message')))),
             if (g.phone != null && g.phone!.isNotEmpty) ...[
               const SizedBox(width: 8),
               IconButton.outlined(onPressed: () => launchUrl(Uri.parse('tel:${g.phone}')), icon: const Icon(Icons.call_rounded, size: 18)),
@@ -240,7 +241,7 @@ class _GuideCard extends StatelessWidget {
                 onPressed: g.userId == Backend.uid && g.userId != null
                     ? null
                     : () => go(context, BookingFlowScreen(draft: BookingDraft(title: 'Guide: ${g.name}', location: g.base, type: 'guide', seed: g.seed, unitPrice: g.pricePerDay))),
-                child: const Text('Hire'),
+                child: Text(tr('Hire')),
               ),
             ),
           ]),
@@ -271,7 +272,7 @@ class _GuideSignupScreenState extends State<GuideSignupScreen> {
   Future<void> _save() async {
     final langs = _langs.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     if (_name.text.trim().isEmpty || _country.text.trim().isEmpty || _areas.text.trim().isEmpty || langs.isEmpty || _phone.text.trim().isEmpty) {
-      return toast(context, 'Please fill in all fields marked *');
+      return toast(context, tr('Please fill in all fields marked *'));
     }
     setState(() => _busy = true);
     try {
@@ -287,7 +288,7 @@ class _GuideSignupScreenState extends State<GuideSignupScreen> {
       });
       if (!mounted) return;
       context.read<AppState>().pullRefresh();
-      toast(context, widget.existing == null ? 'You are now listed as a guide' : 'Guide profile updated');
+      toast(context, widget.existing == null ? tr('You are now listed as a guide') : tr('Guide profile updated'));
       Navigator.pop(context);
     } catch (e) {
       if (mounted) toast(context, errText(e));
@@ -300,11 +301,11 @@ class _GuideSignupScreenState extends State<GuideSignupScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('Stop being a guide?'),
-        content: const Text('Your guide profile and badge will be removed and you will be a traveler again. Any pending verification request is withdrawn. You can sign up again later.'),
+        title: Text(tr('Stop being a guide?')),
+        content: Text(tr('Your guide profile and badge will be removed and you will be a traveler again. Any pending verification request is withdrawn. You can sign up again later.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-          FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.redAccent), onPressed: () => Navigator.pop(c, true), child: const Text('Remove')),
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(tr('Cancel'))),
+          FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.redAccent), onPressed: () => Navigator.pop(c, true), child: Text(tr('Remove'))),
         ],
       ),
     );
@@ -315,7 +316,7 @@ class _GuideSignupScreenState extends State<GuideSignupScreen> {
       if (!mounted) return;
       await context.read<AppState>().pullRefresh();
       if (!mounted) return;
-      toast(context, 'You are a traveler again');
+      toast(context, tr('You are a traveler again'));
       Navigator.pop(context);
     } catch (e) {
       if (mounted) toast(context, errText(e));
@@ -331,11 +332,11 @@ class _GuideSignupScreenState extends State<GuideSignupScreen> {
 
   @override
   Widget build(BuildContext context) => ScreenScaffold(
-        title: widget.existing == null ? 'Become a guide' : 'Edit guide profile',
+        title: widget.existing == null ? tr('Become a guide') : tr('Edit guide profile'),
         body: ListView(padding: const EdgeInsets.all(16), children: [
-          const Text('Step 1 of 2: basic details', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+          Text(tr('Step 1 of 2: basic details'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
           const SizedBox(height: 4),
-          const Text('You will be listed as a Guide right away. Submit your ID and proof of experience later to get the Verified guide badge.', style: TextStyle(color: C.muted, fontSize: 12.5)),
+          Text(tr('You will be listed as a Guide right away. Submit your ID and proof of experience later to get the Verified guide badge.'), style: TextStyle(color: C.muted, fontSize: 12.5)),
           const SizedBox(height: 16),
           _f(_name, 'Full name *'),
           _f(_country, 'Country you guide in *', hint: 'e.g. Bangladesh'),
@@ -355,13 +356,13 @@ class _GuideSignupScreenState extends State<GuideSignupScreen> {
             const Divider(),
             const SizedBox(height: 8),
             if (widget.existing!.verified)
-              const Text('Verified guides cannot remove the guide role. Contact support if you need to stop guiding.', style: TextStyle(color: C.muted, fontSize: 12.5))
+              Text(tr('Verified guides cannot remove the guide role. Contact support if you need to stop guiding.'), style: TextStyle(color: C.muted, fontSize: 12.5))
             else
               TextButton.icon(
                 style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
                 onPressed: _busy ? null : _leave,
                 icon: const Icon(Icons.logout_rounded),
-                label: const Text('Stop being a guide'),
+                label: Text(tr('Stop being a guide')),
               ),
           ],
         ]),
@@ -412,7 +413,7 @@ class _GuideVerifyScreenState extends State<GuideVerifyScreen> {
     if (f == null) return null;
     final b = await f.readAsBytes();
     if (b.length > 10 * 1024 * 1024) {
-      if (mounted) toast(context, 'Each file must be under 10 MB');
+      if (mounted) toast(context, tr('Each file must be under 10 MB'));
       return null;
     }
     return _Doc(b, f.name);
@@ -437,7 +438,7 @@ class _GuideVerifyScreenState extends State<GuideVerifyScreen> {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('$label${required ? ' *' : ''}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
-                  Text(d?.name ?? hint ?? 'Tap to add a clear photo or scan', style: const TextStyle(color: C.muted, fontSize: 11.5), overflow: TextOverflow.ellipsis),
+                  Text(d?.name ?? hint ?? tr('Tap to add a clear photo or scan'), style: const TextStyle(color: C.muted, fontSize: 11.5), overflow: TextOverflow.ellipsis),
                 ]),
               ),
               Icon(d == null ? Icons.add_rounded : Icons.check_circle_rounded, color: d == null ? C.muted : const Color(0xFF2EB67D)),
@@ -450,11 +451,11 @@ class _GuideVerifyScreenState extends State<GuideVerifyScreen> {
 
   Future<void> _submit() async {
     if (_fullName.text.trim().isEmpty || _idNo.text.trim().isEmpty || _address.text.trim().isEmpty || _experience.text.trim().length < 30 || _dob == null) {
-      return toast(context, 'Fill in every field marked *. Describe your experience in at least 30 characters.');
+      return toast(context, tr('Fill in every field marked *. Describe your experience in at least 30 characters.'));
     }
-    if (_front == null || _photo == null || (_idType == 'nid' && _back == null)) return toast(context, 'Add your ID photos and a clear photo of yourself');
-    if (_proofs.isEmpty) return toast(context, 'Add at least one proof of experience');
-    if (!_agree) return toast(context, 'Please accept the guide agreement');
+    if (_front == null || _photo == null || (_idType == 'nid' && _back == null)) return toast(context, tr('Add your ID photos and a clear photo of yourself'));
+    if (_proofs.isEmpty) return toast(context, tr('Add at least one proof of experience'));
+    if (!_agree) return toast(context, tr('Please accept the guide agreement'));
     setState(() => _busy = true);
     try {
       final g = _guide!;
@@ -485,7 +486,7 @@ class _GuideVerifyScreenState extends State<GuideVerifyScreen> {
         'agreed_terms': true,
       });
       if (!mounted) return;
-      toast(context, 'Submitted. We will review your documents soon.');
+      toast(context, tr('Submitted. We will review your documents soon.'));
       Navigator.pop(context);
     } catch (e) {
       if (mounted) toast(context, errText(e));
@@ -496,19 +497,19 @@ class _GuideVerifyScreenState extends State<GuideVerifyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const ScreenScaffold(title: 'Get verified', body: Center(child: CircularProgressIndicator(color: C.primary)));
+    if (_loading) return ScreenScaffold(title: tr('Get verified'), body: Center(child: CircularProgressIndicator(color: C.primary)));
     if (_guide == null) {
-      return const ScreenScaffold(title: 'Get verified', body: EmptyState(Icons.badge_rounded, 'Sign up as a guide first', 'Complete step 1 (basic details), then come back to submit documents.'));
+      return ScreenScaffold(title: tr('Get verified'), body: EmptyState(Icons.badge_rounded, 'Sign up as a guide first', 'Complete step 1 (basic details), then come back to submit documents.'));
     }
     if (_guide!.verified) {
-      return const ScreenScaffold(title: 'Get verified', body: EmptyState(Icons.workspace_premium_rounded, 'You are verified', 'Travelers see the Verified guide badge on your profile.'));
+      return ScreenScaffold(title: tr('Get verified'), body: EmptyState(Icons.workspace_premium_rounded, 'You are verified', 'Travelers see the Verified guide badge on your profile.'));
     }
     if (_last?.status == 'pending') {
-      return const ScreenScaffold(
-          title: 'Get verified', body: EmptyState(Icons.hourglass_top_rounded, 'Under review', 'Your documents were received. You will get a notification when the review is done.'));
+      return ScreenScaffold(
+          title: tr('Get verified'), body: EmptyState(Icons.hourglass_top_rounded, 'Under review', 'Your documents were received. You will get a notification when the review is done.'));
     }
     return ScreenScaffold(
-      title: 'Get verified',
+      title: tr('Get verified'),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         if (_last?.status == 'rejected')
           Container(
@@ -517,13 +518,13 @@ class _GuideVerifyScreenState extends State<GuideVerifyScreen> {
             decoration: BoxDecoration(color: Colors.red.withValues(alpha: .12), borderRadius: BorderRadius.circular(12)),
             child: Text('Your last request was not approved. ${_last!.row['review_note'] ?? ''}', style: const TextStyle(fontSize: 12.5)),
           ),
-        const Text('Step 2 of 2: verification', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+        Text(tr('Step 2 of 2: verification'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
         const SizedBox(height: 4),
-        const Text('Your documents are stored privately. Only you and the ExploreHub review team can see them.', style: TextStyle(color: C.muted, fontSize: 12.5)),
+        Text(tr('Your documents are stored privately. Only you and the ExploreHub review team can see them.'), style: TextStyle(color: C.muted, fontSize: 12.5)),
         const SizedBox(height: 16),
-        const Text('Personal details', style: TextStyle(fontWeight: FontWeight.w700)),
+        Text(tr('Personal details'), style: TextStyle(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
-        TextField(controller: _fullName, decoration: const InputDecoration(labelText: 'Full name as on ID *')),
+        TextField(controller: _fullName, decoration: InputDecoration(labelText: tr('Full name as on ID *'))),
         const SizedBox(height: 10),
         InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -531,15 +532,15 @@ class _GuideVerifyScreenState extends State<GuideVerifyScreen> {
             final r = await showDatePicker(context: context, initialDate: DateTime(1995), firstDate: DateTime(1940), lastDate: DateTime.now().subtract(const Duration(days: 365 * 18)));
             if (r != null) setState(() => _dob = r);
           },
-          child: InputDecorator(decoration: const InputDecoration(labelText: 'Date of birth *'), child: Text(_dob == null ? 'Select' : fmtDate(_dob!))),
+          child: InputDecorator(decoration: InputDecoration(labelText: tr('Date of birth *')), child: Text(_dob == null ? tr('Select') : fmtDate(_dob!))),
         ),
         const SizedBox(height: 10),
-        TextField(controller: _address, maxLines: 2, decoration: const InputDecoration(labelText: 'Present address *')),
+        TextField(controller: _address, maxLines: 2, decoration: InputDecoration(labelText: tr('Present address *'))),
         const SizedBox(height: 18),
-        const Text('Identity document', style: TextStyle(fontWeight: FontWeight.w700)),
+        Text(tr('Identity document'), style: TextStyle(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         SegmentedButton<String>(
-          segments: const [ButtonSegment(value: 'nid', label: Text('National ID')), ButtonSegment(value: 'passport', label: Text('Passport'))],
+          segments: [ButtonSegment(value: 'nid', label: Text(tr('National ID'))), ButtonSegment(value: 'passport', label: Text(tr('Passport')))],
           selected: {_idType},
           onSelectionChanged: (s) => setState(() => _idType = s.first),
         ),
@@ -550,12 +551,12 @@ class _GuideVerifyScreenState extends State<GuideVerifyScreen> {
         if (_idType == 'nid') _slot('NID back', _back, (d) => _back = d),
         _slot('Your photo (selfie)', _photo, (d) => _photo = d, hint: 'A clear photo of your face, no sunglasses'),
         const SizedBox(height: 8),
-        const Text('Experience', style: TextStyle(fontWeight: FontWeight.w700)),
+        Text(tr('Experience'), style: TextStyle(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         TextField(
           controller: _experience,
           maxLines: 5,
-          decoration: const InputDecoration(labelText: 'Experience details *', hintText: 'Where have you guided, for how long, for which agencies, what tours you lead...'),
+          decoration: InputDecoration(labelText: tr('Experience details *'), hintText: tr('Where have you guided, for how long, for which agencies, what tours you lead...')),
         ),
         const SizedBox(height: 10),
         for (var i = 0; i < _proofs.length; i++) _slot('Proof ${i + 1}', _proofs[i], (d) => _proofs[i] = d),
@@ -567,7 +568,7 @@ class _GuideVerifyScreenState extends State<GuideVerifyScreen> {
                   if (x != null) setState(() => _proofs.add(x));
                 },
           icon: const Icon(Icons.add_rounded),
-          label: Text(_proofs.isEmpty ? 'Add proof of experience * (license, certificate, agency letter)' : 'Add another proof'),
+          label: Text(_proofs.isEmpty ? tr('Add proof of experience * (license, certificate, agency letter)') : tr('Add another proof')),
         ),
         const SizedBox(height: 14),
         _slot('NOC (No Objection Certificate)', _noc, (d) => _noc = d, required: false, hint: 'From your employer or tourism authority, if you have one'),
@@ -590,7 +591,7 @@ class _GuideVerifyScreenState extends State<GuideVerifyScreen> {
           onChanged: (v) => setState(() => _agree = v ?? false),
           controlAffinity: ListTileControlAffinity.leading,
           contentPadding: EdgeInsets.zero,
-          title: const Text('I have read and agree to the guide agreement *', style: TextStyle(fontSize: 13)),
+          title: Text(tr('I have read and agree to the guide agreement *'), style: TextStyle(fontSize: 13)),
         ),
         const SizedBox(height: 8),
         PrimaryButton(_busy ? 'Uploading...' : 'Submit for verification', icon: Icons.verified_rounded, onPressed: _busy ? null : _submit),
@@ -627,7 +628,7 @@ class _GuideReviewScreenState extends State<GuideReviewScreen> {
 
   @override
   Widget build(BuildContext context) => ScreenScaffold(
-        title: 'Guide verification',
+        title: tr('Guide verification'),
         body: _apps == null
             ? const Center(child: CircularProgressIndicator(color: C.primary))
             : _apps!.isEmpty
@@ -638,7 +639,7 @@ class _GuideReviewScreenState extends State<GuideReviewScreen> {
                         color: C.card,
                         child: ListTile(
                           title: Text(a.fullName, style: const TextStyle(fontWeight: FontWeight.w700)),
-                          subtitle: Text('${a.row['base_country']}  ·  ${a.row['id_type'] == 'nid' ? 'NID' : 'Passport'}  ·  ${fmtDate(DateTime.parse(a.row['created_at'] as String).toLocal())}'),
+                          subtitle: Text('${a.row['base_country']}  ·  ${a.row['id_type'] == 'nid' ? 'NID' : tr('Passport')}  ·  ${fmtDate(DateTime.parse(a.row['created_at'] as String).toLocal())}'),
                           trailing: const Icon(Icons.chevron_right_rounded),
                           onTap: () async {
                             await go(context, _ReviewDetail(a));
@@ -684,12 +685,12 @@ class _ReviewDetailState extends State<_ReviewDetail> {
   }
 
   Future<void> _decide(bool ok) async {
-    if (!ok && _note.text.trim().isEmpty) return toast(context, 'Write a short reason so the guide knows what to fix');
+    if (!ok && _note.text.trim().isEmpty) return toast(context, tr('Write a short reason so the guide knows what to fix'));
     setState(() => _busy = true);
     try {
       await Backend.reviewGuide(widget.a.id, ok, _note.text.trim().isEmpty ? null : _note.text.trim());
       if (!mounted) return;
-      toast(context, ok ? 'Approved. The guide is now verified.' : 'Request declined');
+      toast(context, ok ? tr('Approved. The guide is now verified.') : tr('Request declined'));
       Navigator.pop(context);
     } catch (e) {
       if (mounted) toast(context, errText(e));
@@ -704,7 +705,7 @@ class _ReviewDetailState extends State<_ReviewDetail> {
     Widget kv(String k, Object? v) => Padding(
           padding: const EdgeInsets.only(bottom: 6),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            SizedBox(width: 120, child: Text(k, style: const TextStyle(color: C.muted, fontSize: 12.5))),
+            SizedBox(width: 120, child: Text(tr(k), style: const TextStyle(color: C.muted, fontSize: 12.5))),
             Expanded(child: Text('${v ?? '-'}', style: const TextStyle(fontSize: 13))),
           ]),
         );
@@ -721,11 +722,11 @@ class _ReviewDetailState extends State<_ReviewDetail> {
         kv('Languages', (r['languages'] as List?)?.join(', ')),
         kv('Experience', '${r['years']} years'),
         const SizedBox(height: 6),
-        const Text('Experience details', style: TextStyle(fontWeight: FontWeight.w700)),
+        Text(tr('Experience details'), style: TextStyle(fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
         Text('${r['experience']}', style: const TextStyle(fontSize: 13, height: 1.5)),
         const SizedBox(height: 14),
-        const Text('Documents', style: TextStyle(fontWeight: FontWeight.w700)),
+        Text(tr('Documents'), style: TextStyle(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         Wrap(spacing: 10, runSpacing: 10, children: [
           for (final d in _docs)
@@ -740,17 +741,17 @@ class _ReviewDetailState extends State<_ReviewDetail> {
                   child: _urls[d.$2] == null ? const Center(child: CircularProgressIndicator(strokeWidth: 2)) : Image.network(_urls[d.$2]!, fit: BoxFit.cover),
                 ),
                 const SizedBox(height: 4),
-                Text(d.$1, style: const TextStyle(fontSize: 11.5)),
+                Text(tr(d.$1), style: const TextStyle(fontSize: 11.5)),
               ]),
             ),
         ]),
         const SizedBox(height: 16),
-        TextField(controller: _note, maxLines: 2, decoration: const InputDecoration(labelText: 'Note to the guide (required to decline)')),
+        TextField(controller: _note, maxLines: 2, decoration: InputDecoration(labelText: tr('Note to the guide (required to decline)'))),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: OutlinedButton(onPressed: _busy ? null : () => _decide(false), child: const Text('Decline'))),
+          Expanded(child: OutlinedButton(onPressed: _busy ? null : () => _decide(false), child: Text(tr('Decline')))),
           const SizedBox(width: 10),
-          Expanded(child: FilledButton(style: FilledButton.styleFrom(backgroundColor: const Color(0xFF2EB67D)), onPressed: _busy ? null : () => _decide(true), child: const Text('Approve'))),
+          Expanded(child: FilledButton(style: FilledButton.styleFrom(backgroundColor: const Color(0xFF2EB67D)), onPressed: _busy ? null : () => _decide(true), child: Text(tr('Approve')))),
         ]),
       ]),
     );

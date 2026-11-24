@@ -6,6 +6,7 @@ import 'package:flutter/gestures.dart' show PointerScrollEvent;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../core/theme.dart';
@@ -198,7 +199,7 @@ class _ExploreGlobeState extends State<ExploreGlobe> with TickerProviderStateMix
                       dense: true,
                       leading: Icon(o is Place ? Icons.place_rounded : Icons.flag_rounded, color: C.primary),
                       title: Text(o is Place ? o.name : (o as _Country).name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text(o is Place ? o.where : 'Country', style: const TextStyle(fontSize: 11.5)),
+                      subtitle: Text(o is Place ? o.where : tr('Country'), style: const TextStyle(fontSize: 11.5)),
                       onTap: () => select(o),
                     ),
                 ]),
@@ -220,7 +221,7 @@ class _ExploreGlobeState extends State<ExploreGlobe> with TickerProviderStateMix
           focusNode: focus,
           autofocus: true,
           decoration: InputDecoration(
-            hintText: 'Search a place or country',
+            hintText: tr('Search a place or country'),
             prefixIcon: const Icon(Icons.search_rounded),
             suffixIcon: IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => setState(() => _searching = false)),
             border: InputBorder.none,
@@ -335,14 +336,14 @@ class _ExploreGlobeState extends State<ExploreGlobe> with TickerProviderStateMix
             ]),
           ),
           if (_sel == null)
-            const Positioned(
+            Positioned(
               left: 14,
               bottom: 12,
               child: IgnorePointer(
                 child: Row(children: [
                   Icon(Icons.touch_app_rounded, size: 15, color: C.muted),
                   SizedBox(width: 5),
-                  Text('Spin the globe and tap a place', style: TextStyle(color: C.muted, fontSize: 12)),
+                  Text(tr('Spin the globe and tap a place'), style: TextStyle(color: C.muted, fontSize: 12)),
                 ]),
               ),
             ),
@@ -409,7 +410,7 @@ class _PlacePanel extends StatelessWidget {
                     if (p.dailyBudget > 0) Text('from \$${p.dailyBudget}/day', style: const TextStyle(fontSize: 12, color: C.primary, fontWeight: FontWeight.w700)),
                   ]),
                   const SizedBox(height: 6),
-                  const Text('Tap for photos, budget, weather and how to get there', style: TextStyle(color: C.muted, fontSize: 11)),
+                  Text(tr('Tap for photos, budget, weather and how to get there'), style: TextStyle(color: C.muted, fontSize: 11)),
                 ]),
               ),
               Column(children: [

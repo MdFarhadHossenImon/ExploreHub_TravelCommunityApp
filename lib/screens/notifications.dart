@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme.dart';
@@ -58,17 +59,17 @@ Future<void> openNotification(BuildContext context, AppNotification n) async {
         if (id == null) break;
         final p = await Backend.postById(id);
         if (!context.mounted) return;
-        if (p == null) return toast(context, 'This post was deleted');
+        if (p == null) return toast(context, tr('This post was deleted'));
         if (n.kind == 'comment') await app.loadComments(p);
         if (!context.mounted) return;
-        go(context, Scaffold(appBar: AppBar(title: const Text('Post')), body: ListView(children: [PostCard(p)])));
+        go(context, Scaffold(appBar: AppBar(title: Text(tr('Post'))), body: ListView(children: [PostCard(p)])));
         return;
       case 'profile':
         if (id == null) break;
         final known = travelers.where((t) => t.id == id);
         final t = known.isNotEmpty ? known.first : await Backend.fetchTraveler(id);
         if (!context.mounted) return;
-        if (t == null) return toast(context, 'This traveler is no longer on ExploreHub');
+        if (t == null) return toast(context, tr('This traveler is no longer on ExploreHub'));
         go(context, TravelerProfileScreen(traveler: t));
         return;
       case 'group':
@@ -96,7 +97,7 @@ Future<void> openNotification(BuildContext context, AppNotification n) async {
       case 'like':
       case 'comment':
       case 'community':
-        toast(context, 'This post is no longer available');
+        toast(context, tr('This post is no longer available'));
       case 'buddy':
       case 'follow':
         go(context, const FriendsScreen());
@@ -111,7 +112,7 @@ Future<void> openNotification(BuildContext context, AppNotification n) async {
         go(context, const BookingsScreen());
     }
   } catch (e) {
-    if (context.mounted) toast(context, 'Could not open this right now');
+    if (context.mounted) toast(context, tr('Could not open this right now'));
   }
 }
 
@@ -126,8 +127,8 @@ class NotificationsScreen extends StatelessWidget {
       if (!days.contains(n.day)) days.add(n.day);
     }
     return ScreenScaffold(
-      title: 'Notifications',
-      actions: [TextButton(onPressed: s.unread == 0 ? null : s.markAllRead, child: const Text('Read all'))],
+      title: tr('Notifications'),
+      actions: [TextButton(onPressed: s.unread == 0 ? null : s.markAllRead, child: Text(tr('Read all')))],
       body: PullRefresh(
         child: s.notifications.isEmpty
             ? ListView(physics: const AlwaysScrollableScrollPhysics(), children: const [
@@ -138,7 +139,7 @@ class NotificationsScreen extends StatelessWidget {
                 for (final d in days) ...[
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-                    child: Text(d, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    child: Text(tr(d), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                   ),
                   for (final n in s.notifications.where((x) => x.day == d)) _NotificationTile(n),
                 ],

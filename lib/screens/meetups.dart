@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -47,12 +48,12 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
     if (_filter == 'Hosting') list = list.where((m) => m.hostId == Backend.uid).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Travel meetups')),
+      appBar: AppBar(title: Text(tr('Travel meetups'))),
       floatingActionButton: Backend.on
           ? FloatingActionButton.extended(
               onPressed: () => go(context, const CreateMeetupScreen()),
               icon: const Icon(Icons.add_rounded),
-              label: const Text('Host a meetup'),
+              label: Text(tr('Host a meetup')),
             )
           : null,
       body: Center(
@@ -61,12 +62,12 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
           child: RefreshIndicator(
             onRefresh: social.loadMeetups,
             child: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 100), children: [
-              const Text('Meet travelers in real life: sunrise hikes, food walks, shared boats and city meetups.',
+              Text(tr('Meet travelers in real life: sunrise hikes, food walks, shared boats and city meetups.'),
                   style: TextStyle(color: C.muted, fontSize: 13.5, height: 1.4)),
               const SizedBox(height: 12),
               Wrap(spacing: 8, children: [
                 for (final f in const ['Upcoming', 'Going', 'Hosting'])
-                  ChoiceChip(label: Text(f), selected: _filter == f, onSelected: (_) => setState(() => _filter = f)),
+                  ChoiceChip(label: Text(tr(f)), selected: _filter == f, onSelected: (_) => setState(() => _filter = f)),
               ]),
               const SizedBox(height: 14),
               if (!Backend.on)
@@ -138,7 +139,7 @@ class MeetupCard extends StatelessWidget {
                 Row(children: [
                   Avatar(m.hostAvatar, name: m.hostName, radius: 10),
                   const SizedBox(width: 6),
-                  Expanded(child: Text('Hosted by ${m.hostName}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
+                  Expanded(child: Text(trf('Hosted by {0}', [m.hostName]), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
                   Text('${m.going} going', style: const TextStyle(color: C.muted, fontSize: 12)),
                 ]),
               ]),
@@ -203,20 +204,20 @@ class _MeetupDetailScreenState extends State<MeetupDetailScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Meetup'), actions: [
+      appBar: AppBar(title: Text(tr('Meetup')), actions: [
         if (isHost)
           IconButton(
-            tooltip: 'Cancel meetup',
+            tooltip: tr('Cancel meetup'),
             icon: const Icon(Icons.delete_outline_rounded),
             onPressed: () async {
               final ok = await showDialog<bool>(
                 context: context,
                 builder: (c) => AlertDialog(
-                  title: const Text('Cancel this meetup?'),
-                  content: const Text('It will be removed for everyone who joined.'),
+                  title: Text(tr('Cancel this meetup?')),
+                  content: Text(tr('It will be removed for everyone who joined.')),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep')),
-                    FilledButton(style: FilledButton.styleFrom(backgroundColor: C.danger), onPressed: () => Navigator.pop(c, true), child: const Text('Cancel meetup')),
+                    TextButton(onPressed: () => Navigator.pop(c, false), child: Text(tr('Keep'))),
+                    FilledButton(style: FilledButton.styleFrom(backgroundColor: C.danger), onPressed: () => Navigator.pop(c, true), child: Text(tr('Cancel meetup'))),
                   ],
                 ),
               );
@@ -238,7 +239,7 @@ class _MeetupDetailScreenState extends State<MeetupDetailScreen> {
                       style: FilledButton.styleFrom(shape: const StadiumBorder(), minimumSize: const Size.fromHeight(48)),
                       onPressed: m.isFull && mine != 'going' ? null : () => _rsvp(mine == 'going' ? null : 'going'),
                       icon: Icon(mine == 'going' ? Icons.check_circle_rounded : Icons.event_available_rounded),
-                      label: Text(mine == 'going' ? 'You\'re going' : (m.isFull ? 'Full' : 'Going')),
+                      label: Text(mine == 'going' ? tr('You\'re going') : (m.isFull ? tr('Full') : tr('Going'))),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -247,7 +248,7 @@ class _MeetupDetailScreenState extends State<MeetupDetailScreen> {
                       style: OutlinedButton.styleFrom(shape: const StadiumBorder(), minimumSize: const Size.fromHeight(48), foregroundColor: C.ink, side: const BorderSide(color: C.line)),
                       onPressed: () => _rsvp(mine == 'interested' ? null : 'interested'),
                       icon: Icon(mine == 'interested' ? Icons.star_rounded : Icons.star_border_rounded),
-                      label: const Text('Interested'),
+                      label: Text(tr('Interested')),
                     ),
                   ),
                 ]),
@@ -275,7 +276,7 @@ class _MeetupDetailScreenState extends State<MeetupDetailScreen> {
                   child: TextButton.icon(
                     onPressed: () => go(context, PlaceDetailScreen(place: place)),
                     icon: const Icon(Icons.travel_explore_rounded, size: 18),
-                    label: Text('About ${place.name}'),
+                    label: Text(trf('About {0}', [place.name])),
                   ),
                 ),
               ),
@@ -285,27 +286,27 @@ class _MeetupDetailScreenState extends State<MeetupDetailScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('Hosted by', style: TextStyle(color: C.muted, fontSize: 11.5)),
+                  Text(tr('Hosted by'), style: TextStyle(color: C.muted, fontSize: 11.5)),
                   Text(m.hostName, style: const TextStyle(fontWeight: FontWeight.w700)),
                 ]),
               ),
             ]),
             if (m.about.isNotEmpty) ...[
               const SizedBox(height: 16),
-              const Text('About this meetup', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              Text(tr('About this meetup'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
               const SizedBox(height: 6),
               Text(m.about, style: const TextStyle(fontSize: 14, height: 1.5)),
             ],
             const SizedBox(height: 18),
-            Text('Going (${going.length})', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+            Text(trf('Going ({0})', [going.length]), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
             const SizedBox(height: 10),
             if (going.isEmpty)
-              const Text('No one yet.', style: TextStyle(color: C.muted))
+              Text(tr('No one yet.'), style: TextStyle(color: C.muted))
             else
               SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [for (final r in going) person(r)])),
             if (interested.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text('Interested (${interested.length})', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              Text(trf('Interested ({0})', [interested.length]), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
               const SizedBox(height: 10),
               SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [for (final r in interested) person(r)])),
             ],
@@ -314,7 +315,7 @@ class _MeetupDetailScreenState extends State<MeetupDetailScreen> {
               style: OutlinedButton.styleFrom(shape: const StadiumBorder(), foregroundColor: C.ink, side: const BorderSide(color: C.line)),
               onPressed: () => _invite(context, m),
               icon: const Icon(Icons.send_rounded, size: 18),
-              label: const Text('Invite a buddy'),
+              label: Text(tr('Invite a buddy')),
             ),
           ]),
         ),
@@ -324,12 +325,12 @@ class _MeetupDetailScreenState extends State<MeetupDetailScreen> {
 
   void _invite(BuildContext context, Meetup m) {
     final social = context.read<SocialState>();
-    if (social.buddyList.isEmpty) return toast(context, 'Add travel buddies first to invite them.');
+    if (social.buddyList.isEmpty) return toast(context, tr('Add travel buddies first to invite them.'));
     showModalBottomSheet(
       context: context,
       constraints: const BoxConstraints(maxWidth: 560),
       builder: (c) => ListView(shrinkWrap: true, padding: const EdgeInsets.symmetric(vertical: 12), children: [
-        const Padding(padding: EdgeInsets.fromLTRB(16, 0, 16, 8), child: Text('Invite a buddy', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
+        Padding(padding: EdgeInsets.fromLTRB(16, 0, 16, 8), child: Text(tr('Invite a buddy'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
         for (final t in social.buddyList)
           ListTile(
             leading: PersonAvatar(t, radius: 18),
@@ -350,7 +351,7 @@ class _MeetupDetailScreenState extends State<MeetupDetailScreen> {
         child: Row(children: [
           Icon(i, size: 18, color: C.primary),
           const SizedBox(width: 10),
-          Expanded(child: Text(t, style: const TextStyle(fontSize: 14))),
+          Expanded(child: Text(tr(t), style: const TextStyle(fontSize: 14))),
         ]),
       );
 }
@@ -380,11 +381,11 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
 
   Future<void> _save() async {
     final title = _title.text.trim();
-    if (title.length < 3) return toast(context, 'Give your meetup a title');
-    if (_placeId == null && _location.text.trim().isEmpty) return toast(context, 'Choose a place or write where to meet');
-    if (_when.isBefore(DateTime.now())) return toast(context, 'Pick a time in the future');
+    if (title.length < 3) return toast(context, tr('Give your meetup a title'));
+    if (_placeId == null && _location.text.trim().isEmpty) return toast(context, tr('Choose a place or write where to meet'));
+    if (_when.isBefore(DateTime.now())) return toast(context, tr('Pick a time in the future'));
     final cap = int.tryParse(_capacity.text.trim());
-    if (_capacity.text.trim().isNotEmpty && (cap == null || cap < 2 || cap > 500)) return toast(context, 'Spots must be between 2 and 500');
+    if (_capacity.text.trim().isNotEmpty && (cap == null || cap < 2 || cap > 500)) return toast(context, tr('Spots must be between 2 and 500'));
     setState(() => _busy = true);
     final ok = await context.read<SocialState>().createMeetup(
           title: title,
@@ -399,13 +400,13 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
     setState(() => _busy = false);
     if (ok) {
       Navigator.pop(context);
-      toast(context, 'Meetup published');
+      toast(context, tr('Meetup published'));
     }
   }
 
   @override
   Widget build(BuildContext context) => ScreenScaffold(
-        title: 'Host a meetup',
+        title: tr('Host a meetup'),
         bottom: PrimaryButton(_busy ? 'Publishing...' : 'Publish meetup', icon: Icons.event_available_rounded, onPressed: _busy ? null : _save),
         body: ListView(padding: const EdgeInsets.all(16), children: [
           GestureDetector(
@@ -422,41 +423,41 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
               clipBehavior: Clip.antiAlias,
               child: _cover != null
                   ? Image.memory(_cover!, fit: BoxFit.cover)
-                  : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                       Icon(Icons.add_photo_alternate_outlined, size: 36, color: C.primary),
                       SizedBox(height: 6),
-                      Text('Add a cover photo (optional)', style: TextStyle(color: C.primary)),
+                      Text(tr('Add a cover photo (optional)'), style: TextStyle(color: C.primary)),
                     ]),
             ),
           ),
           const SizedBox(height: 16),
-          TextField(controller: _title, maxLength: 120, decoration: const InputDecoration(labelText: 'Title', hintText: 'Sunrise hike at Sajek')),
+          TextField(controller: _title, maxLength: 120, decoration: InputDecoration(labelText: tr('Title'), hintText: tr('Sunrise hike at Sajek'))),
           const SizedBox(height: 8),
           DropdownButtonFormField<String?>(
             value: _placeId,
             isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Destination (optional)'),
+            decoration: InputDecoration(labelText: tr('Destination (optional)')),
             items: [
-              const DropdownMenuItem(value: null, child: Text('No specific destination')),
+              DropdownMenuItem(value: null, child: Text(tr('No specific destination'))),
               for (final p in places) DropdownMenuItem(value: p.id, child: Text('${p.name}, ${p.country}', overflow: TextOverflow.ellipsis)),
             ],
             onChanged: (v) => setState(() => _placeId = v),
           ),
           const SizedBox(height: 12),
-          TextField(controller: _location, decoration: const InputDecoration(labelText: 'Where to meet', hintText: 'e.g. Hotel lobby, Gate 2, bus stand', prefixIcon: Icon(Icons.location_on_outlined))),
+          TextField(controller: _location, decoration: InputDecoration(labelText: tr('Where to meet'), hintText: tr('e.g. Hotel lobby, Gate 2, bus stand'), prefixIcon: Icon(Icons.location_on_outlined))),
           const SizedBox(height: 12),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.schedule_rounded, color: C.primary),
             title: Text(meetupWhen(_when)),
-            subtitle: const Text('Tap to change date and time'),
+            subtitle: Text(tr('Tap to change date and time')),
             onTap: _pickDate,
           ),
-          TextField(controller: _capacity, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Spots (optional)', hintText: 'Leave empty for no limit')),
+          TextField(controller: _capacity, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: tr('Spots (optional)'), hintText: tr('Leave empty for no limit'))),
           const SizedBox(height: 12),
-          TextField(controller: _about, maxLines: 5, minLines: 3, maxLength: 2000, decoration: const InputDecoration(labelText: 'Details', hintText: 'Plan, what to bring, costs to share, contact on the day')),
+          TextField(controller: _about, maxLines: 5, minLines: 3, maxLength: 2000, decoration: InputDecoration(labelText: tr('Details'), hintText: tr('Plan, what to bring, costs to share, contact on the day'))),
           const SizedBox(height: 6),
-          const Text('Meet in public places and share your plans with someone you trust.', style: TextStyle(color: C.muted, fontSize: 12)),
+          Text(tr('Meet in public places and share your plans with someone you trust.'), style: TextStyle(color: C.muted, fontSize: 12)),
         ]),
       );
 }

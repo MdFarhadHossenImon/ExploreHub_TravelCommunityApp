@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -46,7 +47,7 @@ class StoryRow extends StatelessWidget {
                   Positioned(bottom: -12, child: CircleAvatar(radius: 15, backgroundColor: C.bg, child: avatar)),
                 ]),
                 const SizedBox(height: 16),
-                Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+                Text(tr(label), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
               ]),
             ),
           ),
@@ -59,7 +60,7 @@ class StoryRow extends StatelessWidget {
           ring: false,
           image: Container(color: C.card, child: const Icon(Icons.add_a_photo_rounded, color: C.primary, size: 26)),
           avatar: Avatar(s.avatarSeed, name: s.name, radius: 13),
-          label: 'Add moment',
+          label: tr('Add moment'),
         ),
         for (var i = 0; i < list.length; i++)
           if (i == 0 || list[i - 1].travelerId != list[i].travelerId)
@@ -104,9 +105,9 @@ class StoryRow extends StatelessWidget {
         builder: (c, set) => Padding(
           padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(c).viewInsets.bottom + 16),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Create a story', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+            Text(tr('Create a story'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
             const SizedBox(height: 4),
-            const Text('Stories disappear after 24 hours.', style: TextStyle(color: C.muted, fontSize: 12.5)),
+            Text(tr('Stories disappear after 24 hours.'), style: TextStyle(color: C.muted, fontSize: 12.5)),
             const SizedBox(height: 14),
             SizedBox(
               height: 120,
@@ -123,12 +124,12 @@ class StoryRow extends StatelessWidget {
               ]),
             ),
             const SizedBox(height: 12),
-            TextField(controller: ctl, decoration: const InputDecoration(hintText: 'Add a caption')),
+            TextField(controller: ctl, decoration: InputDecoration(hintText: tr('Add a caption'))),
             const SizedBox(height: 14),
             PrimaryButton('Share to story', icon: Icons.auto_awesome_rounded, onPressed: () {
               c.read<SocialState>().addStory(picked, ctl.text.trim().isEmpty ? 'New story' : ctl.text.trim());
               Navigator.pop(c);
-              toast(context, 'Your story is live');
+              toast(context, tr('Your story is live'));
             }),
           ]),
         ),
@@ -154,13 +155,13 @@ class StoryRow extends StatelessWidget {
         builder: (c, set) => Padding(
           padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(c).viewInsets.bottom + 16),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Share a moment', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+            Text(tr('Share a moment'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
             const SizedBox(height: 4),
-            const Text('Moments disappear after 24 hours.', style: TextStyle(color: C.muted, fontSize: 12.5)),
+            Text(tr('Moments disappear after 24 hours.'), style: TextStyle(color: C.muted, fontSize: 12.5)),
             const SizedBox(height: 14),
             Center(child: ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.memory(bytes, height: 260, fit: BoxFit.cover))),
             const SizedBox(height: 12),
-            TextField(controller: ctl, decoration: const InputDecoration(hintText: 'Add a caption')),
+            TextField(controller: ctl, decoration: InputDecoration(hintText: tr('Add a caption'))),
             const SizedBox(height: 14),
             PrimaryButton(busy ? 'Uploading...' : 'Share moment', icon: Icons.auto_awesome_rounded, onPressed: busy
                 ? null
@@ -168,7 +169,7 @@ class StoryRow extends StatelessWidget {
                     set(() => busy = true);
                     final ok = await c.read<SocialState>().publishStory(bytes, ext, ext == 'png' ? 'image/png' : 'image/jpeg', ctl.text.trim());
                     if (c.mounted) Navigator.pop(c);
-                    if (context.mounted) toast(context, ok ? 'Your moment is live' : 'Upload failed, please try again');
+                    if (context.mounted) toast(context, ok ? tr('Your moment is live') : tr('Upload failed, please try again'));
                   }),
           ]),
         ),
@@ -299,22 +300,22 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
                     Row(children: [
                       mine ? Avatar(s.avatarSeed, name: s.name, radius: 18) : Avatar(t!.seed, name: t.name, radius: 18),
                       const SizedBox(width: 10),
-                      Text(mine ? 'Your story' : t!.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                      Text(mine ? tr('Your story') : t!.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                       const SizedBox(width: 8),
                       Text(st.time, style: const TextStyle(color: Colors.white70, fontSize: 12)),
                       const Spacer(),
                       if (mine)
                         IconButton(
-                          tooltip: 'Delete story',
+                          tooltip: tr('Delete story'),
                           onPressed: () async {
                             _ac.stop();
                             final ok = await showDialog<bool>(
                               context: context,
                               builder: (c) => AlertDialog(
-                                title: const Text('Delete this story?'),
+                                title: Text(tr('Delete this story?')),
                                 actions: [
-                                  TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-                                  FilledButton(style: FilledButton.styleFrom(backgroundColor: C.danger), onPressed: () => Navigator.pop(c, true), child: const Text('Delete')),
+                                  TextButton(onPressed: () => Navigator.pop(c, false), child: Text(tr('Cancel'))),
+                                  FilledButton(style: FilledButton.styleFrom(backgroundColor: C.danger), onPressed: () => Navigator.pop(c, true), child: Text(tr('Delete'))),
                                 ],
                               ),
                             );
@@ -365,7 +366,7 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
                         ),
                         const SizedBox(width: 6),
                         for (final e in const ['❤️', '😍', '🧭'])
-                          InkWell(onTap: () => _send(t, e), child: Padding(padding: const EdgeInsets.all(4), child: Text(e, style: const TextStyle(fontSize: 24)))),
+                          InkWell(onTap: () => _send(t, e), child: Padding(padding: const EdgeInsets.all(4), child: Text(tr(e), style: const TextStyle(fontSize: 24)))),
                       ]),
                   ]),
                 ),

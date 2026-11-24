@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/theme.dart';
@@ -31,15 +32,15 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   Widget _q(String title, {String? hint}) => Padding(
         padding: const EdgeInsets.only(top: 22, bottom: 10),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-          if (hint != null) Text(hint, style: const TextStyle(color: C.muted, fontSize: 12)),
+          Text(tr(title), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          if (hint != null) Text(tr(hint), style: const TextStyle(color: C.muted, fontSize: 12)),
         ]),
       );
 
   Widget _single(List<String> opts, String? value, void Function(String) set) => Wrap(spacing: 8, runSpacing: 8, children: [
         for (final o in opts)
           ChoiceChip(
-            label: Text(o),
+            label: Text(tr(o)),
             selected: value == o,
             showCheckmark: false,
             selectedColor: C.primary,
@@ -49,10 +50,10 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       ]);
 
   Future<void> _submit() async {
-    if (_rating == 0) return toast(context, 'Please give a star rating');
-    if (_improve.text.trim().length < 3) return toast(context, 'Tell us at least one thing to improve');
+    if (_rating == 0) return toast(context, tr('Please give a star rating'));
+    if (_improve.text.trim().length < 3) return toast(context, tr('Tell us at least one thing to improve'));
     if (!Backend.on) {
-      toast(context, 'Thanks! Feedback is saved in the live app.');
+      toast(context, tr('Thanks! Feedback is saved in the live app.'));
       Navigator.pop(context);
       return;
     }
@@ -74,9 +75,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         context: context,
         builder: (c) => AlertDialog(
           icon: const Icon(Icons.favorite_rounded, color: C.primary, size: 40),
-          title: const Text('Thank you!'),
-          content: const Text('Your feedback helps make ExploreHub better for every traveler.'),
-          actions: [FilledButton(onPressed: () => Navigator.pop(c), child: const Text('Done'))],
+          title: Text(tr('Thank you!')),
+          content: Text(tr('Your feedback helps make ExploreHub better for every traveler.')),
+          actions: [FilledButton(onPressed: () => Navigator.pop(c), child: Text(tr('Done')))],
         ),
       );
       if (mounted) Navigator.pop(context);
@@ -88,10 +89,10 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
   @override
   Widget build(BuildContext context) => ScreenScaffold(
-        title: 'Give feedback',
+        title: tr('Give feedback'),
         bottom: PrimaryButton(_busy ? 'Sending...' : 'Send feedback', icon: Icons.send_rounded, onPressed: _busy ? null : _submit),
         body: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 32), children: [
-          const Text('Help us build the best app for travelers. It takes about a minute.', style: TextStyle(color: C.muted, height: 1.4)),
+          Text(tr('Help us build the best app for travelers. It takes about a minute.'), style: TextStyle(color: C.muted, height: 1.4)),
           _q('How do you rate ExploreHub overall?'),
           Row(children: [
             for (var i = 1; i <= 5; i++)
@@ -107,7 +108,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           Wrap(spacing: 8, runSpacing: 8, children: [
             for (final f in _featureOpts)
               FilterChip(
-                label: Text(f),
+                label: Text(tr(f)),
                 selected: _features.contains(f),
                 onSelected: (v) => setState(() => v ? _features.add(f) : _features.remove(f)),
               ),
@@ -119,9 +120,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           _q('Did anything break or feel buggy?'),
           _single(_bugOpts, _bug, (v) => _bug = v),
           _q('Things to improve *', hint: 'Describe what should be better, what confused you, or what went wrong.'),
-          TextField(controller: _improve, maxLines: 6, maxLength: 4000, decoration: const InputDecoration(hintText: 'e.g. The trip planner should let me add hotel links...')),
+          TextField(controller: _improve, maxLines: 6, maxLength: 4000, decoration: InputDecoration(hintText: tr('e.g. The trip planner should let me add hotel links...'))),
           _q('Anything you wish the app had?', hint: 'Optional'),
-          TextField(controller: _wish, maxLines: 3, maxLength: 1000, decoration: const InputDecoration(hintText: 'Your dream travel feature')),
+          TextField(controller: _wish, maxLines: 3, maxLength: 1000, decoration: InputDecoration(hintText: tr('Your dream travel feature'))),
         ]),
       );
 }

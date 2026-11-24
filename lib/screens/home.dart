@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -65,20 +66,20 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             // Services marketplace
-            const SectionHeader('Book everything for your trip'),
+            SectionHeader(tr('Book everything for your trip')),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(children: [
-                _Service(Icons.apartment_rounded, 'Hotel', () => go(context, const StaysScreen())),
-                _Service(Icons.flight_rounded, 'Flight', () => go(context, const TransportScreen(type: 'flight'))),
-                _Service(Icons.train_rounded, 'Train', () => go(context, const TransportScreen(type: 'train'))),
-                _Service(Icons.directions_bus_rounded, 'Bus', () => go(context, const TransportScreen(type: 'bus'))),
-                _Service(Icons.badge_rounded, 'Guide', () => go(context, const GuidesScreen())),
+                _Service(Icons.apartment_rounded, tr('Hotel'), () => go(context, const StaysScreen())),
+                _Service(Icons.flight_rounded, tr('Flight'), () => go(context, const TransportScreen(type: 'flight'))),
+                _Service(Icons.train_rounded, tr('Train'), () => go(context, const TransportScreen(type: 'train'))),
+                _Service(Icons.directions_bus_rounded, tr('Bus'), () => go(context, const TransportScreen(type: 'bus'))),
+                _Service(Icons.badge_rounded, tr('Guide'), () => go(context, const GuidesScreen())),
               ]),
             ),
 
             // Explore places: filter chips + big photo cards
-            SectionHeader('Explore places', onSeeAll: () => go(context, const SearchScreen())),
+            SectionHeader(tr('Explore places'), onSeeAll: () => go(context, const SearchScreen())),
             SizedBox(
               height: 42,
               child: ListView.separated(
@@ -98,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: on ? C.primary : C.line),
                       ),
-                      child: Text(chips[i], style: TextStyle(color: on ? C.on : C.muted, fontWeight: on ? FontWeight.w700 : FontWeight.w500, fontSize: 12.5)),
+                      child: Text(tr(chips[i]), style: TextStyle(color: on ? C.on : C.muted, fontWeight: on ? FontWeight.w700 : FontWeight.w500, fontSize: 12.5)),
                     ),
                   );
                 },
@@ -129,12 +130,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () => go(context, SearchScreen(category: categories.contains(_cat) ? _cat : null)),
                   icon: const Icon(Icons.travel_explore_rounded),
-                  label: Text('See all ${list.length} places'),
+                  label: Text(trf('See all {0} places', [list.length])),
                 ),
               ),
 
             // Watch to explore
-            SectionHeader('Watch & explore', onSeeAll: () => shellTab.value = 2),
+            SectionHeader(tr('Watch & explore'), onSeeAll: () => shellTab.value = 2),
             SizedBox(
               height: 150,
               child: ListView.separated(
@@ -171,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             // Events
-            if (!Backend.on) SectionHeader('Top Events', onSeeAll: () => go(context, const SearchScreen())),
+            if (!Backend.on) SectionHeader(tr('Top Events'), onSeeAll: () => go(context, const SearchScreen())),
             if (!Backend.on)
               SizedBox(
                 height: 112,
@@ -210,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Live: upcoming traveler meetups
             if (Backend.on) ...[
-              SectionHeader('Upcoming meetups', onSeeAll: () => go(context, const MeetupsScreen())),
+              SectionHeader(tr('Upcoming meetups'), onSeeAll: () => go(context, const MeetupsScreen())),
               Builder(builder: (context) {
                 final ms = context.watch<SocialState>().meetups.where((m) => !m.isPast).take(8).toList();
                 if (ms.isEmpty) {
@@ -222,10 +223,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), border: Border.all(color: C.line)),
-                        child: const Row(children: [
+                        child: Row(children: [
                           Icon(Icons.event_available_rounded, color: C.primary),
                           SizedBox(width: 12),
-                          Expanded(child: Text('No meetups yet. Host the first one and meet travelers in person.', style: TextStyle(fontSize: 13))),
+                          Expanded(child: Text(tr('No meetups yet. Host the first one and meet travelers in person.'), style: TextStyle(fontSize: 13))),
                           Icon(Icons.chevron_right_rounded, color: C.muted),
                         ]),
                       ),
@@ -254,11 +255,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Ink(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), color: C.primary),
-                  child: const Row(children: [
+                  child: Row(children: [
                     Icon(Icons.camera_alt_rounded, color: C.on, size: 30),
                     SizedBox(width: 14),
                     Expanded(
-                      child: Text('Back from a trip? Share your photos and videos with the community.', style: TextStyle(color: C.on, fontWeight: FontWeight.w700, height: 1.4)),
+                      child: Text(tr('Back from a trip? Share your photos and videos with the community.'), style: TextStyle(color: C.on, fontWeight: FontWeight.w700, height: 1.4)),
                     ),
                   ]),
                 ),
@@ -295,7 +296,7 @@ class _Header extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Welcome', style: TextStyle(color: C.muted, fontSize: 11.5)),
+                Text(tr('Welcome'), style: TextStyle(color: C.muted, fontSize: 11.5)),
                 Text(first, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
               ]),
             ),
@@ -323,7 +324,7 @@ class _Header extends StatelessWidget {
             ]),
           ]),
           const SizedBox(height: 22),
-          const Text('Where to next?', style: TextStyle(color: C.primary, fontSize: 25, fontWeight: FontWeight.w800, height: 1.15)),
+          Text(tr('Where to next?'), style: TextStyle(color: C.primary, fontSize: 25, fontWeight: FontWeight.w800, height: 1.15)),
           const SizedBox(height: 14),
           InkWell(
             borderRadius: BorderRadius.circular(16),
@@ -334,7 +335,7 @@ class _Header extends StatelessWidget {
               child: Row(children: [
                 const Icon(Icons.search_rounded, color: C.muted, size: 18),
                 const SizedBox(width: 10),
-                const Expanded(child: Text('Search places, hotels, guides', style: TextStyle(color: C.muted, fontSize: 13))),
+                Expanded(child: Text(tr('Search places, hotels, guides'), style: TextStyle(color: C.muted, fontSize: 13))),
                 Container(
                   width: 40,
                   height: 40,
@@ -373,7 +374,7 @@ class _Service extends StatelessWidget {
                   child: Icon(icon, color: C.primary, size: 22),
                 ),
                 const SizedBox(height: 6),
-                Text(label, style: const TextStyle(fontSize: 11.5)),
+                Text(tr(label), style: const TextStyle(fontSize: 11.5)),
               ]),
             ),
           ),
@@ -424,7 +425,7 @@ class _PlaceCard extends StatelessWidget {
                   Text('${p.rating}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
                 ])),
                 const SizedBox(width: 6),
-                _tag(Text(p.category, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500))),
+                _tag(Text(tr(p.category), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500))),
               ]),
             ),
             Positioned(
@@ -437,7 +438,7 @@ class _PlaceCard extends StatelessWidget {
               right: 64,
               bottom: 16,
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                _tag(Text(p.price > 0 ? money(p.price) : p.category, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600))),
+                _tag(Text(p.price > 0 ? money(p.price) : tr(p.category), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600))),
                 const SizedBox(height: 8),
                 Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
                 const SizedBox(height: 2),

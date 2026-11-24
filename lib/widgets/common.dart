@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 
 import '../core/responsive.dart';
 import '../core/theme.dart';
@@ -32,7 +33,7 @@ Future<T?> go<T>(BuildContext c, Widget w) => Navigator.of(c).push<T>(FastRoute<
 
 void goRoot(BuildContext c, Widget w) => Navigator.of(c).pushAndRemoveUntil(FastRoute(w), (r) => false);
 
-void toast(BuildContext c, String m) => ScaffoldMessenger.of(c).showSnackBar(SnackBar(content: Text(m), behavior: SnackBarBehavior.floating));
+void toast(BuildContext c, String m) => ScaffoldMessenger.of(c).showSnackBar(SnackBar(content: Text(tr(m)), behavior: SnackBarBehavior.floating));
 
 IconData modeIcon(String m) {
   switch (m) {
@@ -186,7 +187,7 @@ class PrimaryButton extends StatelessWidget {
     final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(12));
     final text = Row(mainAxisSize: MainAxisSize.min, children: [
       if (icon != null) ...[Icon(icon, size: 18), const SizedBox(width: 8)],
-      Flexible(child: Text(label, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w500))),
+      Flexible(child: Text(tr(label), overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w500))),
     ]);
     return SizedBox(
       height: 50,
@@ -211,7 +212,7 @@ class LabeledField extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(tr(label), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
           TextFormField(
             controller: controller,
@@ -234,7 +235,7 @@ class QtyStepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(fontSize: 13, color: C.muted)),
+        Text(tr(label), style: const TextStyle(fontSize: 13, color: C.muted)),
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: C.line)),
@@ -288,7 +289,7 @@ class ScreenScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(leading: BackCircle(onTap: onBack), leadingWidth: 56, title: Text(title), actions: actions),
+        appBar: AppBar(leading: BackCircle(onTap: onBack), leadingWidth: 56, title: Text(tr(title)), actions: actions),
         body: Constrained(maxWidth: maxWidth, child: body),
         bottomNavigationBar: bottom == null
             ? null
@@ -341,8 +342,8 @@ class SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 22, 16, 12),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-          if (onSeeAll != null) GestureDetector(onTap: onSeeAll, child: const Text('See All', style: TextStyle(color: C.primary, fontSize: 13))),
+          Text(tr(title), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+          if (onSeeAll != null) GestureDetector(onTap: onSeeAll, child: Text(tr('See All'), style: TextStyle(color: C.primary, fontSize: 13))),
         ]),
       );
 }
@@ -357,7 +358,7 @@ class RatingText extends StatelessWidget {
   Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.star_rounded, color: C.star, size: 16),
         const SizedBox(width: 3),
-        Text(rating == 0 ? 'New on ExploreHub' : (reviews == null ? '$rating' : '$rating ($reviews Reviews)'), style: TextStyle(fontSize: 12, color: color ?? C.muted)),
+        Text(rating == 0 ? tr('New on ExploreHub') : (reviews == null ? '$rating' : '$rating ($reviews ${tr('Reviews')})'), style: TextStyle(fontSize: 12, color: color ?? C.muted)),
       ]);
 }
 
@@ -373,9 +374,9 @@ class EmptyState extends StatelessWidget {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Icon(icon, size: 56, color: C.sky),
             const SizedBox(height: 12),
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            Text(tr(title), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
-            Text(hint, textAlign: TextAlign.center, style: const TextStyle(color: C.muted, fontSize: 13)),
+            Text(tr(hint), textAlign: TextAlign.center, style: const TextStyle(color: C.muted, fontSize: 13)),
           ]),
         ),
       );

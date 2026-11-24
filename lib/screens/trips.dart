@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -31,19 +32,19 @@ class TripsHubScreen extends StatelessWidget {
         appBar: AppBar(
           automaticallyImplyLeading: false,
           centerTitle: !wide,
-          title: const Text('Trips'),
+          title: Text(tr('Trips')),
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(kTextTabBarHeight),
             child: Align(
               alignment: wide ? Alignment.centerLeft : Alignment.center,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
-                child: const TabBar(
+                child: TabBar(
                   indicatorColor: C.primary,
                   labelColor: C.primary,
                   unselectedLabelColor: C.muted,
                   dividerColor: Colors.transparent,
-                  tabs: [Tab(text: 'Trip plans'), Tab(text: 'Bookings')],
+                  tabs: [Tab(text: tr('Trip plans')), Tab(text: tr('Bookings'))],
                 ),
               ),
             ),
@@ -73,14 +74,14 @@ class _PlansTab extends StatelessWidget {
           child: ListView(padding: const EdgeInsets.all(16), children: [
         Panel(
           onTap: () => go(context, const CreateTripScreen()),
-          child: const Row(children: [
+          child: Row(children: [
             IconBubble(Icons.add_location_alt_rounded, C.primary, size: 46),
             SizedBox(width: 14),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Plan a new trip', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+                Text(tr('Plan a new trip'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
                 SizedBox(height: 2),
-                Text('Build a day-by-day itinerary and invite your travel buddies.', style: TextStyle(color: C.muted, fontSize: 12.5)),
+                Text(tr('Build a day-by-day itinerary and invite your travel buddies.'), style: TextStyle(color: C.muted, fontSize: 12.5)),
               ]),
             ),
             Icon(Icons.chevron_right_rounded, color: C.muted),
@@ -130,7 +131,7 @@ class TripCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(color: C.primary, borderRadius: BorderRadius.circular(10)),
-                child: Text(days > 0 ? 'In $days days' : 'Now', style: const TextStyle(color: C.on, fontWeight: FontWeight.w800, fontSize: 11)),
+                child: Text(days > 0 ? (isBangla ? '$days দিন পরে' : 'In $days days') : tr('Now'), style: const TextStyle(color: C.on, fontWeight: FontWeight.w800, fontSize: 11)),
               ),
             ),
             if (!trip.public) const Positioned(right: 10, top: 10, child: Icon(Icons.lock_rounded, color: Colors.white, size: 18)),
@@ -154,7 +155,7 @@ class TripCard extends StatelessWidget {
             Row(children: [
               const Icon(Icons.calendar_month_rounded, size: 14, color: C.primary),
               const SizedBox(width: 4),
-              Text('${_short(trip.start)} - ${_short(trip.end)}  ·  ${trip.days.length} days', style: const TextStyle(fontSize: 12.5, color: C.muted)),
+              Text('${_short(trip.start)} - ${_short(trip.end)}  ·  ${tr('${trip.days.length} days')}', style: const TextStyle(fontSize: 12.5, color: C.muted)),
             ]),
             if (!compact) ...[
               const SizedBox(height: 10),
@@ -162,7 +163,7 @@ class TripCard extends StatelessWidget {
                 if (buddies.isNotEmpty) AvatarStack(buddies, radius: 12),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(buddies.isEmpty ? 'Solo trip' : 'With ${buddies.map((b) => b.first).join(', ')}', overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 12)),
+                  child: Text(buddies.isEmpty ? tr('Solo trip') : '${isBangla ? 'সাথে' : 'With'} ${buddies.map((b) => b.first).join(', ')}', overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 12)),
                 ),
                 if (trip.budget > 0) Text(money(trip.budget), style: const TextStyle(color: C.primary, fontWeight: FontWeight.w800)),
               ]),
@@ -191,7 +192,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
 
   @override
   Widget build(BuildContext context) => ScreenScaffold(
-        title: 'Plan a trip',
+        title: tr('Plan a trip'),
         bottom: PrimaryButton('Create trip plan', icon: Icons.check_rounded, onPressed: () {
           final p = placeById(_place);
           final t = context.read<SocialState>().createTrip(
@@ -207,7 +208,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
           AspectRatio(aspectRatio: 16 / 7, child: AppImage(placeById(_place).photo, radius: 18)),
           const SizedBox(height: 16),
           LabeledField('Trip name', 'e.g. Winter in the hills', controller: _title),
-          const Text('Destination', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(tr('Destination'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: _place,
@@ -215,7 +216,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
             onChanged: (v) => setState(() => _place = v ?? _place),
           ),
           const SizedBox(height: 14),
-          const Text('Dates', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(tr('Dates'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
           Panel(
             onTap: () async {
@@ -231,7 +232,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
               const Icon(Icons.date_range_rounded, color: C.primary),
               const SizedBox(width: 10),
               Expanded(child: Text('${fmtDate(_range.start)}  to  ${fmtDate(_range.end)}')),
-              Text('${_range.duration.inDays + 1} days', style: const TextStyle(color: C.muted)),
+              Text(tr('${_range.duration.inDays + 1} days'), style: const TextStyle(color: C.muted)),
             ]),
           ),
           const SizedBox(height: 14),
@@ -263,7 +264,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         builder: (c, set) => Padding(
           padding: EdgeInsets.fromLTRB(16, 18, 16, MediaQuery.of(c).viewInsets.bottom + 16),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Add to day ${_day + 1}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+            Text(trf('Add to day {0}', [_day + 1]), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
             const SizedBox(height: 12),
             Wrap(spacing: 8, runSpacing: 8, children: [
               for (final k in const ['sight', 'food', 'hotel', 'flight', 'bus', 'train', 'boat', 'trek'])
@@ -281,7 +282,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             LabeledField('What', 'e.g. Sunset boat ride', controller: title),
             LabeledField('Notes', 'Tickets, address, who booked it...', controller: note),
             Row(children: [
-              const Text('Time', style: TextStyle(fontWeight: FontWeight.w500)),
+              Text(tr('Time'), style: TextStyle(fontWeight: FontWeight.w500)),
               const Spacer(),
               TextButton.icon(
                 onPressed: () async {
@@ -311,7 +312,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
       constraints: const BoxConstraints(maxWidth: 560),
       builder: (c) => SafeArea(
         child: ListView(shrinkWrap: true, children: [
-          const Padding(padding: EdgeInsets.all(16), child: Text('Invite buddies', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
+          Padding(padding: EdgeInsets.all(16), child: Text(tr('Invite buddies'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
           for (final t in social.buddyList)
             ListTile(
               leading: PersonAvatar(t, showOnline: true),
@@ -416,7 +417,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                           ]),
                         ),
                         IconButton(
-                          tooltip: 'Remove',
+                          tooltip: tr('Remove'),
                           onPressed: () => social.removeStop(t, _day, day.stops[i]),
                           icon: const Icon(Icons.close_rounded, size: 18, color: C.muted),
                         ),
@@ -430,9 +431,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     final side = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Panel(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Travel buddies', style: TextStyle(fontWeight: FontWeight.w800)),
+          Text(tr('Travel buddies'), style: TextStyle(fontWeight: FontWeight.w800)),
           const SizedBox(height: 10),
-          if (buddies.isEmpty) const Text('Solo for now', style: TextStyle(color: C.muted)),
+          if (buddies.isEmpty) Text(tr('Solo for now'), style: TextStyle(color: C.muted)),
           for (final b in buddies)
             ListTile(
               dense: true,
@@ -440,33 +441,33 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
               leading: PersonAvatar(b, radius: 16, showOnline: true),
               title: Text(b.name, style: const TextStyle(fontWeight: FontWeight.w600)),
               trailing: IconButton(
-                tooltip: 'Message',
+                tooltip: tr('Message'),
                 onPressed: () => go(context, ChatScreen(conversation: social.chatWith(b))),
                 icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18, color: C.primary),
               ),
             ),
           const SizedBox(height: 6),
-          OutlinedButton.icon(onPressed: _invite, icon: const Icon(Icons.person_add_alt_rounded, size: 18), label: const Text('Invite')),
+          OutlinedButton.icon(onPressed: _invite, icon: const Icon(Icons.person_add_alt_rounded, size: 18), label: Text(tr('Invite'))),
         ]),
       ),
       const SizedBox(height: 12),
       Panel(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Trip tools', style: TextStyle(fontWeight: FontWeight.w800)),
+          Text(tr('Trip tools'), style: TextStyle(fontWeight: FontWeight.w800)),
           const SizedBox(height: 4),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.receipt_long_rounded, color: C.primary),
-            title: const Text('Shared expenses'),
-            subtitle: const Text('Log costs, see who owes whom', style: TextStyle(fontSize: 12, color: C.muted)),
+            title: Text(tr('Shared expenses')),
+            subtitle: Text(tr('Log costs, see who owes whom'), style: TextStyle(fontSize: 12, color: C.muted)),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => go(context, TripExpensesScreen(trip: t)),
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.luggage_rounded, color: C.primary),
-            title: const Text('Packing list'),
-            subtitle: const Text('Shared checklist for the group', style: TextStyle(fontSize: 12, color: C.muted)),
+            title: Text(tr('Packing list')),
+            subtitle: Text(tr('Shared checklist for the group'), style: TextStyle(fontSize: 12, color: C.muted)),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => go(context, TripPackingScreen(trip: t)),
           ),
@@ -475,16 +476,16 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
       const SizedBox(height: 12),
       Panel(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Trip details', style: TextStyle(fontWeight: FontWeight.w800)),
+          Text(tr('Trip details'), style: TextStyle(fontWeight: FontWeight.w800)),
           const SizedBox(height: 10),
           _row(Icons.calendar_month_rounded, '${fmtDate(t.start)} - ${fmtDate(t.end)}'),
           _row(Icons.payments_rounded, t.budget > 0 ? '${money(t.budget)} per person' : 'No budget set'),
           _row(t.public ? Icons.public_rounded : Icons.lock_rounded, t.public ? 'Visible to buddies' : 'Only you and invited buddies'),
           const SizedBox(height: 6),
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () => go(context, PlaceDetailScreen(place: p, initialTab: 1)), child: const Text('How to go'))),
+            Expanded(child: OutlinedButton(onPressed: () => go(context, PlaceDetailScreen(place: p, initialTab: 1)), child: Text(tr('How to go')))),
             const SizedBox(width: 8),
-            Expanded(child: FilledButton(onPressed: () => go(context, PlaceDetailScreen(place: p)), child: const Text('Book stays'))),
+            Expanded(child: FilledButton(onPressed: () => go(context, PlaceDetailScreen(place: p)), child: Text(tr('Book stays')))),
           ]),
         ]),
       ),
@@ -500,7 +501,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           leadingWidth: 56,
           title: Text(t.title),
           actions: [
-            IconButton(tooltip: 'Share trip', onPressed: () => toast(context, 'Trip link copied'), icon: const Icon(Icons.ios_share_rounded)),
+            IconButton(tooltip: tr('Share trip'), onPressed: () => toast(context, tr('Trip link copied')), icon: const Icon(Icons.ios_share_rounded)),
             PopupMenuButton<String>(
               onSelected: (v) {
                 if (v == 'privacy') {
@@ -511,8 +512,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                 }
               },
               itemBuilder: (_) => [
-                PopupMenuItem(value: 'privacy', child: Text(t.public ? 'Make private' : 'Make visible to buddies')),
-                const PopupMenuItem(value: 'delete', child: Text('Delete trip')),
+                PopupMenuItem(value: 'privacy', child: Text(t.public ? tr('Make private') : tr('Make visible to buddies'))),
+                PopupMenuItem(value: 'delete', child: Text(tr('Delete trip'))),
               ],
             ),
           ],
@@ -528,7 +529,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                 right: 16,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('${p.name}, ${p.country}', style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                  Text('${t.days.length}-day itinerary', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                  Text(trf('{0}-day itinerary', [t.days.length]), style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
                 ]),
               ),
             ]),
@@ -551,7 +552,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
       ])),
-      floatingActionButton: FloatingActionButton.extended(onPressed: _addStop, icon: const Icon(Icons.add_rounded), label: const Text('Add stop')),
+      floatingActionButton: FloatingActionButton.extended(onPressed: _addStop, icon: const Icon(Icons.add_rounded), label: Text(tr('Add stop'))),
     );
   }
 
@@ -560,7 +561,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         child: Row(children: [
           Icon(i, size: 16, color: C.primary),
           const SizedBox(width: 8),
-          Expanded(child: Text(t, style: const TextStyle(fontSize: 13))),
+          Expanded(child: Text(tr(t), style: const TextStyle(fontSize: 13))),
         ]),
       );
 }

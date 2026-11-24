@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -6,6 +7,7 @@ import '../core/theme.dart';
 import '../state/app_state.dart';
 import '../state/social_state.dart';
 import '../widgets/common.dart';
+import '../widgets/lang_switch.dart';
 import '../widgets/pull_refresh.dart';
 import '../widgets/social_widgets.dart';
 import 'bookings.dart';
@@ -59,7 +61,7 @@ class MenuScreen extends StatelessWidget {
           : AppBar(
               automaticallyImplyLeading: false,
               centerTitle: false,
-              title: const Text('Menu', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+              title: Text(tr('Menu'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
               actions: [...headerActions(context), const SizedBox(width: 12)],
             ),
       body: Constrained(
@@ -74,7 +76,7 @@ class MenuScreen extends StatelessWidget {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(s.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-                  const Text('See your traveler profile', style: TextStyle(color: C.muted, fontSize: 12.5)),
+                  Text(tr('See your traveler profile'), style: TextStyle(color: C.muted, fontSize: 12.5)),
                 ]),
               ),
               const Icon(Icons.chevron_right_rounded, color: C.muted),
@@ -94,8 +96,8 @@ class MenuScreen extends StatelessWidget {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Icon(it.$1, color: it.$2, size: 26),
                   const Spacer(),
-                  Text(it.$3, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-                  if (it.$4 != null) Text(it.$4!, style: const TextStyle(color: C.muted, fontSize: 11.5)),
+                  Text(tr(it.$3), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                  if (it.$4 != null) Text(tr(it.$4!), style: const TextStyle(color: C.muted, fontSize: 11.5)),
                 ]),
               );
             },
@@ -111,14 +113,14 @@ class MenuScreen extends StatelessWidget {
                 gradient: LinearGradient(colors: [C.primary.withValues(alpha: .25), C.primary.withValues(alpha: .08)]),
                 border: Border.all(color: C.primary.withValues(alpha: .5)),
               ),
-              child: const Row(children: [
+              child: Row(children: [
                 Icon(Icons.rate_review_rounded, color: C.primary, size: 30),
                 SizedBox(width: 14),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Give feedback', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                    Text(tr('Give feedback'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
                     SizedBox(height: 2),
-                    Text('Tell us what to improve. We read every answer.', style: TextStyle(color: C.muted, fontSize: 12)),
+                    Text(tr('Tell us what to improve. We read every answer.'), style: TextStyle(color: C.muted, fontSize: 12)),
                   ]),
                 ),
                 Icon(Icons.chevron_right_rounded, color: C.primary),
@@ -127,19 +129,32 @@ class MenuScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Panel(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                const Icon(Icons.translate_rounded, color: C.primary, size: 20),
+                const SizedBox(width: 8),
+                Text(tr('Language'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              ]),
+              const SizedBox(height: 10),
+              const LangSwitch(),
+            ]),
+          ),
+          const SizedBox(height: 16),
+          Panel(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Column(children: [
               ListTile(
                 leading: const Icon(Icons.settings_rounded, color: C.muted),
-                title: const Text('Settings & privacy', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600)),
+                title: Text(tr('Settings & privacy'), style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600)),
                 trailing: const Icon(Icons.chevron_right_rounded, color: C.muted),
                 onTap: () => go(context, const ProfileScreen(standalone: true)),
               ),
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.verified_user_rounded, color: C.muted),
-                title: const Text('Safety center', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600)),
-                subtitle: const Text('Travel advisories, emergency numbers, report a user', style: TextStyle(color: C.muted, fontSize: 12)),
+                title: Text(tr('Safety center'), style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600)),
+                subtitle: Text(tr('Travel advisories, emergency numbers, report a user'), style: TextStyle(color: C.muted, fontSize: 12)),
                 trailing: const Icon(Icons.chevron_right_rounded, color: C.muted),
                 onTap: () => go(context, const SafetyCenterScreen()),
               ),

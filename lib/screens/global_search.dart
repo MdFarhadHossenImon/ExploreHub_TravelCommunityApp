@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -40,7 +41,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
 
     Widget h(String t) => Padding(
           padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
-          child: Text(t, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+          child: Text(tr(t), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
         );
 
     return Scaffold(
@@ -53,7 +54,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
           autofocus: true,
           onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
-            hintText: 'Search ExploreHub',
+            hintText: tr('Search ExploreHub'),
             prefixIcon: const Icon(Icons.search_rounded, color: C.muted),
             suffixIcon: q.isEmpty ? null : IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => setState(_q.clear)),
             contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -67,7 +68,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
           Wrap(spacing: 8, children: [
             for (final f in const ['All', 'Travelers', 'Places', 'Groups', 'Posts'])
               ChoiceChip(
-                label: Text(f),
+                label: Text(tr(f)),
                 selected: _filter == f,
                 showCheckmark: false,
                 selectedColor: C.primary,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -121,10 +122,10 @@ class _FeedVideoState extends State<FeedVideo> {
               child: SizedBox(width: c.value.size.width, height: c.value.size.height, child: VideoPlayer(c)),
             ),
           if (_failed)
-            const Center(
+            Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
-                child: Text('This video format can\'t play here. MP4 videos work everywhere.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 13)),
+                child: Text(tr('This video format can\'t play here. MP4 videos work everywhere.'), textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 13)),
               ),
             )
           else if (!ready)
@@ -146,7 +147,7 @@ class _FeedVideoState extends State<FeedVideo> {
                 color: const Color(0x99000000),
                 shape: const CircleBorder(),
                 child: IconButton(
-                  tooltip: _muted ? 'Sound on' : 'Mute',
+                  tooltip: _muted ? tr('Sound on') : tr('Mute'),
                   onPressed: _toggleSound,
                   icon: Icon(_muted ? Icons.volume_off_rounded : Icons.volume_up_rounded, color: Colors.white, size: 20),
                 ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme.dart';
@@ -35,27 +36,27 @@ class LeftSidebar extends StatelessWidget {
       ),
       ShortcutTile(
           leading: const IconBubble(Icons.people_alt_rounded, Color(0xFF6FB7E9)),
-          label: 'Travel buddies',
+          label: tr('Travel buddies'),
           trailing: social.incoming.isEmpty ? null : '${social.incoming.length}',
           onTap: () => go(context, const FriendsScreen())),
       ShortcutTile(
           leading: const IconBubble(Icons.chat_bubble_rounded, Color(0xFFB68CF0)),
-          label: 'Messages',
+          label: tr('Messages'),
           trailing: social.unreadChats == 0 ? null : '${social.unreadChats}',
           onTap: () => go(context, const MessagesScreen())),
-      ShortcutTile(leading: const IconBubble(Icons.groups_rounded, Color(0xFF7CC08D)), label: 'Groups', onTap: () => go(context, const GroupsScreen())),
-      ShortcutTile(leading: const IconBubble(Icons.map_rounded, C.primary), label: 'Trip planner', onTap: () => shellTab.value = 3),
-      ShortcutTile(leading: const IconBubble(Icons.smart_display_rounded, C.danger), label: 'Watch', onTap: () => shellTab.value = 2),
+      ShortcutTile(leading: const IconBubble(Icons.groups_rounded, Color(0xFF7CC08D)), label: tr('Groups'), onTap: () => go(context, const GroupsScreen())),
+      ShortcutTile(leading: const IconBubble(Icons.map_rounded, C.primary), label: tr('Trip planner'), onTap: () => shellTab.value = 3),
+      ShortcutTile(leading: const IconBubble(Icons.smart_display_rounded, C.danger), label: tr('Watch'), onTap: () => shellTab.value = 2),
       ShortcutTile(
           leading: const IconBubble(Icons.confirmation_number_rounded, Color(0xFFE9C46A)),
-          label: 'Bookings',
+          label: tr('Bookings'),
           onTap: () => go(context, const Scaffold(body: BookingsScreen()))),
-      ShortcutTile(leading: const IconBubble(Icons.bookmark_rounded, Color(0xFFE88DB0)), label: 'Saved places', onTap: () => go(context, const SavedPlacesScreen())),
-      ShortcutTile(leading: const IconBubble(Icons.badge_rounded, Color(0xFF8FB3AC)), label: 'Local guides', onTap: () => go(context, const GuidesScreen())),
+      ShortcutTile(leading: const IconBubble(Icons.bookmark_rounded, Color(0xFFE88DB0)), label: tr('Saved places'), onTap: () => go(context, const SavedPlacesScreen())),
+      ShortcutTile(leading: const IconBubble(Icons.badge_rounded, Color(0xFF8FB3AC)), label: tr('Local guides'), onTap: () => go(context, const GuidesScreen())),
       const Divider(height: 28),
-      const Padding(
+      Padding(
         padding: EdgeInsets.fromLTRB(8, 0, 8, 6),
-        child: Text('Your groups', style: TextStyle(color: C.muted, fontWeight: FontWeight.w700, fontSize: 13.5)),
+        child: Text(tr('Your groups'), style: TextStyle(color: C.muted, fontWeight: FontWeight.w700, fontSize: 13.5)),
       ),
       for (final g in social.myGroups)
         ShortcutTile(
@@ -63,9 +64,9 @@ class LeftSidebar extends StatelessWidget {
           label: g.name,
           onTap: () => go(context, GroupDetailScreen(group: g)),
         ),
-      const Padding(
+      Padding(
         padding: EdgeInsets.fromLTRB(8, 18, 8, 0),
-        child: Text('Privacy · Terms · Help · ExploreHub © 2026', style: TextStyle(color: C.muted, fontSize: 11.5)),
+        child: Text(tr('Privacy · Terms · Help · ExploreHub © 2026'), style: TextStyle(color: C.muted, fontSize: 11.5)),
       ),
     ]);
   }
@@ -78,8 +79,8 @@ class RightSidebar extends StatelessWidget {
   Widget _h(String t, {VoidCallback? onAll}) => Padding(
         padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
         child: Row(children: [
-          Expanded(child: Text(t, style: const TextStyle(color: C.muted, fontWeight: FontWeight.w700, fontSize: 13.5))),
-          if (onAll != null) GestureDetector(onTap: onAll, child: const Text('See all', style: TextStyle(color: C.primary, fontSize: 12.5))),
+          Expanded(child: Text(tr(t), style: const TextStyle(color: C.muted, fontWeight: FontWeight.w700, fontSize: 13.5))),
+          if (onAll != null) GestureDetector(onTap: onAll, child: Text(tr('See all'), style: TextStyle(color: C.primary, fontSize: 12.5))),
         ]),
       );
 
@@ -104,16 +105,16 @@ class RightSidebar extends StatelessWidget {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   VerifiedName(t, size: 13.5),
-                  Text('${social.mutuals(t)} mutual buddies', style: const TextStyle(color: C.muted, fontSize: 11.5)),
+                  Text(trf('{0} mutual buddies', [social.mutuals(t)]), style: const TextStyle(color: C.muted, fontSize: 11.5)),
                   const SizedBox(height: 6),
                   Row(children: [
-                    Expanded(child: FilledButton(style: FilledButton.styleFrom(visualDensity: VisualDensity.compact), onPressed: () => social.acceptRequest(t.id), child: const Text('Accept'))),
+                    Expanded(child: FilledButton(style: FilledButton.styleFrom(visualDensity: VisualDensity.compact), onPressed: () => social.acceptRequest(t.id), child: Text(tr('Accept')))),
                     const SizedBox(width: 6),
                     Expanded(
                         child: OutlinedButton(
                             style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact, foregroundColor: C.ink, side: const BorderSide(color: C.line)),
                             onPressed: () => social.declineRequest(t.id),
-                            child: const Text('Delete'))),
+                            child: Text(tr('Delete')))),
                   ]),
                 ]),
               ),
@@ -154,8 +155,8 @@ class PeopleStrip extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Row(children: [
-            const Expanded(child: Text('Travelers you may know', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15))),
-            GestureDetector(onTap: () => go(context, const FriendsScreen()), child: const Text('See all', style: TextStyle(color: C.primary, fontSize: 12.5))),
+            Expanded(child: Text(tr('Travelers you may know'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15))),
+            GestureDetector(onTap: () => go(context, const FriendsScreen()), child: Text(tr('See all'), style: TextStyle(color: C.primary, fontSize: 12.5))),
           ]),
         ),
         const SizedBox(height: 12),

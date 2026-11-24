@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -78,7 +79,7 @@ class _SearchScreenState extends State<SearchScreen> {
           autofocus: widget.focus,
           onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
-            hintText: 'Search here',
+            hintText: tr('Search here'),
             prefixIcon: const Icon(Icons.search_rounded, color: C.muted),
             suffixIcon: _q.text.isEmpty ? null : IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => setState(() => _q.clear())),
             contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -98,14 +99,14 @@ class _SearchScreenState extends State<SearchScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('Dhaka, Bangladesh', style: TextStyle(fontWeight: FontWeight.w500)),
+                  Text(tr('Dhaka, Bangladesh'), style: TextStyle(fontWeight: FontWeight.w500)),
                   const SizedBox(height: 4),
                   Text('${fmtDate(_range.start)} to ${fmtDate(_range.end)}  ·  $_guests guests', style: const TextStyle(fontSize: 11.5, color: C.muted)),
                 ]),
               ),
-              TextButton.icon(onPressed: _edit, icon: const Icon(Icons.edit_calendar_rounded, size: 18), label: const Text('Edit')),
-              IconButton(tooltip: 'Fewer guests', onPressed: _guests > 1 ? () => setState(() => _guests--) : null, icon: const Icon(Icons.remove_circle_outline_rounded, size: 20)),
-              IconButton(tooltip: 'More guests', onPressed: () => setState(() => _guests++), icon: const Icon(Icons.add_circle_outline_rounded, size: 20)),
+              TextButton.icon(onPressed: _edit, icon: const Icon(Icons.edit_calendar_rounded, size: 18), label: Text(tr('Edit'))),
+              IconButton(tooltip: tr('Fewer guests'), onPressed: _guests > 1 ? () => setState(() => _guests--) : null, icon: const Icon(Icons.remove_circle_outline_rounded, size: 20)),
+              IconButton(tooltip: tr('More guests'), onPressed: () => setState(() => _guests++), icon: const Icon(Icons.add_circle_outline_rounded, size: 20)),
             ]),
           ),
           SizedBox(
@@ -118,7 +119,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
-                      label: Text(c ?? 'All'),
+                      label: Text(c == null ? tr('All') : tr(c)),
                       selected: _cat == c,
                       selectedColor: C.primary,
                       labelStyle: TextStyle(color: _cat == c ? C.on : C.ink, fontSize: 12.5),
@@ -139,15 +140,15 @@ class _SearchScreenState extends State<SearchScreen> {
               PopupMenuButton<String>(
                 onSelected: (v) => setState(() => _region = v.isEmpty ? null : v),
                 itemBuilder: (_) => [
-                  const PopupMenuItem(value: '', child: Text('Anywhere')),
-                  for (final r in _regions) PopupMenuItem(value: r, child: Text(r)),
+                  PopupMenuItem(value: '', child: Text(tr('Anywhere'))),
+                  for (final r in _regions) PopupMenuItem(value: r, child: Text(tr(r))),
                 ],
                 child: Padding(
                   padding: const EdgeInsets.all(8),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     const Icon(Icons.public_rounded, size: 16, color: C.primary),
                     const SizedBox(width: 4),
-                    Text(_region ?? 'Anywhere', style: const TextStyle(color: C.primary, fontSize: 13)),
+                    Text(_region ?? tr('Anywhere'), style: const TextStyle(color: C.primary, fontSize: 13)),
                   ]),
                 ),
               ),
@@ -222,17 +223,17 @@ class PlaceCard extends StatelessWidget {
                 Row(children: [
                   if (p.price > 0) ...[
                     Text(money(p.price), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                    const Text(' /person', style: TextStyle(fontSize: 11, color: C.muted)),
+                    Text(tr(' /person'), style: TextStyle(fontSize: 11, color: C.muted)),
                   ] else if (p.dailyBudget > 0) ...[
                     Text('from \$${p.dailyBudget}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                    const Text(' /day', style: TextStyle(fontSize: 11, color: C.muted)),
+                    Text(tr(' /day'), style: TextStyle(fontSize: 11, color: C.muted)),
                   ] else
-                    Text(p.category, style: const TextStyle(fontSize: 12, color: C.muted)),
+                    Text(tr(p.category), style: const TextStyle(fontSize: 12, color: C.muted)),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(color: C.primary, borderRadius: BorderRadius.circular(8)),
-                    child: const Text('Show More', style: TextStyle(color: Colors.white, fontSize: 11)),
+                    child: Text(tr('Show More'), style: TextStyle(color: Colors.white, fontSize: 11)),
                   ),
                 ]),
               ]),

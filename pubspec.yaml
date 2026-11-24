@@ -18,6 +18,7 @@ dependencies:
   visibility_detector: ^0.4.0+2
   video_compress: ^3.1.4
   http: ^1.6.0
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:
@@ -31,3 +32,7 @@ flutter:
     - assets/demo/
     - assets/google_fonts/
     - assets/world.json
+  fonts:
+    - family: NotoSansBengali
+      fonts:
+        - asset: assets/fonts/NotoSansBengali.ttf

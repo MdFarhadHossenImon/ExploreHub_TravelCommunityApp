@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -42,9 +43,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _save() async {
     final name = _name.text.trim();
     final user = _user.text.trim().toLowerCase().replaceAll('@', '');
-    if (name.isEmpty) return toast(context, 'Please enter your name');
+    if (name.isEmpty) return toast(context, tr('Please enter your name'));
     if (user.isNotEmpty && !RegExp(r'^[a-z0-9_.]{3,24}$').hasMatch(user)) {
-      return toast(context, 'Username: 3-24 letters, numbers, _ or .');
+      return toast(context, tr('Username: 3-24 letters, numbers, _ or .'));
     }
     setState(() => _busy = true);
     final ok = await s.saveProfile(
@@ -59,10 +60,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (ok) {
-      toast(context, 'Profile updated');
+      toast(context, tr('Profile updated'));
       Navigator.pop(context);
     } else {
-      toast(context, 'Could not save. That username may be taken.');
+      toast(context, tr('Could not save. That username may be taken.'));
     }
   }
 
@@ -72,12 +73,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ? Image.memory(_cover!, fit: BoxFit.cover)
         : (s.coverUrl != null ? AppImage(s.coverUrl!, radius: 0) : AppImage('cover-me', radius: 0));
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit profile'), actions: [
+      appBar: AppBar(title: Text(tr('Edit profile')), actions: [
         Padding(
           padding: const EdgeInsets.only(right: 12),
           child: FilledButton(
             onPressed: _busy ? null : _save,
-            child: _busy ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save'),
+            child: _busy ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : Text(tr('Save')),
           ),
         ),
       ]),
@@ -146,14 +147,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             TextField(controller: _user, decoration: const InputDecoration(prefixText: '@')),
             const SizedBox(height: 14),
             _label('Bio'),
-            TextField(controller: _bio, maxLines: 3, maxLength: 160, decoration: const InputDecoration(hintText: 'What kind of traveler are you?')),
+            TextField(controller: _bio, maxLines: 3, maxLength: 160, decoration: InputDecoration(hintText: tr('What kind of traveler are you?'))),
             const SizedBox(height: 6),
             _label('Home base'),
-            TextField(controller: _home, decoration: const InputDecoration(hintText: 'City, Country', prefixIcon: Icon(Icons.home_rounded))),
+            TextField(controller: _home, decoration: InputDecoration(hintText: tr('City, Country'), prefixIcon: Icon(Icons.home_rounded))),
             const SizedBox(height: 14),
             _label('Countries visited (${_countries.length})'),
             Wrap(spacing: 6, runSpacing: 6, children: [
-              for (final c in _countries) InputChip(label: Text(c), onDeleted: () => setState(() => _countries.remove(c))),
+              for (final c in _countries) InputChip(label: Text(tr(c)), onDeleted: () => setState(() => _countries.remove(c))),
             ]),
             const SizedBox(height: 8),
             Row(children: [
@@ -162,7 +163,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   controller: _country,
                   textCapitalization: TextCapitalization.words,
                   onSubmitted: (_) => _addCountry(),
-                  decoration: const InputDecoration(hintText: 'Add a country'),
+                  decoration: InputDecoration(hintText: tr('Add a country')),
                 ),
               ),
               const SizedBox(width: 8),
@@ -170,7 +171,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ]),
             if (!Backend.on) ...[
               const SizedBox(height: 18),
-              const Text('Demo mode: changes stay on this device.', style: TextStyle(color: C.muted, fontSize: 12.5)),
+              Text(tr('Demo mode: changes stay on this device.'), style: TextStyle(color: C.muted, fontSize: 12.5)),
             ],
           ]),
         ),
@@ -180,7 +181,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Widget _label(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 6, left: 2),
-        child: Text(t, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+        child: Text(tr(t), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
       );
 }
 
@@ -195,7 +196,7 @@ class _Chip extends StatelessWidget {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, color: Colors.white, size: 16),
           const SizedBox(width: 6),
-          Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+          Text(tr(text), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
         ]),
       );
 }

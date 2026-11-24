@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -34,16 +35,16 @@ class GroupsScreen extends StatelessWidget {
       appBar: AppBar(
         leading: const BackCircle(),
         leadingWidth: 56,
-        title: const Text('Groups'),
+        title: Text(tr('Groups')),
         actions: [
-          IconButton(tooltip: 'Create group', onPressed: () => _create(context), icon: const Icon(Icons.add_circle_outline_rounded, color: C.primary)),
+          IconButton(tooltip: tr('Create group'), onPressed: () => _create(context), icon: const Icon(Icons.add_circle_outline_rounded, color: C.primary)),
         ],
       ),
       body: Constrained(
         maxWidth: Bp.isDesktop(context) ? 1100 : 760,
         child: PullRefresh(
             child: ListView(padding: const EdgeInsets.all(16), children: [
-          const Text('Your groups', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+          Text(tr('Your groups'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
           const SizedBox(height: 10),
           SizedBox(
             height: 112,
@@ -69,7 +70,7 @@ class GroupsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          const Text('Discover groups', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+          Text(tr('Discover groups'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
           const SizedBox(height: 10),
           GridView.builder(
             shrinkWrap: true,
@@ -79,7 +80,7 @@ class GroupsScreen extends StatelessWidget {
             itemBuilder: (c, i) => GroupCard(social.discoverGroups[i]),
           ),
           const SizedBox(height: 22),
-          const Text('Recent activity', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+          Text(tr('Recent activity'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
           const SizedBox(height: 10),
           for (final e in groupFeed) Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 620), child: PostCard(e.$2, groupName: e.$1.name))),
         ])),
@@ -99,14 +100,14 @@ class GroupsScreen extends StatelessWidget {
         builder: (c, set) => Padding(
           padding: EdgeInsets.fromLTRB(16, 18, 16, MediaQuery.of(c).viewInsets.bottom + 16),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Create a group', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+            Text(tr('Create a group'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
             const SizedBox(height: 14),
             LabeledField('Name', 'e.g. Sundarbans Explorers', controller: name),
             LabeledField('About', 'What is this group for?', controller: about, maxLines: 2),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Private group'),
-              subtitle: const Text('Only members see posts', style: TextStyle(color: C.muted, fontSize: 12)),
+              title: Text(tr('Private group')),
+              subtitle: Text(tr('Only members see posts'), style: TextStyle(color: C.muted, fontSize: 12)),
               value: private,
               onChanged: (v) => set(() => private = v),
             ),
@@ -145,7 +146,7 @@ class GroupCard extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(g.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
             const SizedBox(height: 2),
-            Text('${g.private ? 'Private' : 'Public'} group · ${compact(g.members)} members', style: const TextStyle(color: C.muted, fontSize: 12)),
+            Text('${g.private ? tr('Private') : tr('Public')} group · ${compact(g.members)} members', style: const TextStyle(color: C.muted, fontSize: 12)),
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -153,7 +154,7 @@ class GroupCard extends StatelessWidget {
                   ? OutlinedButton(
                       style: OutlinedButton.styleFrom(foregroundColor: C.ink, side: const BorderSide(color: C.line)),
                       onPressed: () => go(context, GroupDetailScreen(group: g)),
-                      child: const Text('View group'))
+                      child: Text(tr('View group')))
                   : FilledButton(
                       onPressed: () => social.toggleJoin(g),
                       child: Text(pending
@@ -194,9 +195,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       builder: (c) => Padding(
         padding: EdgeInsets.fromLTRB(16, 18, 16, MediaQuery.of(c).viewInsets.bottom + 16),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Post in ${widget.group.name}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+          Text(trf('Post in {0}', [widget.group.name]), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
           const SizedBox(height: 12),
-          TextField(controller: ctl, maxLines: 4, decoration: const InputDecoration(hintText: 'Ask a question or share an update...')),
+          TextField(controller: ctl, maxLines: 4, decoration: InputDecoration(hintText: tr('Ask a question or share an update...'))),
           const SizedBox(height: 12),
           PrimaryButton('Post', icon: Icons.send_rounded, onPressed: () {
             if (ctl.text.trim().isEmpty) return;
@@ -243,7 +244,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                 Row(children: [
                   Icon(g.private ? Icons.lock_rounded : Icons.public_rounded, size: 15, color: C.muted),
                   const SizedBox(width: 4),
-                  Text('${g.private ? 'Private' : 'Public'} group · ${compact(g.members)} members', style: const TextStyle(color: C.muted, fontSize: 13)),
+                  Text('${g.private ? tr('Private') : tr('Public')} group · ${compact(g.members)} members', style: const TextStyle(color: C.muted, fontSize: 13)),
                 ]),
                 const SizedBox(height: 10),
                 Row(children: [
@@ -255,7 +256,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                 Row(children: [
                   Expanded(
                     child: joined
-                        ? FilledButton.icon(onPressed: _post, icon: const Icon(Icons.edit_rounded, size: 18), label: const Text('Write post'))
+                        ? FilledButton.icon(onPressed: _post, icon: const Icon(Icons.edit_rounded, size: 18), label: Text(tr('Write post')))
                         : FilledButton.icon(
                             onPressed: () => social.toggleJoin(g),
                             icon: Icon(pending ? Icons.schedule_rounded : Icons.group_add_rounded, size: 18),
@@ -268,16 +269,16 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(foregroundColor: C.ink, side: const BorderSide(color: C.line)),
-                    onPressed: () => toast(context, 'Invite link copied'),
+                    onPressed: () => toast(context, tr('Invite link copied')),
                     icon: const Icon(Icons.person_add_alt_rounded, size: 18),
-                    label: const Text('Invite'),
+                    label: Text(tr('Invite')),
                   ),
                   if (joined) ...[
                     const SizedBox(width: 8),
                     PopupMenuButton<String>(
                       icon: const Icon(Icons.more_horiz_rounded),
                       onSelected: (_) => social.toggleJoin(g),
-                      itemBuilder: (_) => const [PopupMenuItem(value: 'leave', child: Text('Leave group'))],
+                      itemBuilder: (_) => [PopupMenuItem(value: 'leave', child: Text(tr('Leave group')))],
                     ),
                   ],
                 ]),
@@ -286,10 +287,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                   width: double.infinity,
                   child: SegmentedButton<int>(
                     showSelectedIcon: false,
-                    segments: const [
-                      ButtonSegment(value: 0, label: Text('Discussion')),
-                      ButtonSegment(value: 1, label: Text('About')),
-                      ButtonSegment(value: 2, label: Text('Members')),
+                    segments: [
+                      ButtonSegment(value: 0, label: Text(tr('Discussion'))),
+                      ButtonSegment(value: 1, label: Text(tr('About'))),
+                      ButtonSegment(value: 2, label: Text(tr('Members'))),
                     ],
                     selected: {_tab},
                     onSelectionChanged: (v) => setState(() => _tab = v.first),
@@ -300,7 +301,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                   Text(g.about, style: const TextStyle(height: 1.5)),
                   const SizedBox(height: 16),
                   if (g.rules.isNotEmpty) ...[
-                    const Text('Group rules', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                    Text(tr('Group rules'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
                     const SizedBox(height: 8),
                     for (var i = 0; i < g.rules.length; i++)
                       ListTile(

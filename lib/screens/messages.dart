@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -42,7 +43,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: TextField(
           onChanged: (v) => setState(() => _q = v),
-          decoration: const InputDecoration(hintText: 'Search messages', prefixIcon: Icon(Icons.search_rounded, color: C.muted), isDense: true),
+          decoration: InputDecoration(hintText: tr('Search messages'), prefixIcon: Icon(Icons.search_rounded, color: C.muted), isDense: true),
         ),
       ),
       SizedBox(
@@ -112,7 +113,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
     ]);
 
     final newChat = IconButton(
-      tooltip: 'New message',
+      tooltip: tr('New message'),
       icon: const Icon(Icons.edit_square, color: C.primary),
       onPressed: () async {
         final t = await showModalBottomSheet<Traveler>(
@@ -120,7 +121,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
           constraints: const BoxConstraints(maxWidth: 560),
           builder: (c) => SafeArea(
             child: ListView(shrinkWrap: true, children: [
-              const Padding(padding: EdgeInsets.all(16), child: Text('New message', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
+              Padding(padding: EdgeInsets.all(16), child: Text(tr('New message'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
               for (final t in social.buddyList) ListTile(leading: PersonAvatar(t, showOnline: true), title: Text(t.name), subtitle: Text(t.home), onTap: () => Navigator.pop(c, t)),
             ]),
           ),
@@ -131,12 +132,12 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
     if (!wide) {
       return Scaffold(
-        appBar: AppBar(leading: const BackCircle(), leadingWidth: 56, title: const Text('Messages'), actions: [newChat]),
+        appBar: AppBar(leading: const BackCircle(), leadingWidth: 56, title: Text(tr('Messages')), actions: [newChat]),
         body: Constrained(maxWidth: 640, child: inbox),
       );
     }
     return Scaffold(
-      appBar: AppBar(leading: const BackCircle(), leadingWidth: 56, title: const Text('Messages'), actions: [newChat]),
+      appBar: AppBar(leading: const BackCircle(), leadingWidth: 56, title: Text(tr('Messages')), actions: [newChat]),
       body: Row(children: [
         SizedBox(width: 360, child: inbox),
         const VerticalDivider(width: 1, color: C.line),
@@ -176,8 +177,8 @@ class ChatScreen extends StatelessWidget {
           ]),
         ),
         actions: [
-          IconButton(tooltip: 'Voice call', onPressed: () => toast(context, 'Calling is coming soon'), icon: const Icon(Icons.call_rounded, color: C.primary)),
-          IconButton(tooltip: 'Video call', onPressed: () => toast(context, 'Video calls are coming soon'), icon: const Icon(Icons.videocam_rounded, color: C.primary)),
+          IconButton(tooltip: tr('Voice call'), onPressed: () => toast(context, tr('Calling is coming soon')), icon: const Icon(Icons.call_rounded, color: C.primary)),
+          IconButton(tooltip: tr('Video call'), onPressed: () => toast(context, tr('Video calls are coming soon')), icon: const Icon(Icons.videocam_rounded, color: C.primary)),
         ],
       ),
       body: Constrained(maxWidth: 760, child: ChatView(conversation: conversation, showHeader: false)),
@@ -235,10 +236,10 @@ class _ChatViewState extends State<ChatView> {
                     style: const TextStyle(color: C.muted, fontSize: 12)),
               ]),
             ),
-            IconButton(tooltip: 'Voice call', onPressed: () => toast(context, 'Calling is coming soon'), icon: const Icon(Icons.call_rounded, color: C.primary)),
-            IconButton(tooltip: 'Video call', onPressed: () => toast(context, 'Video calls are coming soon'), icon: const Icon(Icons.videocam_rounded, color: C.primary)),
+            IconButton(tooltip: tr('Voice call'), onPressed: () => toast(context, tr('Calling is coming soon')), icon: const Icon(Icons.call_rounded, color: C.primary)),
+            IconButton(tooltip: tr('Video call'), onPressed: () => toast(context, tr('Video calls are coming soon')), icon: const Icon(Icons.videocam_rounded, color: C.primary)),
             if (!cv.isGroup)
-              IconButton(tooltip: 'Profile', onPressed: () => go(context, TravelerProfileScreen(traveler: people.first)), icon: const Icon(Icons.info_outline_rounded, color: C.primary)),
+              IconButton(tooltip: tr('Profile'), onPressed: () => go(context, TravelerProfileScreen(traveler: people.first)), icon: const Icon(Icons.info_outline_rounded, color: C.primary)),
           ]),
         ),
       Expanded(
@@ -254,7 +255,7 @@ class _ChatViewState extends State<ChatView> {
                   cv.isGroup ? AvatarStack(people, radius: 22) : Avatar(people.first.seed, name: people.first.name, radius: 34),
                   const SizedBox(height: 8),
                   Text(cv.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-                  Text(cv.isGroup ? 'Group chat for your trip' : 'You are travel buddies on ExploreHub', style: const TextStyle(color: C.muted, fontSize: 12)),
+                  Text(cv.isGroup ? tr('Group chat for your trip') : tr('You are travel buddies on ExploreHub'), style: const TextStyle(color: C.muted, fontSize: 12)),
                 ]),
               );
             }
@@ -294,7 +295,7 @@ class _ChatViewState extends State<ChatView> {
                           ),
                         ),
                         if (mine && i == cv.messages.length)
-                          const Padding(padding: EdgeInsets.only(top: 3, right: 4), child: Text('Hold a message to delete it', style: TextStyle(color: C.muted, fontSize: 10.5))),
+                          Padding(padding: EdgeInsets.only(top: 3, right: 4), child: Text(tr('Hold a message to delete it'), style: TextStyle(color: C.muted, fontSize: 10.5))),
                       ]),
                     ),
                   ),
@@ -310,14 +311,14 @@ class _ChatViewState extends State<ChatView> {
           padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
           decoration: const BoxDecoration(border: Border(top: BorderSide(color: C.line))),
           child: Row(children: [
-            IconButton(tooltip: 'Share location', onPressed: () => _send('📍 Shared my location'), icon: const Icon(Icons.location_on_rounded, color: C.primary)),
-            IconButton(tooltip: 'Photo', onPressed: () => toast(context, 'Photo sharing uses your gallery'), icon: const Icon(Icons.image_rounded, color: C.primary)),
+            IconButton(tooltip: tr('Share location'), onPressed: () => _send('📍 Shared my location'), icon: const Icon(Icons.location_on_rounded, color: C.primary)),
+            IconButton(tooltip: tr('Photo'), onPressed: () => toast(context, tr('Photo sharing uses your gallery')), icon: const Icon(Icons.image_rounded, color: C.primary)),
             Expanded(
               child: TextField(
                 controller: _ctl,
                 onSubmitted: (_) => _send(),
                 decoration: InputDecoration(
-                  hintText: 'Message...',
+                  hintText: tr('Message...'),
                   isDense: true,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: C.line)),
                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: C.line)),
@@ -325,7 +326,7 @@ class _ChatViewState extends State<ChatView> {
                 ),
               ),
             ),
-            IconButton(tooltip: 'Send', onPressed: _send, icon: const Icon(Icons.send_rounded, color: C.primary)),
+            IconButton(tooltip: tr('Send'), onPressed: _send, icon: const Icon(Icons.send_rounded, color: C.primary)),
           ]),
         ),
       ),
@@ -341,10 +342,10 @@ Future<void> _confirmDelete(BuildContext context, Conversation cv, Message m) as
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         ListTile(
           leading: const Icon(Icons.delete_outline_rounded, color: C.danger),
-          title: const Text('Delete for everyone', style: TextStyle(color: C.danger)),
+          title: Text(tr('Delete for everyone'), style: TextStyle(color: C.danger)),
           onTap: () => Navigator.pop(c, true),
         ),
-        ListTile(leading: const Icon(Icons.close_rounded), title: const Text('Cancel'), onTap: () => Navigator.pop(c, false)),
+        ListTile(leading: const Icon(Icons.close_rounded), title: Text(tr('Cancel')), onTap: () => Navigator.pop(c, false)),
       ]),
     ),
   );

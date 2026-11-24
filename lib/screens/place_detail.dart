@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -93,7 +94,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         builder: (c, set) => Padding(
           padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(c).viewInsets.bottom),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Write a review', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+            Text(tr('Write a review'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Row(children: [
               for (var i = 1; i <= 5; i++)
@@ -102,7 +103,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                   icon: Icon(i <= stars ? Icons.star_rounded : Icons.star_border_rounded, color: C.star, size: 30),
                 ),
             ]),
-            TextField(controller: ctl, maxLines: 3, decoration: const InputDecoration(hintText: 'What should other travelers know?')),
+            TextField(controller: ctl, maxLines: 3, decoration: InputDecoration(hintText: tr('What should other travelers know?'))),
             const SizedBox(height: 14),
             PrimaryButton('Post review', onPressed: () async {
               final text = ctl.text.trim();
@@ -178,23 +179,23 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   }
 
   Widget _about() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('About', style: TextStyle(fontWeight: FontWeight.w600)),
+        Text(tr('About'), style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
-        Text(_aboutText.isEmpty ? 'Loading details...' : _aboutText,
+        Text(_aboutText.isEmpty ? tr('Loading details...') : _aboutText,
             maxLines: _more ? null : 4, overflow: _more ? TextOverflow.visible : TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 13, height: 1.6)),
         GestureDetector(
           onTap: () => setState(() => _more = !_more),
           child: Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: Text(_more ? 'Show less' : 'Read more', style: const TextStyle(color: C.danger, fontSize: 13)),
+            child: Text(_more ? tr('Show less') : tr('Read more'), style: const TextStyle(color: C.danger, fontSize: 13)),
           ),
         ),
         if (_history != null) ...[
           const SizedBox(height: 18),
-          const Row(children: [
+          Row(children: [
             Icon(Icons.history_edu_rounded, size: 18, color: C.primary),
             SizedBox(width: 6),
-            Text('History', style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(tr('History'), style: TextStyle(fontWeight: FontWeight.w600)),
           ]),
           const SizedBox(height: 8),
           Text(_history!, maxLines: _historyMore ? null : 6, overflow: _historyMore ? TextOverflow.visible : TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 13, height: 1.6)),
@@ -202,21 +203,21 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             onTap: () => setState(() => _historyMore = !_historyMore),
             child: Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text(_historyMore ? 'Show less' : 'Read the full history', style: const TextStyle(color: C.danger, fontSize: 13)),
+              child: Text(_historyMore ? tr('Show less') : tr('Read the full history'), style: const TextStyle(color: C.danger, fontSize: 13)),
             ),
           ),
         ],
         if ((p.imageUrl ?? '').contains('wikimedia.org'))
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: 10),
-            child: Text('Cover photo: Wikimedia Commons contributors, free license (Creative Commons or public domain).', style: TextStyle(color: C.muted, fontSize: 11)),
+            child: Text(tr('Cover photo: Wikimedia Commons contributors, free license (Creative Commons or public domain).'), style: TextStyle(color: C.muted, fontSize: 11)),
           ),
         if (p.wikiTitle != null && p.popularity != null)
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: InkWell(
               onTap: () => launchUrl(Uri.parse('https://en.wikipedia.org/wiki/${Uri.encodeComponent(p.wikiTitle!)}'), mode: LaunchMode.externalApplication),
-              child: const Text('Text: Wikipedia (CC BY-SA). Read the full article', style: TextStyle(color: C.primary, fontSize: 11, decoration: TextDecoration.underline)),
+              child: Text(tr('Text: Wikipedia (CC BY-SA). Read the full article'), style: TextStyle(color: C.primary, fontSize: 11, decoration: TextDecoration.underline)),
             ),
           ),
         if (p.dailyBudget > 0) ...[
@@ -225,7 +226,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         ],
         if (p.lat != null && p.lng != null) ...[
           const SizedBox(height: 18),
-          const Text('Weather', style: TextStyle(fontWeight: FontWeight.w600)),
+          Text(tr('Weather'), style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           WeatherCard(p.lat!, p.lng!),
         ],
@@ -233,26 +234,26 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         NearbyStrip(p, onOpen: (o) => go(context, PlaceDetailScreen(place: o))),
         if (p.videoUrl != null) ...[
           const SizedBox(height: 18),
-          const Text('Watch', style: TextStyle(fontWeight: FontWeight.w600)),
+          Text(tr('Watch'), style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           AspectRatio(
             aspectRatio: 16 / 9,
             child: ClipRRect(borderRadius: BorderRadius.circular(14), child: FeedVideo(p.videoUrl!, autoplay: false, fit: BoxFit.contain)),
           ),
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: 6),
-            child: Text('Video: Wikimedia Commons contributors, free license.', style: TextStyle(color: C.muted, fontSize: 11)),
+            child: Text(tr('Video: Wikimedia Commons contributors, free license.'), style: TextStyle(color: C.muted, fontSize: 11)),
           ),
         ],
         const SizedBox(height: 18),
         Row(children: [
           const Icon(Icons.wb_sunny_outlined, size: 18, color: C.primary),
           const SizedBox(width: 8),
-          Text('Best time: ${p.season}', style: const TextStyle(fontSize: 13)),
+          Text(trf('Best time: {0}', [p.season]), style: const TextStyle(fontSize: 13)),
         ]),
         if (p.address != null || p.hours != null) ...[
           const SizedBox(height: 18),
-          const Text('Location', style: TextStyle(fontWeight: FontWeight.w600)),
+          Text(tr('Location'), style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(14),
@@ -275,13 +276,13 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               if (p.mapsUrl != null || p.lat != null)
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: TextButton.icon(onPressed: _openMap, icon: const Icon(Icons.map_outlined, size: 18), label: const Text('Open in Maps')),
+                  child: TextButton.icon(onPressed: _openMap, icon: const Icon(Icons.map_outlined, size: 18), label: Text(tr('Open in Maps'))),
                 ),
             ]),
           ),
         ],
         const SizedBox(height: 18),
-        const Text('Facilities', style: TextStyle(fontWeight: FontWeight.w600)),
+        Text(tr('Facilities'), style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 10),
         Wrap(spacing: 8, runSpacing: 8, children: [
           for (final f in p.facilities)
@@ -291,12 +292,12 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 const Icon(Icons.check_circle_rounded, size: 15, color: C.ok),
                 const SizedBox(width: 6),
-                Text(f, style: const TextStyle(fontSize: 12)),
+                Text(tr(f), style: const TextStyle(fontSize: 12)),
               ]),
             ),
         ]),
         const SizedBox(height: 18),
-        const Text('Where to stay', style: TextStyle(fontWeight: FontWeight.w600)),
+        Text(tr('Where to stay'), style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 10),
         InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -304,16 +305,16 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: C.line)),
-            child: const Row(children: [
+            child: Row(children: [
               Icon(Icons.hotel_rounded, color: C.primary),
               SizedBox(width: 12),
-              Expanded(child: Text('Hotels, hostels and guest houses nearby', style: TextStyle(fontSize: 13))),
+              Expanded(child: Text(tr('Hotels, hostels and guest houses nearby'), style: TextStyle(fontSize: 13))),
               Icon(Icons.chevron_right_rounded, color: C.muted),
             ]),
           ),
         ),
         const SizedBox(height: 18),
-        const Text('Tour guide', style: TextStyle(fontWeight: FontWeight.w600)),
+        Text(tr('Tour guide'), style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 10),
         InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -321,10 +322,10 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: C.line)),
-            child: const Row(children: [
+            child: Row(children: [
               Icon(Icons.badge_rounded, color: C.primary),
               SizedBox(width: 12),
-              Expanded(child: Text('Hire a local guide for this trip', style: TextStyle(fontSize: 13))),
+              Expanded(child: Text(tr('Hire a local guide for this trip'), style: TextStyle(fontSize: 13))),
               Icon(Icons.chevron_right_rounded, color: C.muted),
             ]),
           ),
@@ -335,14 +336,14 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   Widget _howToGo() {
     final local = p.lastDetail.isNotEmpty;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('How to get to ${p.name}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+      Text(trf('How to get to {0}', [p.name]), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
       const SizedBox(height: 4),
-      const Text('Real road route with the main towns on the way. Change the start city any time.', style: TextStyle(color: C.muted, fontSize: 12.5)),
+      Text(tr('Real road route with the main towns on the way. Change the start city any time.'), style: TextStyle(color: C.muted, fontSize: 12.5)),
       const SizedBox(height: 14),
-      if (p.lat != null && p.lng != null) RoutePlanView(place: p) else const Text('Route not available for this place yet.', style: TextStyle(color: C.muted)),
+      if (p.lat != null && p.lng != null) RoutePlanView(place: p) else Text(tr('Route not available for this place yet.'), style: TextStyle(color: C.muted)),
       if (local) ...[
         const SizedBox(height: 18),
-        const Text('Local tip for the last stretch', style: TextStyle(fontWeight: FontWeight.w600)),
+        Text(tr('Local tip for the last stretch'), style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.all(14),
@@ -356,7 +357,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       ],
       if (p.season.isNotEmpty) ...[
         const SizedBox(height: 12),
-        Text('Best time to visit: ${p.season}', style: const TextStyle(color: C.muted, fontSize: 12.5)),
+        Text(trf('Best time to visit: {0}', [p.season]), style: const TextStyle(color: C.muted, fontSize: 12.5)),
       ],
     ]);
   }
@@ -367,9 +368,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       Row(children: [
         Text(avg.toStringAsFixed(1), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w600)),
         const SizedBox(width: 10),
-        Text('${_reviews.length} recent reviews', style: const TextStyle(color: C.muted)),
+        Text(trf('{0} recent reviews', [_reviews.length]), style: const TextStyle(color: C.muted)),
         const Spacer(),
-        TextButton(onPressed: _addReview, child: const Text('Write a review')),
+        TextButton(onPressed: _addReview, child: Text(tr('Write a review'))),
       ]),
       for (final r in _reviews)
         Container(
@@ -411,7 +412,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 child: p.price == 0
                     ? PrimaryButton('Plan a trip here', icon: Icons.map_rounded, onPressed: () => go(context, const CreateTripScreen()))
-                    : PrimaryButton('Book a Trip  ·  ${money(p.price)}/person',
+                    : PrimaryButton(trf('Book a Trip  ·  {0}/person', [money(p.price)]),
                         onPressed: () => go(context, BookingFlowScreen(draft: BookingDraft(title: p.name, location: p.where, type: 'tour', seed: p.id, unitPrice: p.price)))),
               ),
             ),
@@ -490,7 +491,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                   if (p.price > 0)
                     Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                       Text(money(p.price), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600)),
-                      const Text('per person', style: TextStyle(fontSize: 11, color: C.muted)),
+                      Text(tr('per person'), style: TextStyle(fontSize: 11, color: C.muted)),
                     ]),
                 ]),
                 const SizedBox(height: 4),
@@ -512,7 +513,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                           padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
                           margin: const EdgeInsets.only(right: 22),
                           decoration: BoxDecoration(border: Border(bottom: BorderSide(color: i == _tab ? C.primary : Colors.transparent, width: 2))),
-                          child: Text(_tabs[i], style: TextStyle(fontWeight: i == _tab ? FontWeight.w600 : FontWeight.w400, color: i == _tab ? C.primary : C.muted)),
+                          child: Text(tr(_tabs[i]), style: TextStyle(fontWeight: i == _tab ? FontWeight.w600 : FontWeight.w400, color: i == _tab ? C.primary : C.muted)),
                         ),
                       ),
                   ]),
@@ -545,14 +546,14 @@ class _BudgetCard extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Icon(icon, size: 20, color: C.primary),
               const SizedBox(height: 6),
-              Text(name, style: const TextStyle(fontSize: 12, color: C.muted)),
+              Text(tr(name), style: const TextStyle(fontSize: 12, color: C.muted)),
               Text('\$$v', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-              Text(what, style: const TextStyle(fontSize: 10.5, color: C.muted, height: 1.3)),
+              Text(tr(what), style: const TextStyle(fontSize: 10.5, color: C.muted, height: 1.3)),
             ]),
           ),
         );
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('Daily budget per person', style: TextStyle(fontWeight: FontWeight.w600)),
+      Text(tr('Daily budget per person'), style: TextStyle(fontWeight: FontWeight.w600)),
       const SizedBox(height: 8),
       Row(children: [
         tier('Backpacker', Icons.backpack_outlined, low, 'Hostel, street food, buses'),
@@ -562,7 +563,7 @@ class _BudgetCard extends StatelessWidget {
         tier('Comfort', Icons.diamond_outlined, high, 'Upscale stay, tours, car'),
       ]),
       const SizedBox(height: 6),
-      Text('Estimated in US dollars from typical costs in ${p.country}. Entry tickets and flights are extra.', style: const TextStyle(fontSize: 11, color: C.muted)),
+      Text(trf('Estimated in US dollars from typical costs in {0}. Entry tickets and flights are extra.', [p.country]), style: const TextStyle(fontSize: 11, color: C.muted)),
     ]);
   }
 }

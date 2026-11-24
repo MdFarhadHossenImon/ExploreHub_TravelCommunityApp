@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show OAuthProvider, AuthException;
 
@@ -38,10 +39,10 @@ class WelcomeScreen extends StatelessWidget {
               const SocialButtons(),
               const SizedBox(height: 16),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const Text("Don't have an account? ", style: TextStyle(color: C.muted, fontSize: 13)),
+                Text(tr("Don't have an account? "), style: TextStyle(color: C.muted, fontSize: 13)),
                 GestureDetector(
                   onTap: () => go(context, const SignupScreen()),
-                  child: const Text('Register', style: TextStyle(color: C.primary, fontSize: 13)),
+                  child: Text(tr('Register'), style: TextStyle(color: C.primary, fontSize: 13)),
                 ),
               ]),
             ]),
@@ -53,11 +54,11 @@ class WelcomeScreen extends StatelessWidget {
 class _OrDivider extends StatelessWidget {
   const _OrDivider();
   @override
-  Widget build(BuildContext context) => const Padding(
+  Widget build(BuildContext context) => Padding(
         padding: EdgeInsets.symmetric(vertical: 24),
         child: Row(children: [
           Expanded(child: Divider()),
-          Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('Or', style: TextStyle(color: C.muted))),
+          Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text(tr('Or'), style: TextStyle(color: C.muted))),
           Expanded(child: Divider()),
         ]),
       );
@@ -95,7 +96,7 @@ class SocialButtons extends StatelessWidget {
                 side: const BorderSide(color: C.line),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [icon, const SizedBox(width: 10), Text(label)]),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [icon, const SizedBox(width: 10), Text(tr(label))]),
             ),
           ),
         );
@@ -137,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
             await Backend.resendSignupCode(_email0.text.trim());
           } catch (_) {}
           if (mounted) {
-            toast(context, 'Verify your email first. We sent you a new 6-digit code.');
+            toast(context, tr('Verify your email first. We sent you a new 6-digit code.'));
             go(context, OtpScreen(email: _email0.text.trim()));
           }
           return;
@@ -163,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) => ScreenScaffold(
-        title: 'Log In',
+        title: tr('Log In'),
         maxWidth: 440,
         body: Form(
           key: _form,
@@ -173,11 +174,11 @@ class _LoginScreenState extends State<LoginScreen> {
             LabeledField('Password', 'Text your password', controller: _pass0, obscure: true, validator: _pass),
             Row(children: [
               Checkbox(value: _remember, activeColor: C.ok, onChanged: (v) => setState(() => _remember = v ?? false)),
-              const Text('Remember me', style: TextStyle(fontSize: 12)),
+              Text(tr('Remember me'), style: TextStyle(fontSize: 12)),
               const Spacer(),
               GestureDetector(
                 onTap: () => go(context, const ForgotScreen()),
-                child: const Text('Forgot password?', style: TextStyle(color: C.muted, fontSize: 12)),
+                child: Text(tr('Forgot password?'), style: TextStyle(color: C.muted, fontSize: 12)),
               ),
             ]),
             const SizedBox(height: 16),
@@ -235,7 +236,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) => ScreenScaffold(
-        title: 'Sign Up',
+        title: tr('Sign Up'),
         maxWidth: 440,
         body: Form(
           key: _form,
@@ -248,7 +249,7 @@ class _SignupScreenState extends State<SignupScreen> {
             const SizedBox(height: 8),
             PrimaryButton(_busy ? 'Please wait...' : 'Create account', onPressed: _busy ? null : _submit),
             const SizedBox(height: 10),
-            const Text('By creating an account you agree to our Terms of Service and Privacy Policy.',
+            Text(tr('By creating an account you agree to our Terms of Service and Privacy Policy.'),
                 textAlign: TextAlign.center, style: TextStyle(color: C.muted, fontSize: 11.5)),
             const _OrDivider(),
             const SocialButtons(),
@@ -293,13 +294,13 @@ class _ForgotScreenState extends State<ForgotScreen> {
 
   @override
   Widget build(BuildContext context) => ScreenScaffold(
-        title: 'Forgot Password',
+        title: tr('Forgot Password'),
         maxWidth: 440,
         body: Form(
           key: _form,
           child: ListView(padding: const EdgeInsets.all(20), children: [
             const SizedBox(height: 12),
-            const Text('Enter the email associated with your account and we will send an email with a code to reset your password.',
+            Text(tr('Enter the email associated with your account and we will send an email with a code to reset your password.'),
                 style: TextStyle(color: C.muted, fontSize: 13, height: 1.5)),
             const SizedBox(height: 24),
             LabeledField('Email', 'Text your email', controller: _email0, keyboard: TextInputType.emailAddress, validator: _email),
@@ -356,14 +357,14 @@ class _OtpScreenState extends State<OtpScreen> {
     if (!Backend.on) return;
     try {
       widget.resetFlow ? await Backend.sendResetCode(widget.email) : await Backend.resendSignupCode(widget.email);
-      if (mounted) toast(context, 'A new code is on its way');
+      if (mounted) toast(context, tr('A new code is on its way'));
     } catch (e) {
       if (mounted) toast(context, errText(e));
     }
   }
 
   Future<void> _verify() async {
-    if (_code.text.length != 6) return toast(context, 'Enter the 6-digit code');
+    if (_code.text.length != 6) return toast(context, tr('Enter the 6-digit code'));
     setState(() => _busy = true);
     try {
       if (Backend.on) {
@@ -371,18 +372,18 @@ class _OtpScreenState extends State<OtpScreen> {
         if (widget.resetFlow) {
           final pw = await _askNewPassword();
           if (pw == null) {
-            if (mounted) toast(context, 'Password not changed. Use at least 8 characters.');
+            if (mounted) toast(context, tr('Password not changed. Use at least 8 characters.'));
             return;
           }
           await Backend.updatePassword(pw);
-          if (mounted) toast(context, 'Password updated');
+          if (mounted) toast(context, tr('Password updated'));
         }
         if (mounted) await _enterApp(context);
       } else if (widget.resetFlow) {
         final pw = await _askNewPassword();
         if (pw != null && mounted) {
           goRoot(context, const LoginScreen());
-          toast(context, 'Password updated. Log in with your new password.');
+          toast(context, tr('Password updated. Log in with your new password.'));
         }
       } else {
         context.read<AppState>().login(widget.email);
@@ -400,7 +401,7 @@ class _OtpScreenState extends State<OtpScreen> {
     final mm = (_left ~/ 60).toString().padLeft(2, '0');
     final ss = (_left % 60).toString().padLeft(2, '0');
     return ScreenScaffold(
-      title: 'Verify your email',
+      title: tr('Verify your email'),
       maxWidth: 440,
       body: ListView(padding: const EdgeInsets.all(20), children: [
         const SizedBox(height: 12),
@@ -432,8 +433,8 @@ class _OtpScreenState extends State<OtpScreen> {
         const SizedBox(height: 20),
         Center(
           child: _left > 0
-              ? Text('Resend in $mm:$ss', style: const TextStyle(color: C.primary, fontWeight: FontWeight.w500))
-              : TextButton(onPressed: _resend, child: const Text('Resend code')),
+              ? Text(trf('Resend in {0}:{1}', [mm, ss]), style: const TextStyle(color: C.primary, fontWeight: FontWeight.w500))
+              : TextButton(onPressed: _resend, child: Text(tr('Resend code'))),
         ),
         const SizedBox(height: 16),
         PrimaryButton(_busy ? 'Please wait...' : 'Confirm', onPressed: _busy ? null : _verify),
@@ -448,11 +449,11 @@ Future<String?> askNewPassword(BuildContext context) {
   return showDialog<String>(
     context: context,
     builder: (c) => AlertDialog(
-      title: const Text('Create a new password'),
-      content: TextField(controller: pw, obscureText: true, decoration: const InputDecoration(hintText: 'At least 8 characters')),
+      title: Text(tr('Create a new password')),
+      content: TextField(controller: pw, obscureText: true, decoration: InputDecoration(hintText: tr('At least 8 characters'))),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.pop(c, pw.text.length >= 8 ? pw.text : null), child: const Text('Save password')),
+        TextButton(onPressed: () => Navigator.pop(c), child: Text(tr('Cancel'))),
+        FilledButton(onPressed: () => Navigator.pop(c, pw.text.length >= 8 ? pw.text : null), child: Text(tr('Save password'))),
       ],
     ),
   );

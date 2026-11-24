@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme.dart';
@@ -64,7 +65,7 @@ class _ReelState extends State<_Reel> {
           padding: const EdgeInsets.only(bottom: 18),
           child: Column(children: [
             IconButton(onPressed: on, icon: Icon(icon, color: color, size: 30)),
-            Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+            Text(tr(label), style: const TextStyle(color: Colors.white, fontSize: 12)),
           ]),
         );
     final real = p.imageSeed.startsWith('http');
@@ -78,10 +79,10 @@ class _ReelState extends State<_Reel> {
             gradient: LinearGradient(colors: [Color(0x80102826), Colors.transparent, Color(0xCC0A1A19)], begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: [0, 0.5, 1]),
           ),
         )),
-        const Positioned(
+        Positioned(
           top: 0,
           left: 16,
-          child: SafeArea(child: Padding(padding: EdgeInsets.only(top: 12), child: Text('Watch & explore', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)))),
+          child: SafeArea(child: Padding(padding: EdgeInsets.only(top: 12), child: Text(tr('Watch & explore'), style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)))),
         ),
         if (p.isVideo && !real)
           Positioned(
@@ -107,7 +108,7 @@ class _ReelState extends State<_Reel> {
           bottom: 30,
           child: Column(children: [
             action(liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, '${p.likes}', () => s.toggleLike(p), color: liked ? C.danger : Colors.white),
-            action(Icons.mode_comment_outlined, '${p.commentCount}', () => go(context, Scaffold(appBar: AppBar(title: const Text('Post')), body: SingleChildScrollView(child: PostCard(p))))),
+            action(Icons.mode_comment_outlined, '${p.commentCount}', () => go(context, Scaffold(appBar: AppBar(title: Text(tr('Post'))), body: SingleChildScrollView(child: PostCard(p))))),
             action(s.savedPosts.contains(p.id) ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, 'Save', () => s.toggleSavePost(p)),
           ]),
         ),

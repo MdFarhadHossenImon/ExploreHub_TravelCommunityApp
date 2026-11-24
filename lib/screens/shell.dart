@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -47,12 +48,12 @@ List<Widget> headerActions(BuildContext context, {bool withSearch = true}) {
   final social = context.watch<SocialState>();
   return [
     if (withSearch) ...[
-      CircleAction(Icons.search_rounded, () => go(context, const GlobalSearchScreen()), tooltip: 'Search'),
+      CircleAction(Icons.search_rounded, () => go(context, const GlobalSearchScreen()), tooltip: tr('Search')),
       const SizedBox(width: 8),
     ],
-    CircleAction(Icons.chat_bubble_rounded, () => go(context, const MessagesScreen()), badge: social.unreadChats, tooltip: 'Messages'),
+    CircleAction(Icons.chat_bubble_rounded, () => go(context, const MessagesScreen()), badge: social.unreadChats, tooltip: tr('Messages')),
     const SizedBox(width: 8),
-    CircleAction(Icons.notifications_rounded, () => go(context, const NotificationsScreen()), badge: s.unread, tooltip: 'Notifications'),
+    CircleAction(Icons.notifications_rounded, () => go(context, const NotificationsScreen()), badge: s.unread, tooltip: tr('Notifications')),
   ];
 }
 
@@ -92,7 +93,7 @@ class _SideRail extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Tooltip(
-          message: _dests[n].label,
+          message: tr(_dests[n].label),
           preferBelow: false,
           child: InkWell(
             borderRadius: BorderRadius.circular(18),
@@ -105,7 +106,7 @@ class _SideRail extends StatelessWidget {
               child: Column(children: [
                 Icon(on ? _dests[n].active : _dests[n].icon, color: on ? C.on : C.muted, size: 24),
                 const SizedBox(height: 4),
-                Text(_dests[n].label, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: on ? C.on : C.muted)),
+                Text(tr(_dests[n].label), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: on ? C.on : C.muted)),
               ]),
             ),
           ),
@@ -131,7 +132,7 @@ class _SideRail extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Tooltip(
-            message: 'Share a moment',
+            message: tr('Share a moment'),
             child: InkWell(
               customBorder: const CircleBorder(),
               onTap: () => go(context, const CreatePostScreen()),
@@ -146,11 +147,11 @@ class _SideRail extends StatelessWidget {
           const SizedBox(height: 18),
           for (var n = 0; n < _dests.length; n++) item(n),
           const Spacer(),
-          CircleAction(Icons.search_rounded, () => go(context, const GlobalSearchScreen()), tooltip: 'Search'),
+          CircleAction(Icons.search_rounded, () => go(context, const GlobalSearchScreen()), tooltip: tr('Search')),
           const SizedBox(height: 10),
-          CircleAction(Icons.chat_bubble_rounded, () => go(context, const MessagesScreen()), badge: social.unreadChats, tooltip: 'Messages'),
+          CircleAction(Icons.chat_bubble_rounded, () => go(context, const MessagesScreen()), badge: social.unreadChats, tooltip: tr('Messages')),
           const SizedBox(height: 10),
-          CircleAction(Icons.notifications_rounded, () => go(context, const NotificationsScreen()), badge: s.unread, tooltip: 'Notifications'),
+          CircleAction(Icons.notifications_rounded, () => go(context, const NotificationsScreen()), badge: s.unread, tooltip: tr('Notifications')),
           const SizedBox(height: 14),
           InkWell(
             customBorder: const CircleBorder(),
@@ -194,7 +195,7 @@ class _PillBar extends StatelessWidget {
         child: Semantics(
           button: true,
           selected: on,
-          label: _dests[n].label,
+          label: tr(_dests[n].label),
           child: InkWell(
             borderRadius: BorderRadius.circular(22),
             onTap: () => shellTab.value = n,

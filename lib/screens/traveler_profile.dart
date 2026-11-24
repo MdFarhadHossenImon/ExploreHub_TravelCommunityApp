@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -122,13 +123,13 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
           TextButton.icon(
             onPressed: () => go(context, const GuideSignupScreen()),
             icon: const Icon(Icons.hiking_rounded, size: 18),
-            label: const Text('Become a guide'),
+            label: Text(tr('Become a guide')),
           )
         else if (isMe && guideFor(t.id) != null && !guideFor(t.id)!.verified)
           TextButton.icon(
             onPressed: () => go(context, const GuideVerifyScreen()),
             icon: const Icon(Icons.verified_rounded, size: 18),
-            label: const Text('Get the Verified guide badge'),
+            label: Text(tr('Get the Verified guide badge')),
           ),
         const SizedBox(height: 6),
         Text('@${t.handle}  ·  ${t.home}', textAlign: TextAlign.center, style: const TextStyle(color: C.muted, fontSize: 13)),
@@ -161,14 +162,14 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
                     style: FilledButton.styleFrom(shape: const StadiumBorder()),
                     onPressed: () => go(context, const CreatePostScreen()),
                     icon: const Icon(Icons.add_rounded, size: 18),
-                    label: const Text('Share a moment'))),
+                    label: Text(tr('Share a moment')))),
             const SizedBox(width: 8),
             Expanded(
               child: OutlinedButton.icon(
                 style: outline,
                 onPressed: () => go(context, const EditProfileScreen()),
                 icon: const Icon(Icons.edit_rounded, size: 18),
-                label: const Text('Edit profile'),
+                label: Text(tr('Edit profile')),
               ),
             ),
           ])
@@ -181,14 +182,14 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
                 style: outline,
                 onPressed: () => go(context, ChatScreen(conversation: social.chatWith(t))),
                 icon: const Icon(Icons.chat_bubble_rounded, size: 18),
-                label: const Text('Message'),
+                label: Text(tr('Message')),
               ),
             ),
             const SizedBox(width: 8),
             OutlinedButton(
               style: outline,
               onPressed: () => s.toggleFollow(t.id),
-              child: Text(s.following.contains(t.id) ? 'Following' : 'Follow'),
+              child: Text(s.following.contains(t.id) ? tr('Following') : tr('Follow')),
             ),
           ]),
         const SizedBox(height: 18),
@@ -197,10 +198,10 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(22), border: Border.all(color: C.line)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Row(children: [
+            Row(children: [
               Icon(Icons.menu_book_rounded, size: 18, color: C.primary),
               SizedBox(width: 6),
-              Text('Passport stamps', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              Text(tr('Passport stamps'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
             ]),
             const SizedBox(height: 12),
             Wrap(spacing: 10, runSpacing: 10, children: [
@@ -229,10 +230,10 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
           width: double.infinity,
           child: SegmentedButton<int>(
             showSelectedIcon: false,
-            segments: const [
-              ButtonSegment(value: 0, label: Text('Journeys'), icon: Icon(Icons.dynamic_feed_rounded, size: 17)),
-              ButtonSegment(value: 1, label: Text('Photos'), icon: Icon(Icons.grid_on_rounded, size: 17)),
-              ButtonSegment(value: 2, label: Text('Trips'), icon: Icon(Icons.map_rounded, size: 17)),
+            segments: [
+              ButtonSegment(value: 0, label: Text(tr('Journeys')), icon: Icon(Icons.dynamic_feed_rounded, size: 17)),
+              ButtonSegment(value: 1, label: Text(tr('Photos')), icon: Icon(Icons.grid_on_rounded, size: 17)),
+              ButtonSegment(value: 2, label: Text(tr('Trips')), icon: Icon(Icons.map_rounded, size: 17)),
             ],
             selected: {_tab},
             onSelectionChanged: (v) => setState(() => _tab = v.first),
@@ -292,7 +293,7 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
           decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: C.line)),
           child: Column(children: [
             Text(v, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
-            Text(l, style: const TextStyle(color: C.muted, fontSize: 11.5)),
+            Text(tr(l), style: const TextStyle(color: C.muted, fontSize: 11.5)),
           ]),
         ),
       );
