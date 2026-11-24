@@ -1070,4 +1070,5 @@ const _bn = <String, String>{
   'Weather in Sylhet this week?': 'এই সপ্তাহে সিলেটের আবহাওয়া কেমন?',
   '100 dollars in taka today?': 'আজ ১০০ ডলার কত টাকা?',
   'I\'m not sure about that one yet. Ask me how to use ExploreHub (posting, trips, bookings, SOS…), name a place, like "Sajek Valley", or ask about the weather or today\'s dollar rate.': 'এটা এখনো ঠিক জানি না। ExploreHub কীভাবে চালাবেন (পোস্ট, ট্রিপ, বুকিং, SOS…) জিজ্ঞেস করুন, কোনো জায়গার নাম লিখুন, যেমন "Sajek Valley", অথবা আবহাওয়া বা আজকের ডলার রেট জিজ্ঞেস করুন।',
+  '{p} sign-in is not available yet. Please use email for now.': '{p} দিয়ে সাইন-ইন এখনো চালু হয়নি। আপাতত ইমেইল দিয়ে ঢুকুন।',
 };

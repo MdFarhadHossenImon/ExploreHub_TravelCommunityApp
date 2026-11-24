@@ -58,9 +58,29 @@ class Backend {
     await _c.auth.updateUser(UserAttributes(password: password));
   }
 
+  /// Sign in with Google, Apple or Facebook. Checks first that the provider is switched on in
+  /// Supabase, so people get a clear message instead of an error page in the browser.
   static Future<void> oauth(OAuthProvider provider) async {
-    await _c.auth.signInWithOAuth(provider, redirectTo: kIsWeb ? null : Env.authRedirect);
+    try {
+      final r = await http.get(Uri.parse('${Env.supabaseUrl}/auth/v1/settings'), headers: {'apikey': Env.supabaseAnonKey}).timeout(const Duration(seconds: 8));
+      final ext = (jsonDecode(r.body) as Map)['external'] as Map?;
+      if (ext != null && ext[provider.name] != true) {
+        throw AuthException(tr('{p} sign-in is not available yet. Please use email for now.').replaceAll('{p}', _providerName(provider)));
+      }
+    } on AuthException {
+      rethrow;
+    } catch (_) {
+      // settings unreachable: try anyway
+    }
+    await _c.auth.signInWithOAuth(provider, redirectTo: returnUrl);
   }
+
+  static String _providerName(OAuthProvider p) => switch (p) {
+        OAuthProvider.google => 'Google',
+        OAuthProvider.facebook => 'Facebook',
+        OAuthProvider.apple => 'Apple',
+        _ => p.name,
+      };
 
   static Future<void> signOut() async {
     try {
