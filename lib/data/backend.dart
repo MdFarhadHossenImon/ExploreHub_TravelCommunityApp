@@ -634,6 +634,18 @@ class Backend {
     return r ?? {};
   }
 
+  /// Festivals from today for the next [months] months, soonest first.
+  static Future<List<Map<String, dynamic>>> festivals({String? country, int months = 12}) {
+    String d(DateTime x) => x.toIso8601String().substring(0, 10);
+    final now = DateTime.now();
+    final from = d(now), to = d(DateTime(now.year, now.month + months, now.day));
+    return Offline.rows('festivals:${country ?? 'all'}:$months', () async {
+      var q = _c.from('festivals').select().gte('ends', from).lte('starts', to);
+      if (country != null) q = q.eq('country', country);
+      return List<Map<String, dynamic>>.from(await q.order('starts'));
+    });
+  }
+
   // ---- live location & SOS ----
   static Future<void> shareLocation(double lat, double lng, double? accuracy, DateTime until) async => _c.from('live_locations').upsert({
         'user_id': uid,

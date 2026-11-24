@@ -14,13 +14,14 @@ import 'place_detail.dart';
 class SearchScreen extends StatefulWidget {
   final String? category;
   final bool focus;
-  const SearchScreen({super.key, this.category, this.focus = false});
+  final String? query;
+  const SearchScreen({super.key, this.category, this.focus = false, this.query});
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final _q = TextEditingController();
+  late final _q = TextEditingController(text: widget.query ?? '');
   String? _cat;
   int _sort = 0; // 0 popular, 1 budget low-high, 2 rating
   String? _region;

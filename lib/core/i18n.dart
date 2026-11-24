@@ -1010,4 +1010,13 @@ const _bn = <String, String>{
   'Listen': 'শুনুন',
   'Tap the speaker to hear it. Sound uses your phone or browser voice, so a few languages may not play on every device.': 'শুনতে স্পিকারে চাপুন। শব্দ আপনার ফোন বা ব্রাউজারের ভয়েস দিয়ে চলে, তাই কিছু ভাষা সব ডিভাইসে নাও বাজতে পারে।',
   'Phrasebook: useful local phrases': 'ফ্রেজবুক: দরকারি স্থানীয় বাক্য',
+  'Festivals & events': 'উৎসব ও ইভেন্ট',
+  'Worldwide': 'বিশ্বজুড়ে',
+  'Next 12 months': 'আগামী ১২ মাস',
+  'No festivals in this period yet.': 'এই সময়ে এখনো কোনো উৎসব নেই।',
+  'Dates marked "about" follow the moon or local calendars and can move by a day or two. Check locally before you book.': '"প্রায়" লেখা তারিখগুলো চাঁদ বা স্থানীয় পঞ্জিকা অনুযায়ী এক-দুই দিন এদিক-ওদিক হতে পারে। বুক করার আগে স্থানীয়ভাবে মিলিয়ে নিন।',
+  'about': 'প্রায়',
+  'Happening now': 'এখন চলছে',
+  'in {0} days': '{0} দিন পরে',
+  'Festivals in {0}': '{0}-এর উৎসব',
 };

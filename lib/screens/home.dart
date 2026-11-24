@@ -13,6 +13,7 @@ import '../widgets/common.dart';
 import '../widgets/globe.dart';
 import '../widgets/pull_refresh.dart';
 import 'notifications.dart';
+import 'festivals.dart';
 import 'meetups.dart';
 import 'place_detail.dart';
 import 'search.dart';
@@ -171,43 +172,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Events
-            if (!Backend.on) SectionHeader(tr('Top Events'), onSeeAll: () => go(context, const SearchScreen())),
-            if (!Backend.on)
-              SizedBox(
-                height: 112,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: events.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (c, i) {
-                    final e = events[i];
-                    final p = placeById(e.placeId);
-                    return GestureDetector(
-                      onTap: () => go(context, PlaceDetailScreen(place: p)),
-                      child: SizedBox(
-                        width: 140,
-                        child: Stack(fit: StackFit.expand, children: [
-                          AppImage(p.photo, radius: 20),
-                          const DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.all(Radius.circular(20)),
-                              gradient: LinearGradient(colors: [Colors.transparent, Color(0xCC0A1A19)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-                            ),
-                          ),
-                          Positioned(
-                            left: 10,
-                            right: 10,
-                            bottom: 8,
-                            child: Text(e.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600)),
-                          ),
-                        ]),
-                      ),
-                    );
-                  },
-                ),
-              ),
+            // Festivals & events
+            SectionHeader(tr('Festivals & events'), onSeeAll: () => go(context, const FestivalsScreen())),
+            const FestivalStrip(),
 
             // Live: upcoming traveler meetups
             if (Backend.on) ...[
