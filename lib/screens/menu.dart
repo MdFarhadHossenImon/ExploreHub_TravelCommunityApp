@@ -9,6 +9,8 @@ import '../widgets/common.dart';
 import '../widgets/pull_refresh.dart';
 import '../widgets/social_widgets.dart';
 import 'bookings.dart';
+import 'feedback.dart';
+import 'safety.dart';
 import 'friends.dart';
 import 'groups.dart';
 import 'meetups.dart';
@@ -99,6 +101,31 @@ class MenuScreen extends StatelessWidget {
             },
           ),
           const SizedBox(height: 16),
+          InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: () => go(context, const FeedbackScreen()),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                gradient: LinearGradient(colors: [C.primary.withValues(alpha: .25), C.primary.withValues(alpha: .08)]),
+                border: Border.all(color: C.primary.withValues(alpha: .5)),
+              ),
+              child: const Row(children: [
+                Icon(Icons.rate_review_rounded, color: C.primary, size: 30),
+                SizedBox(width: 14),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Give feedback', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                    SizedBox(height: 2),
+                    Text('Tell us what to improve. We read every answer.', style: TextStyle(color: C.muted, fontSize: 12)),
+                  ]),
+                ),
+                Icon(Icons.chevron_right_rounded, color: C.primary),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 16),
           Panel(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Column(children: [
@@ -114,7 +141,7 @@ class MenuScreen extends StatelessWidget {
                 title: const Text('Safety center', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600)),
                 subtitle: const Text('Travel advisories, emergency numbers, report a user', style: TextStyle(color: C.muted, fontSize: 12)),
                 trailing: const Icon(Icons.chevron_right_rounded, color: C.muted),
-                onTap: () => toast(context, 'Safety center opens in the next update'),
+                onTap: () => go(context, const SafetyCenterScreen()),
               ),
             ]),
           ),
