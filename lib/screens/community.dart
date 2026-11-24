@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -574,8 +573,18 @@ class PostCard extends StatelessWidget {
             onDoubleTap: () {
               if (!liked) s.toggleLike(post);
             },
-            child: AspectRatio(
-              aspectRatio: post.isVideo ? 4 / 5 : 1,
+            child: ValueListenableBuilder<Map<String, double>>(
+              valueListenable: videoAspects,
+              builder: (context, aspects, child) {
+                // Videos keep their real shape like Facebook: 16:9 stays wide, reels (9:16) stay tall.
+                var ar = post.isVideo ? (aspects[post.imageSeed] ?? 16 / 9) : 1.0;
+                ar = ar.clamp(9 / 16, 16 / 9);
+                return LayoutBuilder(builder: (context, box) {
+                  final maxH = MediaQuery.sizeOf(context).height * .78;
+                  final h = box.maxWidth / ar;
+                  return h > maxH ? SizedBox(height: maxH, width: box.maxWidth, child: child) : AspectRatio(aspectRatio: ar, child: child);
+                });
+              },
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(26),
                 child: Stack(fit: StackFit.expand, children: [
@@ -855,13 +864,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               Text('Compressing video...', style: TextStyle(color: C.primary)),
                             ])
                           : _bytes == null
-                          ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              Icon(_video ? Icons.video_library_outlined : Icons.add_photo_alternate_outlined, size: 42, color: C.primary),
-                              const SizedBox(height: 8),
-                              Text('Tap to add a ${_video ? 'video' : 'photo'} (optional)', style: const TextStyle(color: C.primary)),
-                              if (_video) const Padding(padding: EdgeInsets.only(top: 4), child: Text('Up to 250 MB in the app, 50 MB on the web', style: TextStyle(color: C.muted, fontSize: 12))),
-                            ])
-                          : (_video ? const Center(child: Icon(Icons.check_circle_rounded, size: 52, color: C.primary)) : Image.memory(_bytes!, fit: BoxFit.cover)),
+                              ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                  Icon(_video ? Icons.video_library_outlined : Icons.add_photo_alternate_outlined, size: 42, color: C.primary),
+                                  const SizedBox(height: 8),
+                                  Text('Tap to add a ${_video ? 'video' : 'photo'} (optional)', style: const TextStyle(color: C.primary)),
+                                  if (_video) const Padding(padding: EdgeInsets.only(top: 4), child: Text('Up to 250 MB in the app, 50 MB on the web', style: TextStyle(color: C.muted, fontSize: 12))),
+                                ])
+                              : (_video ? const Center(child: Icon(Icons.check_circle_rounded, size: 52, color: C.primary)) : Image.memory(_bytes!, fit: BoxFit.cover)),
                     ),
                   )
                 : AppImage(_picked),
@@ -932,7 +941,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         ]),
       );
 }
-
 
 /// Facebook-style "who reacted" sheet: tabs per reaction, then the people.
 Future<void> showReactions(BuildContext context, Post post) async {

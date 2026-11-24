@@ -7,12 +7,22 @@ import 'common.dart';
 
 /// Inline video for feeds: starts muted when most of it is on screen and pauses when it scrolls away.
 /// Tap to pause or play; the speaker button turns sound on.
+/// Width / height of each video once it has loaded, so feeds can size posts like the real video (16:9, 9:16, ...).
+final videoAspects = ValueNotifier<Map<String, double>>({});
+
 class FeedVideo extends StatefulWidget {
   final String url;
   final BoxFit fit;
+
   /// Start playing as soon as it is visible (feed, Watch). Off: wait for a tap.
   final bool autoplay;
-  const FeedVideo(this.url, {super.key, this.fit = BoxFit.cover, this.autoplay = true});
+
+  /// Put the sound button in the top-right corner (Watch, where the right edge holds like / comment / save).
+  final bool muteTop;
+
+  /// Fill the frame with tall videos, letterbox wide ones (reels).
+  final bool smartFit;
+  const FeedVideo(this.url, {super.key, this.fit = BoxFit.cover, this.autoplay = true, this.muteTop = false, this.smartFit = false});
 
   @override
   State<FeedVideo> createState() => _FeedVideoState();
@@ -31,6 +41,10 @@ class _FeedVideoState extends State<FeedVideo> {
     _c = c;
     try {
       await c.initialize();
+      final sz = c.value.size;
+      if (sz.width > 0 && sz.height > 0 && videoAspects.value[widget.url] == null) {
+        videoAspects.value = {...videoAspects.value, widget.url: sz.width / sz.height};
+      }
       await c.setLooping(true);
       await c.setVolume(0);
       c.addListener(_tick);
@@ -48,6 +62,7 @@ class _FeedVideoState extends State<FeedVideo> {
 
   void _onVisibility(VisibilityInfo info) {
     if (!mounted) return;
+    if (info.visibleFraction > 0 && widget.autoplay) _ensure(); // load early so the post gets its real shape
     final now = info.visibleFraction > 0.6;
     if (now == _visible) return;
     _visible = now;
@@ -101,7 +116,7 @@ class _FeedVideoState extends State<FeedVideo> {
           const ColoredBox(color: Colors.black),
           if (ready)
             FittedBox(
-              fit: widget.fit,
+              fit: widget.smartFit ? (c.value.aspectRatio > 1 ? BoxFit.contain : BoxFit.cover) : widget.fit,
               clipBehavior: Clip.hardEdge,
               child: SizedBox(width: c.value.size.width, height: c.value.size.height, child: VideoPlayer(c)),
             ),
@@ -109,8 +124,7 @@ class _FeedVideoState extends State<FeedVideo> {
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
-                child: Text('This video format can\'t play here. MP4 videos work everywhere.',
-                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 13)),
+                child: Text('This video format can\'t play here. MP4 videos work everywhere.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 13)),
               ),
             )
           else if (!ready)
@@ -126,7 +140,8 @@ class _FeedVideoState extends State<FeedVideo> {
           if (ready) ...[
             Positioned(
               right: 10,
-              bottom: 56,
+              top: widget.muteTop ? 52 : null,
+              bottom: widget.muteTop ? null : 56,
               child: Material(
                 color: const Color(0x99000000),
                 shape: const CircleBorder(),
@@ -141,8 +156,8 @@ class _FeedVideoState extends State<FeedVideo> {
               left: 0,
               right: 0,
               bottom: 0,
-              child: VideoProgressIndicator(c, allowScrubbing: true, padding: EdgeInsets.zero,
-                  colors: const VideoProgressColors(playedColor: C.primary, bufferedColor: Colors.white24, backgroundColor: Colors.white10)),
+              child: VideoProgressIndicator(c,
+                  allowScrubbing: true, padding: EdgeInsets.zero, colors: const VideoProgressColors(playedColor: C.primary, bufferedColor: Colors.white24, backgroundColor: Colors.white10)),
             ),
           ],
         ]),

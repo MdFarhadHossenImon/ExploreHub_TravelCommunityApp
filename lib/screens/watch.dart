@@ -20,20 +20,26 @@ class WatchScreen extends StatelessWidget {
     final reels = context.watch<AppState>().posts.where((p) => p.isVideo).toList();
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 460),
-          child: reels.isEmpty
-              ? const EmptyState(Icons.videocam_outlined, 'No videos yet', 'Share a trip video from Community.')
-              : PullRefresh(
-                  child: PageView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  scrollDirection: Axis.vertical,
-                  itemCount: reels.length,
-                  itemBuilder: (c, i) => _Reel(reels[i]),
-                )),
-        ),
-      ),
+      body: LayoutBuilder(builder: (context, box) {
+        // Reels are always a 9:16 frame, centred, like Facebook.
+        final w = (box.maxHeight * 9 / 16).clamp(0.0, box.maxWidth);
+        final h = (w * 16 / 9).clamp(0.0, box.maxHeight);
+        return Center(
+          child: SizedBox(
+            width: w,
+            height: h,
+            child: reels.isEmpty
+                ? const EmptyState(Icons.videocam_outlined, 'No videos yet', 'Share a trip video from Community.')
+                : PullRefresh(
+                    child: PageView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    scrollDirection: Axis.vertical,
+                    itemCount: reels.length,
+                    itemBuilder: (c, i) => _Reel(reels[i]),
+                  )),
+          ),
+        );
+      }),
     );
   }
 }
@@ -65,7 +71,7 @@ class _ReelState extends State<_Reel> {
     return GestureDetector(
       onTap: real ? null : () => setState(() => _playing = !_playing),
       child: Stack(fit: StackFit.expand, children: [
-        real ? FeedVideo(p.imageSeed) : AppImage(p.imageSeed, radius: 0),
+        real ? FeedVideo(p.imageSeed, muteTop: true, smartFit: true) : AppImage(p.imageSeed, radius: 0),
         const IgnorePointer(
             child: DecoratedBox(
           decoration: BoxDecoration(
