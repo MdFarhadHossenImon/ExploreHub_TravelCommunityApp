@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/i18n.dart';
+import '../widgets/same_time.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -297,6 +298,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               ]),
             ),
         ]),
+        const SizedBox(height: 18),
+        SameTimeTravelers(place: p),
         const SizedBox(height: 18),
         Text(tr('Where to stay'), style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 10),

@@ -570,6 +570,21 @@ class SocialState extends ChangeNotifier {
     if (_saved(t)) _guard(() => Backend.updateTrip(t.id, {'public': v}));
   }
 
+  void setTripDiscoverable(TripPlan t, bool v) {
+    t = currentTrip(t);
+    t.discoverable = v;
+    notifyListeners();
+    if (_saved(t)) _guard(() => Backend.updateTrip(t.id, {'discoverable': v}));
+  }
+
+  /// Your next trip to this place that has not ended yet.
+  TripPlan? myTripTo(String placeId) {
+    final today = DateTime.now();
+    final list = trips.where((t) => t.placeId == placeId && !t.end.isBefore(DateTime(today.year, today.month, today.day))).toList()
+      ..sort((a, b) => a.start.compareTo(b.start));
+    return list.isEmpty ? null : list.first;
+  }
+
   void inviteBuddy(TripPlan t, String id) {
     t = currentTrip(t);
     if (t.buddies.contains(id)) return;

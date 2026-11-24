@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/i18n.dart';
+import '../widgets/same_time.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -451,6 +452,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         ]),
       ),
       const SizedBox(height: 12),
+      SameTimeTravelers(place: p, trip: t),
+      const SizedBox(height: 12),
       Panel(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(tr('Trip tools'), style: TextStyle(fontWeight: FontWeight.w800)),
@@ -481,6 +484,13 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           _row(Icons.calendar_month_rounded, '${fmtDate(t.start)} - ${fmtDate(t.end)}'),
           _row(Icons.payments_rounded, t.budget > 0 ? '${money(t.budget)} per person' : 'No budget set'),
           _row(t.public ? Icons.public_rounded : Icons.lock_rounded, t.public ? 'Visible to buddies' : 'Only you and invited buddies'),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: t.discoverable,
+            onChanged: (v) => social.setTripDiscoverable(t, v),
+            title: Text(tr('Show me to travelers going at the same time'), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+            subtitle: Text(tr('Others going to this place on your dates can find you and send a buddy request.'), style: const TextStyle(fontSize: 11.5, color: C.muted)),
+          ),
           const SizedBox(height: 6),
           Row(children: [
             Expanded(child: OutlinedButton(onPressed: () => go(context, PlaceDetailScreen(place: p, initialTab: 1)), child: Text(tr('How to go')))),

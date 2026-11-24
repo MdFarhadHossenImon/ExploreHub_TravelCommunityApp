@@ -594,6 +594,7 @@ class Backend {
         start: DateTime.parse(r['start_date'] as String),
         budget: (r['budget'] as num?)?.toDouble() ?? 0,
         public: r['public'] as bool? ?? true,
+        discoverable: r['discoverable'] as bool? ?? true,
         buddies: [
           for (final m in (r['trip_members'] as List? ?? const []))
             if (m['user_id'] != r['owner_id']) m['user_id'] as String
@@ -616,6 +617,14 @@ class Backend {
         .select('id')
         .single();
     return r['id'] as String;
+  }
+
+  /// Travelers going to [placeId] with dates that overlap [from]..[to]. Blocked users are left out.
+  static Future<List<SameTimeMatch>> sameTimeTravelers(String placeId, DateTime from, DateTime to) async {
+    String d(DateTime x) => x.toIso8601String().substring(0, 10);
+    final rows = await Offline.rows('same:$placeId:${d(from)}:${d(to)}',
+        () async => List<Map<String, dynamic>>.from(await _c.rpc('same_time_travelers', params: {'p_place': placeId, 'p_from': d(from), 'p_to': d(to)}) as List));
+    return rows.map(SameTimeMatch.fromRow).toList();
   }
 
   static Future<void> updateTrip(String id, Map<String, dynamic> fields) async => _c.from('trips').update(fields).eq('id', id);

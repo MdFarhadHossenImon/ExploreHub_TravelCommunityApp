@@ -144,6 +144,8 @@ class TripPlan {
   final List<String> buddies; // traveler ids
   double budget;
   bool public;
+  /// Other travelers going to the same place at the same time can see this traveler.
+  bool discoverable;
   TripPlan({
     required this.id,
     required this.title,
@@ -153,8 +155,29 @@ class TripPlan {
     this.buddies = const [],
     this.budget = 0,
     this.public = true,
+    this.discoverable = true,
   });
   DateTime get end => start.add(Duration(days: days.isEmpty ? 0 : days.length - 1));
+}
+
+/// A traveler whose trip overlaps yours at the same place.
+class SameTimeMatch {
+  final String userId, name, home;
+  final String? avatarUrl;
+  final bool verified;
+  final DateTime start, end;
+  final int overlapDays;
+  const SameTimeMatch({required this.userId, required this.name, required this.home, this.avatarUrl, this.verified = false, required this.start, required this.end, required this.overlapDays});
+  factory SameTimeMatch.fromRow(Map<String, dynamic> r) => SameTimeMatch(
+        userId: r['user_id'] as String,
+        name: (r['name'] as String?)?.trim().isNotEmpty == true ? r['name'] as String : 'Traveler',
+        home: r['home'] as String? ?? '',
+        avatarUrl: r['avatar_url'] as String?,
+        verified: r['verified'] as bool? ?? false,
+        start: DateTime.parse(r['start_date'] as String),
+        end: DateTime.parse(r['end_date'] as String),
+        overlapDays: (r['overlap_days'] as num?)?.toInt() ?? 1,
+      );
 }
 
 // ------------------------------------------------------------------ seeds
