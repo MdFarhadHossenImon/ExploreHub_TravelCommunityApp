@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
+import '../core/env.dart';
 import '../core/theme.dart';
 import '../data/mock_data.dart';
 import '../data/models.dart';
@@ -12,9 +13,27 @@ import '../widgets/feed_video.dart';
 import 'community.dart';
 import 'place_detail.dart';
 
-/// Vertical short-video discovery. Real uploads play inline (muted until you tap the speaker).
-class WatchScreen extends StatelessWidget {
+/// Vertical short-video discovery. Videos play with sound (unless you muted), tap to pause,
+/// double tap left / right to jump 10 seconds, and Auto scroll moves to the next video when one ends.
+class WatchScreen extends StatefulWidget {
   const WatchScreen({super.key});
+  @override
+  State<WatchScreen> createState() => _WatchScreenState();
+}
+
+class _WatchScreenState extends State<WatchScreen> {
+  final _pages = PageController();
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  void _next(int i, int count) {
+    if (!watchAutoScroll.value || !_pages.hasClients || i + 1 >= count) return;
+    _pages.nextPage(duration: const Duration(milliseconds: 420), curve: Curves.easeOutCubic);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,13 +50,20 @@ class WatchScreen extends StatelessWidget {
             height: h,
             child: reels.isEmpty
                 ? const EmptyState(Icons.videocam_outlined, 'No videos yet', 'Share a trip video from Community.')
-                : PullRefresh(
-                    child: PageView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    scrollDirection: Axis.vertical,
-                    itemCount: reels.length,
-                    itemBuilder: (c, i) => _Reel(reels[i]),
-                  )),
+                : Stack(children: [
+                    PullRefresh(
+                        child: ValueListenableBuilder<bool>(
+                      valueListenable: watchAutoScroll,
+                      builder: (context, auto, _) => PageView.builder(
+                        controller: _pages,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        scrollDirection: Axis.vertical,
+                        itemCount: reels.length,
+                        itemBuilder: (c, i) => _Reel(reels[i], onEnded: auto ? () => _next(i, reels.length) : null),
+                      ),
+                    )),
+                    Positioned(top: 0, right: 8, child: SafeArea(child: Padding(padding: const EdgeInsets.only(top: 6), child: _AutoScrollToggle()))),
+                  ]),
           ),
         );
       }),
@@ -45,9 +71,40 @@ class WatchScreen extends StatelessWidget {
   }
 }
 
+class _AutoScrollToggle extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
+        valueListenable: watchAutoScroll,
+        builder: (context, on, _) => Material(
+          color: const Color(0x66000000),
+          borderRadius: BorderRadius.circular(20),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () {
+              setWatchAutoScroll(!on);
+              say(on ? tr('Auto scroll off') : tr('Auto scroll on: the next video starts when one ends'));
+            },
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.swipe_up_rounded, color: Colors.white, size: 18),
+                const SizedBox(width: 6),
+                Text(tr('Auto scroll'), style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                SizedBox(
+                  height: 28,
+                  child: FittedBox(child: Switch(value: on, activeColor: C.primary, onChanged: setWatchAutoScroll)),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      );
+}
+
 class _Reel extends StatefulWidget {
   final Post post;
-  const _Reel(this.post);
+  final VoidCallback? onEnded;
+  const _Reel(this.post, {this.onEnded});
   @override
   State<_Reel> createState() => _ReelState();
 }
@@ -72,7 +129,7 @@ class _ReelState extends State<_Reel> {
     return GestureDetector(
       onTap: real ? null : () => setState(() => _playing = !_playing),
       child: Stack(fit: StackFit.expand, children: [
-        real ? FeedVideo(p.imageSeed, muteTop: true, smartFit: true) : AppImage(p.imageSeed, radius: 0),
+        real ? FeedVideo(p.imageSeed, muteTop: true, smartFit: true, onEnded: widget.onEnded) : AppImage(p.imageSeed, radius: 0),
         const IgnorePointer(
             child: DecoratedBox(
           decoration: BoxDecoration(
@@ -96,7 +153,7 @@ class _ReelState extends State<_Reel> {
                       key: ValueKey(p.id),
                       tween: Tween(begin: 0, end: 1),
                       duration: const Duration(seconds: 8),
-                      onEnd: () {},
+                      onEnd: () => widget.onEnded?.call(),
                       builder: (c, v, _) => LinearProgressIndicator(value: v, minHeight: 3, color: C.primary, backgroundColor: Colors.white30),
                     )
                   : const LinearProgressIndicator(value: 0.4, minHeight: 3, color: C.primary, backgroundColor: Colors.white30),

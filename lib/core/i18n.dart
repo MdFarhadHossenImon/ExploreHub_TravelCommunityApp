@@ -1049,4 +1049,10 @@ const _bn = <String, String>{
   'Religious sites': 'ধর্মীয় স্থান',
   'Landmarks': 'দর্শনীয় স্থাপনা',
   'Built from {0}. Costs are estimates; check prices and opening times before you go.': '{0} থেকে তৈরি। খরচ আনুমানিক; যাওয়ার আগে দাম আর খোলার সময় যাচাই করে নিন।',
+  'Auto scroll': 'অটো স্ক্রল',
+  'Auto scroll off': 'অটো স্ক্রল বন্ধ',
+  'Auto scroll on: the next video starts when one ends': 'অটো স্ক্রল চালু: একটা ভিডিও শেষ হলে পরেরটা শুরু হবে',
+  'Back 10 seconds': '১০ সেকেন্ড পেছনে',
+  'Forward 10 seconds': '১০ সেকেন্ড সামনে',
+  '10 sec': '১০ সেকেন্ড',
 };

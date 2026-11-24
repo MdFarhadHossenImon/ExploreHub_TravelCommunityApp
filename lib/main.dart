@@ -11,6 +11,7 @@ import 'core/theme.dart';
 import 'data/backend.dart';
 import 'data/offline.dart';
 import 'widgets/offline_banner.dart';
+import 'widgets/feed_video.dart';
 import 'screens/auth.dart';
 import 'screens/shell.dart';
 import 'screens/splash_onboarding.dart';
@@ -22,6 +23,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = !kPreview; // fonts are bundled in assets/google_fonts
   await loadLang();
+  await loadVideoPrefs();
   await Offline.init();
   await Backend.init(); // no-op in demo mode (no --dart-define keys)
   runApp(
@@ -106,7 +108,7 @@ class _ExploreHubAppState extends State<ExploreHubApp> {
       scaffoldMessengerKey: messengerKey,
       theme: buildTheme(),
       home: const SplashScreen(),
-      builder: (context, child) => OfflineBanner(child: child!),
+      builder: (context, child) => Listener(onPointerUp: (_) => markUserGesture(), child: OfflineBanner(child: child!)),
     );
   }
 }
