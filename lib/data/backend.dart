@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:math';
+import 'dart:convert';
 import 'dart:typed_data';
+
+import 'package:http/http.dart' as http;
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -105,7 +108,7 @@ class Backend {
   }
 
   static Future<List<Guide>> guides() async {
-    final rows = await _c.from('guides').select().order('rating', ascending: false);
+    final rows = await _c.from('guides').select().eq('status', 'approved').order('rating', ascending: false).order('created_at');
     return rows.map<Guide>((r) => Guide.fromRow(r)).toList();
   }
 
@@ -649,4 +652,179 @@ class Backend {
   // ---- country essentials ----
   static Future<Map<String, dynamic>?> countryInfo(String country) async =>
       await _c.from('country_info').select().eq('country', country).maybeSingle();
+
+  // ---------- real travel services ----------
+  /// Places to stay near a destination, from OpenStreetMap (fetched and cached by the `stays` edge function).
+  static Future<List<Stay>> stays(Place place) async {
+    final placeId = place.id;
+    final cached = await _c.from('stays').select().eq('place_id', placeId).order('distance_km').limit(120);
+    final fetched = await _c.from('stays_fetch').select('fetched_at').eq('place_id', placeId).maybeSingle();
+    if (cached.isNotEmpty || fetched != null) return cached.map<Stay>((r) => Stay.fromRow(r)).toList();
+    if (place.lat == null || place.lng == null) return const [];
+    // OpenStreetMap services allow app traffic from the traveler's own device, not from cloud servers.
+    final rows = await osmStays(place.lat!, place.lng!);
+    if (rows == null) throw Exception('map service busy');
+    if (uid != null) {
+      try {
+        await _c.rpc('cache_stays', params: {'p_place': placeId, 'p_rows': rows});
+      } catch (_) {}
+    }
+    final out = rows.map((r) => Stay.fromRow({...r, 'id': '$placeId:${r['id']}'})).toList()
+      ..sort((a, b) => (a.distanceKm ?? 99).compareTo(b.distanceKm ?? 99));
+    return out;
+  }
+
+  static double _km(double a, double b, double c, double d) {
+    const r = pi / 180;
+    final x = pow(sin((c - a) * r / 2), 2) + cos(a * r) * cos(c * r) * pow(sin((d - b) * r / 2), 2);
+    return 12742 * asin(sqrt(x));
+  }
+
+  static Map<String, dynamic> _stayRow(String id, Map t, double lat, double lng, double plat, double plng, {String? kind, String? name, String? addr}) {
+    final stars = double.tryParse('${t['stars'] ?? ''}');
+    final a = addr ?? [t['addr:housenumber'], t['addr:street'], t['addr:city'] ?? t['addr:district']].where((e) => e != null).join(', ');
+    return {
+      'id': id,
+      'name': name ?? t['name:en'] ?? t['name'],
+      'kind': kind ?? t['tourism'] ?? 'hotel',
+      'stars': stars != null && stars > 0 && stars <= 7 ? stars : null,
+      'lat': lat,
+      'lng': lng,
+      'address': a.isEmpty ? null : a,
+      'phone': t['phone'] ?? t['contact:phone'],
+      'website': t['website'] ?? t['contact:website'],
+      'email': t['email'] ?? t['contact:email'],
+      'distance_km': (_km(plat, plng, lat, lng) * 10).round() / 10,
+    };
+  }
+
+  /// Hotels, hostels and guest houses around a point from OpenStreetMap. Null when every service failed.
+  static Future<List<Map<String, dynamic>>?> osmStays(double lat, double lng) async {
+    const kinds = {'hotel', 'hostel', 'guest_house', 'motel', 'resort', 'apartment', 'chalet', 'camp_site'};
+    final q = '[out:json][timeout:20];nwr(around:8000,$lat,$lng)["tourism"~"^(hotel|hostel|guest_house|motel|resort|apartment|chalet|camp_site)\$"]["name"];out center tags 120;';
+    for (final m in ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter']) {
+      try {
+        final r = await http.post(Uri.parse(m), body: {'data': q}).timeout(const Duration(seconds: 25));
+        if (r.statusCode != 200) continue;
+        final els = (jsonDecode(r.body) as Map)['elements'] as List;
+        final out = <Map<String, dynamic>>[];
+        for (final e in els) {
+          final t = (e['tags'] as Map?) ?? const {};
+          final la = (e['lat'] ?? e['center']?['lat']) as num?, lo = (e['lon'] ?? e['center']?['lon']) as num?;
+          if (la == null || lo == null || t['name'] == null) continue;
+          out.add(_stayRow('${(e['type'] as String)[0]}${e['id']}', t, la.toDouble(), lo.toDouble(), lat, lng));
+        }
+        if (out.length >= 5) return out;
+        if (out.isNotEmpty) return [...out, ...?await _nominatimStays(lat, lng, kinds, skip: out.map((e) => e['id']).toSet())];
+        break;
+      } catch (_) {}
+    }
+    return _nominatimStays(lat, lng, kinds);
+  }
+
+  static Future<List<Map<String, dynamic>>?> _nominatimStays(double lat, double lng, Set<String> kinds, {Set<Object?> skip = const {}}) async {
+    final out = <String, Map<String, dynamic>>{};
+    var ok = false;
+    for (final span in [0.07, 0.25]) {
+      for (final q in ['hotel', 'hostel', 'guest house', 'resort']) {
+        try {
+          final u = Uri.https('nominatim.openstreetmap.org', '/search', {
+            'q': q, 'format': 'jsonv2', 'viewbox': '${lng - span},${lat + span},${lng + span},${lat - span}', 'bounded': '1', 'limit': '40',
+            'extratags': '1', 'namedetails': '1', 'addressdetails': '1', 'accept-language': 'en',
+          });
+          final r = await http.get(u).timeout(const Duration(seconds: 15));
+          if (r.statusCode == 200) {
+            ok = true;
+            for (final e in jsonDecode(r.body) as List) {
+              if (e['category'] != 'tourism' || !kinds.contains(e['type'])) continue;
+              final nd = (e['namedetails'] as Map?) ?? const {};
+              final name = nd['name:en'] ?? nd['name'] ?? e['name'];
+              final id = '${(e['osm_type'] as String)[0]}${e['osm_id']}';
+              if (name == null || '$name'.isEmpty || skip.contains(id)) continue;
+              final a = (e['address'] as Map?) ?? const {};
+              final addr = [a['house_number'], a['road'], a['suburb'] ?? a['neighbourhood'], a['city'] ?? a['town'] ?? a['village']].where((x) => x != null).join(', ');
+              out[id] = _stayRow(id, (e['extratags'] as Map?) ?? const {}, double.parse('${e['lat']}'), double.parse('${e['lon']}'), lat, lng,
+                  kind: e['type'] as String, name: '$name', addr: addr);
+            }
+          }
+        } catch (_) {}
+        await Future.delayed(const Duration(milliseconds: 1100));
+      }
+      if (out.length >= 8) break;
+    }
+    return ok ? out.values.toList() : null;
+  }
+
+  static Future<List<Airport>> airports(String q) async {
+    final t = q.trim().replaceAll(RegExp(r'[,()%]'), ' ').trim();
+    if (t.isEmpty) return const [];
+    final rows = t.length == 3
+        ? await _c.from('airports').select().or('iata.eq.${t.toUpperCase()},city.ilike.$t%,name.ilike.%$t%').order('kind').limit(20)
+        : await _c.from('airports').select().or('city.ilike.$t%,name.ilike.%$t%,country.ilike.$t').order('kind').limit(20);
+    final out = rows.map<Airport>((r) => Airport.fromRow(r)).toList();
+    out.sort((a, b) => (a.iata == t.toUpperCase() ? 0 : 1).compareTo(b.iata == t.toUpperCase() ? 0 : 1));
+    return out;
+  }
+
+  static Future<Airport?> airport(String iata) async {
+    final r = await _c.from('airports').select().eq('iata', iata).maybeSingle();
+    return r == null ? null : Airport.fromRow(r);
+  }
+
+  static Future<List<Train>> trains() async {
+    final rows = await _c.from('trains').select().order('number');
+    return rows.map<Train>((r) => Train.fromRow(r)).toList();
+  }
+
+  static Future<List<BusOperator>> busOperators() async {
+    final rows = await _c.from('bus_operators').select().order('name');
+    return rows.map<BusOperator>((r) => BusOperator.fromRow(r)).toList();
+  }
+
+  // ---------- guide applications ----------
+  static Future<bool> isAdmin() async {
+    if (uid == null) return false;
+    final r = await _c.from('app_admins').select('user_id').eq('user_id', uid!).maybeSingle();
+    return r != null;
+  }
+
+  static Future<GuideApplication?> myGuideApplication() async {
+    if (uid == null) return null;
+    final r = await _c.from('guide_applications').select().eq('user_id', uid!).order('created_at', ascending: false).limit(1).maybeSingle();
+    return r == null ? null : GuideApplication.fromRow(r);
+  }
+
+  /// Uploads an identity document to the private `guide-docs` bucket and returns its storage path.
+  static Future<String> uploadPrivateDoc(Uint8List bytes, String ext, String mime) async {
+    final path = '$uid/${DateTime.now().microsecondsSinceEpoch}.$ext';
+    await _c.storage.from('guide-docs').uploadBinary(path, bytes, fileOptions: FileOptions(contentType: mime));
+    return path;
+  }
+
+  static Future<String> signedDocUrl(String path) => _c.storage.from('guide-docs').createSignedUrl(path, 3600);
+
+  static Future<void> applyGuide(Map<String, dynamic> row) async {
+    await _c.from('guide_applications').insert({...row, 'user_id': uid, 'agreed_at': DateTime.now().toUtc().toIso8601String()});
+  }
+
+  static Future<List<GuideApplication>> guideApplications({String status = 'pending'}) async {
+    final rows = await _c.from('guide_applications').select().eq('status', status).order('created_at');
+    return rows.map<GuideApplication>((r) => GuideApplication.fromRow(r)).toList();
+  }
+
+  static Future<void> reviewGuide(String id, bool approve, String? note) async {
+    await _c.rpc('review_guide_application', params: {'app_id': id, 'approve': approve, 'note': note});
+  }
+
+  static Future<Guide?> myGuide() async {
+    if (uid == null) return null;
+    final r = await _c.from('guides').select().eq('user_id', uid!).maybeSingle();
+    return r == null ? null : Guide.fromRow(r);
+  }
+
+  /// Basic guide signup / edit. Verification is separate (documents + admin approval).
+  static Future<void> saveGuide(Map<String, dynamic> row) async {
+    final me = await _c.from('profiles').select('avatar_url').eq('id', uid!).maybeSingle();
+    await _c.from('guides').upsert({...row, 'id': 'g-$uid', 'user_id': uid, 'status': 'approved', 'avatar_url': me?['avatar_url']});
+  }
 }

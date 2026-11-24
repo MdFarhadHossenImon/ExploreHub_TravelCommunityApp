@@ -15,6 +15,7 @@ import '../widgets/feed_video.dart';
 import '../widgets/place_extras.dart';
 import 'booking_flow.dart';
 import 'shell.dart';
+import 'stays.dart';
 import 'transport.dart';
 import 'trips.dart';
 
@@ -261,6 +262,23 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             ),
         ]),
         const SizedBox(height: 18),
+        const Text('Where to stay', style: TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 10),
+        InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => go(context, StaysScreen(place: p)),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: C.line)),
+            child: const Row(children: [
+              Icon(Icons.hotel_rounded, color: C.primary),
+              SizedBox(width: 12),
+              Expanded(child: Text('Hotels, hostels and guest houses nearby', style: TextStyle(fontSize: 13))),
+              Icon(Icons.chevron_right_rounded, color: C.muted),
+            ]),
+          ),
+        ),
+        const SizedBox(height: 18),
         const Text('Tour guide', style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 10),
         InkWell(
@@ -272,7 +290,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             child: const Row(children: [
               Icon(Icons.badge_rounded, color: C.primary),
               SizedBox(width: 12),
-              Expanded(child: Text('Hire a verified local guide for this trip', style: TextStyle(fontSize: 13))),
+              Expanded(child: Text('Hire a local guide for this trip', style: TextStyle(fontSize: 13))),
               Icon(Icons.chevron_right_rounded, color: C.muted),
             ]),
           ),

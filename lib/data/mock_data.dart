@@ -135,7 +135,7 @@ const reviewsSeed = <Review>[
 
 final List<Guide> guides = <Guide>[
   Guide(id: 'g1', name: 'Rahim Uddin', base: 'Bangladesh', rating: 4.9, pricePerDay: 35, years: 8,
-      languages: ['Bangla', 'English'], seed: 'rahim',
+      languages: ['Bangla', 'English'], seed: 'rahim', verified: true,
       bio: 'Hill-tracts specialist. Knows every boat route on Kaptai Lake and the safest jeep drivers to Sajek.'),
   Guide(id: 'g2', name: 'Pema Sherpa', base: 'Nepal', rating: 5.0, pricePerDay: 60, years: 14,
       languages: ['Nepali', 'English', 'Hindi'], seed: 'pema',

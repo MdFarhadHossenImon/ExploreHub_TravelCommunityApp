@@ -10,6 +10,7 @@ import '../data/social.dart';
 import '../state/app_state.dart';
 import '../state/social_state.dart';
 import '../widgets/common.dart';
+import 'guides.dart';
 import '../widgets/pull_refresh.dart';
 import '../widgets/social_widgets.dart';
 import 'community.dart';
@@ -113,7 +114,22 @@ class _TravelerProfileScreenState extends State<TravelerProfileScreen> {
         const SizedBox(height: 12),
         VerifiedName(t, size: 23),
         const SizedBox(height: 6),
-        LevelBadge(t),
+        Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 6, children: [
+          LevelBadge(t),
+          if (guideFor(t.id) != null) GuideBadge(guideFor(t.id)!),
+        ]),
+        if (isMe && guideFor(t.id) == null && Backend.on)
+          TextButton.icon(
+            onPressed: () => go(context, const GuideSignupScreen()),
+            icon: const Icon(Icons.hiking_rounded, size: 18),
+            label: const Text('Become a guide'),
+          )
+        else if (isMe && guideFor(t.id) != null && !guideFor(t.id)!.verified)
+          TextButton.icon(
+            onPressed: () => go(context, const GuideVerifyScreen()),
+            icon: const Icon(Icons.verified_rounded, size: 18),
+            label: const Text('Get the Verified guide badge'),
+          ),
         const SizedBox(height: 6),
         Text('@${t.handle}  ·  ${t.home}', textAlign: TextAlign.center, style: const TextStyle(color: C.muted, fontSize: 13)),
         if (t.bio.isNotEmpty)

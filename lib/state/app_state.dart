@@ -51,7 +51,7 @@ class AppState extends ChangeNotifier {
       final pl = await Backend.places();
       if (pl.isNotEmpty) places..clear()..addAll(pl);
       final gd = await Backend.guides();
-      if (gd.isNotEmpty) guides..clear()..addAll(gd);
+      guides..clear()..addAll(gd);
     } catch (e) {
       say(errText(e));
     }
@@ -104,7 +104,7 @@ class AppState extends ChangeNotifier {
       final pl = await Backend.places();
       if (pl.isNotEmpty) places..clear()..addAll(pl);
       final gd = await Backend.guides();
-      if (gd.isNotEmpty) guides..clear()..addAll(gd);
+      guides..clear()..addAll(gd);
     } catch (e) {
       say(errText(e));
     }

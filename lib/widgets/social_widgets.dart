@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/levels.dart';
 import '../core/theme.dart';
+import '../screens/guides.dart' show guideFor, GuideBadge;
 import '../data/social.dart';
 import '../state/app_state.dart';
 import '../state/social_state.dart';
@@ -133,6 +134,7 @@ class VerifiedName extends StatelessWidget {
   Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
         Flexible(child: Text(t.name, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w700, fontSize: size))),
         if (t.verified) ...[const SizedBox(width: 4), Icon(Icons.verified_rounded, size: size + 1, color: C.primary)],
+        if (guideFor(t.id) != null) ...[const SizedBox(width: 4), GuideBadge(guideFor(t.id)!, compact: true)],
       ]);
 }
 

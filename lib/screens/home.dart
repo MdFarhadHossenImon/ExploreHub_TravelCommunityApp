@@ -15,6 +15,7 @@ import 'meetups.dart';
 import 'place_detail.dart';
 import 'search.dart';
 import 'shell.dart';
+import 'stays.dart';
 import 'transport.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -51,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(children: [
-                _Service(Icons.apartment_rounded, 'Hotel', () => go(context, const SearchScreen())),
+                _Service(Icons.apartment_rounded, 'Hotel', () => go(context, const StaysScreen())),
                 _Service(Icons.flight_rounded, 'Flight', () => go(context, const TransportScreen(type: 'flight'))),
                 _Service(Icons.train_rounded, 'Train', () => go(context, const TransportScreen(type: 'train'))),
                 _Service(Icons.directions_bus_rounded, 'Bus', () => go(context, const TransportScreen(type: 'bus'))),

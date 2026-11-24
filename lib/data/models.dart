@@ -305,6 +305,8 @@ class TransportOffer {
 
 class Guide {
   final String id, name, base, bio, seed;
+  final String? userId, avatarUrl, areas, phone;
+  final bool verified;
   final double rating, pricePerDay;
   final int years;
   final List<String> languages;
@@ -318,6 +320,11 @@ class Guide {
     required this.pricePerDay,
     required this.years,
     required this.languages,
+    this.userId,
+    this.avatarUrl,
+    this.areas,
+    this.phone,
+    this.verified = false,
   });
 
   factory Guide.fromRow(Map<String, dynamic> r) => Guide(
@@ -330,6 +337,11 @@ class Guide {
         pricePerDay: (r['price_per_day'] as num).toDouble(),
         years: (r['years'] as num).toInt(),
         languages: List<String>.from(r['languages'] as List? ?? const []),
+        userId: r['user_id'] as String?,
+        avatarUrl: r['avatar_url'] as String?,
+        areas: r['areas'] as String?,
+        phone: r['phone'] as String?,
+        verified: r['verified'] as bool? ?? false,
       );
 }
 
@@ -427,4 +439,66 @@ class Meetup {
 
   bool get isPast => startsAt.isBefore(DateTime.now());
   bool get isFull => capacity != null && going >= capacity!;
+}
+
+/// A real place to stay from OpenStreetMap.
+class Stay {
+  final String id, name, kind;
+  final double? stars, distanceKm;
+  final double lat, lng;
+  final String? address, phone, website, email;
+  const Stay({required this.id, required this.name, required this.kind, this.stars, this.distanceKm, required this.lat, required this.lng, this.address, this.phone, this.website, this.email});
+  factory Stay.fromRow(Map<String, dynamic> r) => Stay(
+        id: r['id'] as String,
+        name: r['name'] as String,
+        kind: r['kind'] as String? ?? 'hotel',
+        stars: (r['stars'] as num?)?.toDouble(),
+        distanceKm: (r['distance_km'] as num?)?.toDouble(),
+        lat: (r['lat'] as num).toDouble(),
+        lng: (r['lng'] as num).toDouble(),
+        address: r['address'] as String?,
+        phone: r['phone'] as String?,
+        website: r['website'] as String?,
+        email: r['email'] as String?,
+      );
+  String get kindLabel => const {
+        'hotel': 'Hotel', 'hostel': 'Hostel', 'guest_house': 'Guest house', 'motel': 'Motel', 'resort': 'Resort',
+        'apartment': 'Apartment', 'chalet': 'Cottage', 'camp_site': 'Campsite',
+      }[kind] ?? 'Stay';
+}
+
+class Airport {
+  final String iata, name, city, country;
+  final double lat, lng;
+  const Airport(this.iata, this.name, this.city, this.country, this.lat, this.lng);
+  factory Airport.fromRow(Map<String, dynamic> r) => Airport(r['iata'] as String, r['name'] as String, r['city'] as String? ?? '', r['country'] as String? ?? '',
+      (r['lat'] as num).toDouble(), (r['lng'] as num).toDouble());
+  String get label => '${city.isEmpty ? name : city} ($iata)';
+}
+
+class Train {
+  final String number, name, origin, destination;
+  final List<String> stops;
+  final String? note;
+  const Train(this.number, this.name, this.origin, this.destination, this.stops, this.note);
+  factory Train.fromRow(Map<String, dynamic> r) => Train(r['number'] as String, r['name'] as String, r['origin'] as String, r['destination'] as String,
+      List<String>.from(r['stops'] as List? ?? const []), r['note'] as String?);
+  List<String> get line => [origin, ...stops, destination];
+}
+
+class BusOperator {
+  final String name;
+  final List<String> routes;
+  final bool ac;
+  final String? website;
+  const BusOperator(this.name, this.routes, this.ac, this.website);
+  factory BusOperator.fromRow(Map<String, dynamic> r) =>
+      BusOperator(r['name'] as String, List<String>.from(r['routes'] as List? ?? const []), r['ac'] as bool? ?? false, r['website'] as String?);
+}
+
+class GuideApplication {
+  final String id, status, fullName;
+  final Map<String, dynamic> row;
+  const GuideApplication(this.id, this.status, this.fullName, this.row);
+  factory GuideApplication.fromRow(Map<String, dynamic> r) => GuideApplication(r['id'] as String, r['status'] as String, r['full_name'] as String, r);
 }
