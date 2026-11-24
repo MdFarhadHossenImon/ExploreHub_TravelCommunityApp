@@ -6,6 +6,7 @@ import 'package:flutter/gestures.dart' show PointerScrollEvent;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../core/i18n.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -14,15 +15,18 @@ import '../data/mock_data.dart';
 import '../data/models.dart';
 import '../screens/place_detail.dart';
 import 'common.dart';
+import 'globe_layers.dart';
 
 const _deg = math.pi / 180;
+const _maxZoom = 60.0; // close enough to read upazila names
 
 /// Country outlines (Natural Earth 1:110m, public domain), loaded once.
 class _Country {
   final String name;
   final double lon, lat; // degrees, label point
   final int rank; // 2 = largest countries ... 7 = smallest
-  const _Country(this.name, this.lon, this.lat, this.rank);
+  final double area; // square degrees, to label big countries first
+  const _Country(this.name, this.lon, this.lat, this.rank, this.area);
 }
 
 class _World {
@@ -37,7 +41,14 @@ class _World {
     final ls = <Float32List>[], lc = <Float32List>[], ps = <Float32List>[], pc = <Float32List>[];
     final countries = <_Country>[];
     for (final c in data) {
-      countries.add(_Country(c['n'] as String, (c['x'] as num).toDouble(), (c['y'] as num).toDouble(), (c['k'] as num).toInt()));
+      var area = 0.0;
+      for (final r in (c['r'] as List)) {
+        final f = (r as List).cast<num>();
+        for (var i = 0; i + 3 < f.length; i += 2) {
+          area += f[i] * f[i + 3] - f[i + 2] * f[i + 1];
+        }
+      }
+      countries.add(_Country(c['n'] as String, (c['x'] as num).toDouble(), (c['y'] as num).toDouble(), (c['k'] as num).toInt(), area.abs() / 2));
       for (final r in (c['r'] as List)) {
         final flat = (r as List).cast<num>();
         final n = flat.length ~/ 2;
@@ -55,7 +66,7 @@ class _World {
         pc.add(d);
       }
     }
-    return _cache = _World(ls, lc, ps, pc, countries..sort((a, b) => a.rank.compareTo(b.rank)));
+    return _cache = _World(ls, lc, ps, pc, countries..sort((a, b) => a.rank != b.rank ? a.rank.compareTo(b.rank) : b.area.compareTo(a.area)));
   }
 }
 
@@ -135,7 +146,7 @@ class _ExploreGlobeState extends State<ExploreGlobe> with TickerProviderStateMix
       _vLon *= k;
       _vLat *= k;
       changed = true;
-    } else if (_sel == null && DateTime.now().difference(_lastTouch).inSeconds > 3) {
+    } else if (_sel == null && _zoom < 2 && DateTime.now().difference(_lastTouch).inSeconds > 3) {
       _lon += 6 * dt / _zoom; // idle spin
       changed = true;
     }
@@ -263,6 +274,11 @@ class _ExploreGlobeState extends State<ExploreGlobe> with TickerProviderStateMix
       child: LayoutBuilder(builder: (context, box) {
         final size = Size(box.maxWidth, widget.height);
         final r = math.min(size.width, size.height) * _radiusFactor * _zoom;
+        if (_zoom > 1.6 && GeoDetail.cache == null) {
+          GeoDetail.load().then((_) {
+            if (mounted) setState(() {});
+          });
+        }
         return Stack(children: [
           Positioned.fill(
             child: GestureDetector(
@@ -282,7 +298,7 @@ class _ExploreGlobeState extends State<ExploreGlobe> with TickerProviderStateMix
                 setState(() {
                   _lon -= delta.dx / r / _deg;
                   _lat = (_lat + delta.dy / r / _deg).clamp(-80.0, 80.0);
-                  if (d.pointerCount > 1) _zoom = (_startZoom * d.scale).clamp(.8, 9.0);
+                  if (d.pointerCount > 1) _zoom = (_startZoom * d.scale).clamp(.8, _maxZoom);
                 });
                 _lastTouch = DateTime.now();
               },
@@ -296,7 +312,7 @@ class _ExploreGlobeState extends State<ExploreGlobe> with TickerProviderStateMix
               child: Listener(
                 onPointerSignal: (e) {
                   if (widget.fullscreen && e is PointerScrollEvent) {
-                    setState(() => _zoom = (_zoom * (e.scrollDelta.dy > 0 ? .9 : 1.1)).clamp(.8, 9.0));
+                    setState(() => _zoom = (_zoom * (e.scrollDelta.dy > 0 ? .9 : 1.1)).clamp(.8, _maxZoom));
                   }
                 },
                 child: RepaintBoundary(
@@ -307,6 +323,7 @@ class _ExploreGlobeState extends State<ExploreGlobe> with TickerProviderStateMix
                       size: size,
                       painter: _GlobePainter(
                         world: _world,
+                        geo: GeoDetail.cache,
                         places: pts,
                         lon: _lon,
                         lat: _lat,
@@ -328,14 +345,22 @@ class _ExploreGlobeState extends State<ExploreGlobe> with TickerProviderStateMix
             right: 10,
             top: widget.fullscreen ? 70 : 10,
             child: Column(children: [
-              _roundBtn(Icons.add_rounded, () => setState(() => _zoom = (_zoom * 1.4).clamp(.8, 9.0))),
+              _roundBtn(Icons.add_rounded, () => setState(() => _zoom = (_zoom * 1.6).clamp(.8, _maxZoom))),
               const SizedBox(height: 8),
-              _roundBtn(Icons.remove_rounded, () => setState(() => _zoom = (_zoom / 1.4).clamp(.8, 9.0))),
+              _roundBtn(Icons.remove_rounded, () => setState(() => _zoom = (_zoom / 1.6).clamp(.8, _maxZoom))),
               const SizedBox(height: 8),
               if (!widget.fullscreen) _roundBtn(Icons.fullscreen_rounded, () => go(context, const GlobeScreen())),
             ]),
           ),
-          if (_sel == null)
+          if (GeoDetail.cache != null && _zoom > 3)
+            Positioned(
+              right: 12,
+              bottom: _sel != null && _panel ? 150 : 12,
+              child: IgnorePointer(
+                child: Text('Map data: Natural Earth · geoBoundaries.org', style: TextStyle(color: C.muted.withValues(alpha: .8), fontSize: 9)),
+              ),
+            ),
+          if (_sel == null && !(GeoDetail.cache != null && _zoom > 3))
             Positioned(
               left: 14,
               bottom: 12,
@@ -425,12 +450,14 @@ class _PlacePanel extends StatelessWidget {
 
 class _GlobePainter extends CustomPainter {
   final _World? world;
+  final GeoDetail? geo;
   final List<Place> places;
   final double lon, lat, radius, zoom, pin;
   final Place? selected;
   final List<(Place, Offset)> hits;
   _GlobePainter({
     required this.world,
+    required this.geo,
     required this.places,
     required this.lon,
     required this.lat,
@@ -441,7 +468,6 @@ class _GlobePainter extends CustomPainter {
     required this.hits,
   });
 
-  static final Map<String, TextPainter> _labels = {};
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -476,9 +502,24 @@ class _GlobePainter extends CustomPainter {
       _line(canvas, c, r, sl, cl, sp, cp, [for (var lo = -180; lo <= 180; lo += 5) (lo * _deg, g * _deg)], grid);
     }
 
+    final view = GeoView(c, r, sl, cl, sp, cp, size);
+    final ppd = view.ppd; // pixels per degree: how far in we are
+    final g = geo;
+    final hiLand = g != null && ppd >= 9;
+
     // land
     final w = world;
-    if (w != null) {
+    if (hiLand) {
+      // sharper coastlines and borders when zoomed in
+      canvas.drawPath(view.path(g.land, closed: true), Paint()..color = const Color(0xFF3F7A64));
+      canvas.drawPath(
+          view.path(g.land),
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.1
+            ..strokeJoin = StrokeJoin.round
+            ..color = const Color(0xFFA9D6BC).withValues(alpha: .7));
+    } else if (w != null) {
       final fill = Paint()..color = const Color(0xFF3F7A64);
       final border = Paint()
         ..style = PaintingStyle.stroke
@@ -524,6 +565,23 @@ class _GlobePainter extends CustomPainter {
       canvas.drawPath(edges, border);
     }
 
+    // states and provinces, then Bangladesh's upazilas, districts and divisions
+    if (g != null) {
+      Paint stroke(double width, Color color, double a) => Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = width
+        ..strokeJoin = StrokeJoin.round
+        ..color = color.withValues(alpha: a);
+      final aA = ((ppd - 8) / 6).clamp(0.0, 1.0);
+      if (aA > 0) canvas.drawPath(view.path(g.admin1), stroke(.8, const Color(0xFFD4EADD), .30 * aA));
+      final uA = ((ppd - 70) / 30).clamp(0.0, 1.0);
+      if (uA > 0) canvas.drawPath(view.path(g.bdUpa), stroke(.6, const Color(0xFFD4EADD), .22 * uA));
+      final tA = ((ppd - 14) / 8).clamp(0.0, 1.0);
+      if (tA > 0) canvas.drawPath(view.path(g.bdDist), stroke(.9, const Color(0xFFD4EADD), .42 * tA));
+      final vA = ((ppd - 6) / 4).clamp(0.0, 1.0);
+      if (vA > 0) canvas.drawPath(view.path(g.bdDiv), stroke(1.4, const Color(0xFFE9D9B8), .55 * vA));
+    }
+
     // shading: light from the top-left, dark limb
     canvas.drawCircle(
       c,
@@ -559,11 +617,28 @@ class _GlobePainter extends CustomPainter {
     canvas.restore();
 
     final taken = <Rect>[];
+    bool room(Rect rect) {
+      if (rect.left < 2 || rect.top < 2 || rect.right > size.width - 2 || rect.bottom > size.height - 2) return false;
+      if (taken.any((t) => t.overlaps(rect))) return false;
+      taken.add(rect);
+      return true;
+    }
 
-    // country names: strongest when zoomed out, fade away as you zoom in
-    final cAlpha = ((2.4 - zoom) / 1.0).clamp(0.0, 1.0);
+    TextStyle font(double size, FontWeight weight, Color color, {double spacing = 0}) =>
+        GoogleFonts.plusJakartaSans(fontSize: size, fontWeight: weight, color: color, letterSpacing: spacing, height: 1.15);
+
+    /// A centred map label (countries, divisions, districts, states).
+    void area(String text, Offset o, TextStyle st, String kind, {double halo = 3}) {
+      final t = MapText.of(text, st, kind: kind, haloWidth: halo);
+      final rect = Rect.fromCenter(center: o, width: t.$2.width, height: t.$2.height).inflate(2);
+      if (room(rect)) MapText.paint(canvas, t, rect.topLeft + const Offset(2, 2));
+    }
+
+    // country names: letter-spaced capitals with a soft halo; they fade out once cities take over
+    final cAlpha = (1 - (ppd - 22) / 18).clamp(0.0, 1.0);
     if (w != null && cAlpha > 0) {
-      final maxRank = zoom < 1.15 ? 4 : (zoom < 1.6 ? 5 : 7);
+      final maxRank = ppd < 3.3 ? 4 : (ppd < 4.6 ? 5 : (ppd < 7 ? 6 : 7));
+      final grow = 1 + (ppd - 2.8).clamp(0.0, 12.0) * .035;
       canvas.saveLayer(Offset.zero & size, Paint()..color = Colors.white.withValues(alpha: cAlpha));
       for (final ct in w.countries) {
         if (ct.rank > maxRank) continue;
@@ -571,25 +646,8 @@ class _GlobePainter extends CustomPainter {
         final cosc = sp * math.sin(la) + cp * math.cos(la) * math.cos(dl);
         if (cosc < .3) continue;
         final o = Offset(c.dx + r * math.cos(la) * math.sin(dl), c.dy - r * (cp * math.sin(la) - sp * math.cos(la) * math.cos(dl)));
-        final tp = _labels.putIfAbsent(
-          'c:${ct.name}',
-          () => TextPainter(
-            text: TextSpan(
-              text: ct.name.toUpperCase(),
-              style: TextStyle(
-                  color: const Color(0xFFF7EBDD).withValues(alpha: .85),
-                  fontSize: ct.rank <= 3 ? 10.5 : 9,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                  shadows: const [Shadow(blurRadius: 3, color: Colors.black)]),
-            ),
-            textDirection: TextDirection.ltr,
-          )..layout(),
-        );
-        final rect = Rect.fromCenter(center: o, width: tp.width, height: tp.height).inflate(3);
-        if (rect.left < 0 || rect.right > size.width || taken.any((t) => t.overlaps(rect))) continue;
-        taken.add(rect);
-        tp.paint(canvas, rect.topLeft + const Offset(3, 3));
+        final fs = ((ct.rank <= 2 ? 11.5 : ct.rank == 3 ? 10.5 : ct.rank == 4 ? 9.5 : 9.0) * grow * 2).round() / 2;
+        area(ct.name.toUpperCase(), o, font(fs, FontWeight.w700, const Color(0xFFF4EBDC), spacing: ct.rank <= 3 ? 1.8 : 1.2), 'country');
       }
       canvas.restore();
     }
@@ -597,29 +655,92 @@ class _GlobePainter extends CustomPainter {
     // place names: fade in as you zoom in, most popular first, skip overlaps
     final pAlpha = ((zoom - 1.4) / .7).clamp(0.0, 1.0);
     if (pAlpha > 0) {
-      final budget = (6 + zoom * zoom * 5).round().clamp(6, 70);
+      final budget = (6 + zoom * zoom * 5).round().clamp(6, 30);
       visible.sort((x, y) => (y.$1.popularity ?? (y.$1.rating * 1000).round()).compareTo(x.$1.popularity ?? (x.$1.rating * 1000).round()));
       canvas.saveLayer(Offset.zero & size, Paint()..color = Colors.white.withValues(alpha: pAlpha));
       var shown = 0;
       for (final (p, o, cosc) in visible) {
         if (shown >= budget || cosc < .35) continue;
         if (selected?.id == p.id) continue;
-        final tp = _labels.putIfAbsent(
-          p.id,
-          () => TextPainter(
-            text: TextSpan(
-                text: p.name.length > 22 ? '${p.name.substring(0, 21)}…' : p.name,
-                style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w600, shadows: [Shadow(blurRadius: 3, color: Colors.black)])),
-            textDirection: TextDirection.ltr,
-          )..layout(),
-        );
-        final rect = Rect.fromLTWH(o.dx + 5, o.dy - tp.height / 2, tp.width, tp.height).inflate(2);
-        if (rect.right > size.width || rect.left < 0 || taken.any((t) => t.overlaps(rect))) continue;
-        taken.add(rect);
-        tp.paint(canvas, Offset(o.dx + 6, o.dy - tp.height / 2));
+        final t = MapText.of(p.name.length > 22 ? '${p.name.substring(0, 21)}…' : p.name, font(10.5, FontWeight.w700, const Color(0xFFFFC98B)), kind: 'place');
+        var rect = Rect.fromLTWH(o.dx + 6, o.dy - t.$2.height / 2, t.$2.width, t.$2.height).inflate(2);
+        if (!room(rect)) {
+          rect = Rect.fromLTWH(o.dx - 6 - t.$2.width, o.dy - t.$2.height / 2, t.$2.width, t.$2.height).inflate(2);
+          if (!room(rect)) continue;
+        }
+        MapText.paint(canvas, t, rect.topLeft + const Offset(2, 2));
         shown++;
       }
       canvas.restore();
+    }
+
+    // cities and towns: a dot and the name beside it, bigger places first, more as you zoom in
+    if (g != null) {
+      final cityMax = ppd < 4 ? -1 : ppd < 6 ? 1 : ppd < 9 ? 2 : ppd < 13 ? 3 : ppd < 20 ? 5 : ppd < 32 ? 7 : ppd < 55 ? 9 : 11;
+      var shown = 0;
+      final dotFill = Paint()..color = const Color(0xFFFDF8F0);
+      final dotEdge = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = const Color(0xFF0B1F21);
+      for (final ct in g.cities) {
+        if (ct.rank > cityMax || shown >= 45) break;
+        final o = view.label(ct, minCos: .2);
+        if (o == null) continue;
+        final big = ct.rank <= 2 || ct.national;
+        final st = font(big ? 12.5 : (ct.rank <= 5 ? 11.5 : 10.5), ct.national ? FontWeight.w800 : (big ? FontWeight.w700 : FontWeight.w600), Colors.white);
+        final t = MapText.of(ct.name, st, kind: 'city');
+        final w2 = t.$2.width, h2 = t.$2.height;
+        var rect = Rect.fromLTWH(o.dx + 6, o.dy - h2 / 2, w2, h2).inflate(1.5);
+        final dotRect = Rect.fromCircle(center: o, radius: 4);
+        if (taken.any((x) => x.overlaps(dotRect))) continue;
+        if (!room(rect)) {
+          rect = Rect.fromLTWH(o.dx - 6 - w2, o.dy - h2 / 2, w2, h2).inflate(1.5);
+          if (!room(rect)) continue;
+        }
+        taken.add(dotRect);
+        if (ct.national) {
+          canvas.drawCircle(o, 4.2, dotFill);
+          canvas.drawCircle(o, 4.2, dotEdge);
+          canvas.drawCircle(o, 1.6, Paint()..color = const Color(0xFF0B1F21));
+        } else {
+          canvas.drawCircle(o, ct.capital ? 3 : 2.4, dotFill);
+          canvas.drawCircle(o, ct.capital ? 3 : 2.4, dotEdge);
+        }
+        MapText.paint(canvas, t, rect.topLeft + const Offset(1.5, 1.5));
+        shown++;
+      }
+    }
+
+    if (g != null) {
+      // Bangladesh: divisions, then districts, then upazilas
+      if (ppd >= 7 && ppd < 30) {
+        for (final l in g.bdDivLabels) {
+          final o = view.label(l);
+          if (o != null) area('${l.name.toUpperCase()} DIVISION', o.translate(0, 14), font(9.5, FontWeight.w700, const Color(0xFFEAD9B6), spacing: 1.8), 'div');
+        }
+      }
+      if (ppd >= 16) {
+        for (final l in g.bdDistLabels) {
+          final o = view.label(l);
+          if (o != null) area(l.name, o, font(ppd >= 40 ? 11.5 : 10.5, FontWeight.w600, const Color(0xFFE8F1EC), spacing: .3), 'dist');
+        }
+      }
+      // states and provinces elsewhere
+      if (ppd >= 10) {
+        final maxK = ppd < 16 ? 3 : ppd < 28 ? 5 : ppd < 45 ? 7 : 10;
+        for (final l in g.admin1Labels) {
+          if (l.rank > maxK) continue;
+          final o = view.label(l);
+          if (o != null) area(l.name.toUpperCase(), o, font(9.5, FontWeight.w600, const Color(0xFFBCD6C8), spacing: 1.5), 'adm1');
+        }
+      }
+      if (ppd >= 70) {
+        for (final l in g.bdUpaLabels) {
+          final o = view.label(l);
+          if (o != null) area(l.name, o, font(9.5, FontWeight.w500, const Color(0xFFC9DDD2)), 'upa', halo: 2.5);
+        }
+      }
     }
 
     // selected place: ripple + dropping pin

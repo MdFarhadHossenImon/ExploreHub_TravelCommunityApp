@@ -39,6 +39,10 @@ flutter:
     - assets/world.json
     - assets/phrasebook.json
     - assets/waylo_guide.json
+    - assets/geo_land50.json
+    - assets/geo_admin1.json
+    - assets/geo_cities.json
+    - assets/geo_bd.json
   fonts:
     - family: NotoSansBengali
       fonts:
