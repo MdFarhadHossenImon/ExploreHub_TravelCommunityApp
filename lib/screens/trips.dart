@@ -10,6 +10,7 @@ import '../data/social.dart';
 import '../state/social_state.dart';
 import '../widgets/common.dart';
 import 'trip_tools.dart';
+import 'ai_planner.dart';
 import '../widgets/pull_refresh.dart';
 import '../widgets/social_widgets.dart';
 import 'bookings.dart';
@@ -86,6 +87,22 @@ class _PlansTab extends StatelessWidget {
               ]),
             ),
             Icon(Icons.chevron_right_rounded, color: C.muted),
+          ]),
+        ),
+        const SizedBox(height: 10),
+        Panel(
+          onTap: () => go(context, const AiPlannerScreen()),
+          child: Row(children: [
+            IconBubble(Icons.auto_awesome_rounded, const Color(0xFF9B7BE0), size: 46),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(tr('AI trip planner'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+                const SizedBox(height: 2),
+                Text(tr('Tell AI your days and budget, get a ready plan.'), style: const TextStyle(color: C.muted, fontSize: 12.5)),
+              ]),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: C.muted),
           ]),
         ),
         const SizedBox(height: 16),

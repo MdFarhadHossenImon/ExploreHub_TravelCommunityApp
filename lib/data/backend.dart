@@ -646,6 +646,26 @@ class Backend {
     });
   }
 
+  /// AI trip planner (Edge Function `ai-planner`). Returns {plan, remaining} or throws [PlannerError].
+  static Future<Map<String, dynamic>> aiPlan({required String destination, required int days, required double budget, required String currency, String style = ''}) async {
+    try {
+      final res = await _c.functions.invoke('ai-planner', body: {
+        'destination': destination,
+        'days': days,
+        'budget': budget,
+        'currency': currency,
+        'style': style,
+        'lang': isBangla ? 'bn' : 'en',
+      });
+      return Map<String, dynamic>.from(res.data as Map);
+    } on FunctionException catch (e) {
+      final d = e.details;
+      final code = d is Map ? (d['error'] ?? '').toString() : '';
+      final msg = d is Map ? (d['message'] ?? '').toString() : '';
+      throw PlannerError(code.isEmpty ? 'server' : code, msg.isEmpty ? 'The planner is busy. Please try again.' : msg);
+    }
+  }
+
   // ---- live location & SOS ----
   static Future<void> shareLocation(double lat, double lng, double? accuracy, DateTime until) async => _c.from('live_locations').upsert({
         'user_id': uid,
@@ -896,4 +916,11 @@ class Backend {
     final me = await _c.from('profiles').select('avatar_url').eq('id', uid!).maybeSingle();
     await _c.from('guides').upsert({...row, 'id': 'g-$uid', 'user_id': uid, 'status': 'approved', 'avatar_url': me?['avatar_url']});
   }
+}
+
+class PlannerError implements Exception {
+  final String code, message;
+  PlannerError(this.code, this.message);
+  @override
+  String toString() => message;
 }

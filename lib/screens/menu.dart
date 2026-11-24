@@ -4,6 +4,7 @@ import 'live_sos.dart';
 import 'passport.dart';
 import 'phrasebook.dart';
 import 'festivals.dart';
+import 'ai_planner.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -53,6 +54,7 @@ class MenuScreen extends StatelessWidget {
         () => go(context, const MeetupsScreen())
       ),
       (Icons.map_rounded, C.primary, 'Trip planner', '${social.trips.length} plans', () => shellTab.value = 3),
+      (Icons.auto_awesome_rounded, const Color(0xFF9B7BE0), 'AI trip planner', null, () => go(context, const AiPlannerScreen())),
       (Icons.confirmation_number_rounded, const Color(0xFFE9C46A), 'Bookings', null, () => go(context, const Scaffold(body: BookingsScreen()))),
       (Icons.smart_display_rounded, C.danger, 'Watch', null, () => shellTab.value = 2),
       (Icons.bookmark_rounded, const Color(0xFFE88DB0), 'Saved', null, () => go(context, const SavedPlacesScreen())),
