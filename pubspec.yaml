@@ -19,6 +19,7 @@ dependencies:
   video_compress: ^3.1.4
   http: ^1.6.0
   shared_preferences: ^2.5.3
+  connectivity_plus: ^7.3.1
 
 dev_dependencies:
   flutter_test:

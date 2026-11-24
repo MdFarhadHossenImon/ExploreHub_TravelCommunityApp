@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/env.dart';
 import 'models.dart';
+import 'offline.dart';
 
 /// A city a trip starts from.
 class Origin {
@@ -52,6 +53,28 @@ class RoutePlanner {
 
   /// Returns a cached plan or builds one from real road routing (OSRM) and the towns along the road (OpenStreetMap).
   static Future<List<PlanItem>> plan(Origin o, Place p) async {
+    final k = 'route:${p.id}:${o.key}';
+    List<PlanItem>? saved() {
+      final c = Offline.read(k);
+      return c is List ? [for (final e in c) Map<String, dynamic>.from(e as Map)] : null;
+    }
+
+    if (!Offline.online.value) {
+      final c = saved();
+      if (c != null) return c;
+    }
+    try {
+      final items = await _plan(o, p);
+      if (items.length > 2) Offline.write(k, items);
+      return items;
+    } catch (_) {
+      final c = saved();
+      if (c != null) return c;
+      rethrow;
+    }
+  }
+
+  static Future<List<PlanItem>> _plan(Origin o, Place p) async {
     if (Env.configured) {
       try {
         final r = await _c.from('place_routes').select('data').eq('place_id', p.id).eq('origin', o.key).maybeSingle();
@@ -250,6 +273,17 @@ class RoutePlanner {
 
   // ---------- history from Wikipedia ----------
   static Future<String?> history(Place p) async {
+    final k = 'history:${p.id}';
+    final h = await _history(p);
+    if (h != null && h.isNotEmpty) {
+      Offline.write(k, h);
+      return h;
+    }
+    final c = Offline.read(k);
+    return c is String ? c : h;
+  }
+
+  static Future<String?> _history(Place p) async {
     if (p.wikiTitle == null || p.wikiTitle!.isEmpty) return null;
     try {
       final u = Uri.https('en.wikipedia.org', '/w/api.php', {

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../core/env.dart';
 import '../data/backend.dart';
+import '../data/offline.dart';
 import '../data/mock_data.dart';
 import '../data/models.dart';
 
@@ -123,7 +124,7 @@ class AppState extends ChangeNotifier {
       savedPlaces..clear()..addAll(await Backend.mySavedPlaces());
       following..clear()..addAll(await Backend.myFollowing());
     } catch (e) {
-      say(errText(e));
+      if (Offline.online.value) say(errText(e));
     }
     notifyListeners();
   }

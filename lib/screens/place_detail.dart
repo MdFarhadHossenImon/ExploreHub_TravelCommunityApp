@@ -7,6 +7,7 @@ import '../core/responsive.dart';
 import '../core/theme.dart';
 import '../core/env.dart';
 import '../data/backend.dart';
+import '../data/offline.dart';
 import '../data/mock_data.dart';
 import '../data/models.dart';
 import '../state/app_state.dart';
@@ -45,7 +46,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   Future<void> _loadHistory() async {
     String? h;
     try {
-      final r = await Supabase.instance.client.from('places').select('history').eq('id', widget.place.id).maybeSingle();
+      final r = await Offline.row('hist:${widget.place.id}', () => Supabase.instance.client.from('places').select('history').eq('id', widget.place.id).maybeSingle());
       h = r?['history'] as String?;
     } catch (_) {}
     h ??= await RoutePlanner.history(widget.place);

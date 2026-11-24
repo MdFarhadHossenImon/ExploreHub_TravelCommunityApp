@@ -1,3 +1,5 @@
+import 'offline.dart';
+import '../core/i18n.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:math';
 import 'dart:convert';
@@ -16,7 +18,8 @@ String errText(Object e) {
   if (e is AuthException) return e.message;
   if (e is PostgrestException) return e.message;
   if (e is StorageException) return e.message;
-  return 'Something went wrong. Check your connection and try again.';
+  if (!Offline.online.value) return tr('You are offline. This needs internet, try again when you are connected.');
+  return tr('Something went wrong. Check your connection and try again.');
 }
 
 /// Every call to Supabase lives here, so screens never touch the SDK directly.
@@ -73,7 +76,7 @@ class Backend {
 
   // ---------- profile ----------
   static Future<Map<String, dynamic>?> profile() =>
-      _c.from('profiles_view').select().eq('id', uid!).maybeSingle();
+      Offline.row('profile', () => _c.from('profiles_view').select().eq('id', uid!).maybeSingle());
 
   static Future<void> updateName(String name) async {
     await _c.from('profiles').update({'name': name}).eq('id', uid!);
@@ -87,28 +90,31 @@ class Backend {
   static Future<List<Place>> places() async {
     const cols = 'id,name,location,country,category,hub,rating,reviews,price,season,last_mode,last_detail,last_duration,facilities,'
         'address,lat,lng,hours,maps_url,image_url,wiki_title,video_url,continent,budget_low,budget_high,popularity';
-    final out = <Place>[];
-    // The API returns at most 1000 rows per request, so page through the catalog.
-    for (var from = 0; from < 5000; from += 1000) {
-      final rows = await _c
-          .from('places')
-          .select(cols)
-          .order('popularity', ascending: false, nullsFirst: true)
-          .order('id')
-          .range(from, from + 999);
-      out.addAll(rows.map<Place>((r) => Place.fromRow(r)));
-      if (rows.length < 1000) break;
-    }
-    return out;
+    final all = await Offline.rows('places', () async {
+      final acc = <Map<String, dynamic>>[];
+      // The API returns at most 1000 rows per request, so page through the catalog.
+      for (var from = 0; from < 5000; from += 1000) {
+        final rows = await _c
+            .from('places')
+            .select(cols)
+            .order('popularity', ascending: false, nullsFirst: true)
+            .order('id')
+            .range(from, from + 999);
+        acc.addAll(rows);
+        if (rows.length < 1000) break;
+      }
+      return acc;
+    });
+    return all.map<Place>((r) => Place.fromRow(r)).toList();
   }
 
   static Future<String?> placeAbout(String id) async {
-    final r = await _c.from('places').select('about').eq('id', id).maybeSingle();
+    final r = await Offline.row('about:$id', () => _c.from('places').select('about').eq('id', id).maybeSingle());
     return r?['about'] as String?;
   }
 
   static Future<List<Guide>> guides() async {
-    final rows = await _c.from('guides').select().eq('status', 'approved').order('rating', ascending: false).order('created_at');
+    final rows = await Offline.rows('guides', () => _c.from('guides').select().eq('status', 'approved').order('rating', ascending: false).order('created_at'));
     return rows.map<Guide>((r) => Guide.fromRow(r)).toList();
   }
 
@@ -132,12 +138,12 @@ class Backend {
 
   // ---------- community ----------
   static Future<List<Post>> posts() async {
-    final rows = await _c.from('posts_feed').select().isFilter('group_id', null).order('created_at', ascending: false).limit(60);
+    final rows = await Offline.rows('posts', () => _c.from('posts_feed').select().isFilter('group_id', null).order('created_at', ascending: false).limit(60));
     return rows.map<Post>((r) => Post.fromRow(r)).toList();
   }
 
   static Future<Set<String>> _ids(String table, String column) async {
-    final rows = await _c.from(table).select(column).eq(table == 'follows' ? 'follower_id' : 'user_id', uid!);
+    final rows = await Offline.rows('ids:$table', () => _c.from(table).select(column).eq(table == 'follows' ? 'follower_id' : 'user_id', uid!));
     return rows.map<String>((r) => r[column] as String).toSet();
   }
 
@@ -381,7 +387,7 @@ class Backend {
 
   // ---------- bookings & notifications ----------
   static Future<List<Booking>> bookings() async {
-    final rows = await _c.from('bookings').select().order('created_at', ascending: false);
+    final rows = await Offline.rows('bookings', () => _c.from('bookings').select().order('created_at', ascending: false));
     return rows.map<Booking>((r) => Booking.fromRow(r)).toList();
   }
 
@@ -412,7 +418,7 @@ class Backend {
   }
 
   static Future<List<AppNotification>> notifications() async {
-    final rows = await _c.from('notifications').select('*, actor:profiles!notifications_actor_id_fkey(name, avatar_url)').order('created_at', ascending: false).limit(50);
+    final rows = await Offline.rows('notifications', () => _c.from('notifications').select('*, actor:profiles!notifications_actor_id_fkey(name, avatar_url)').order('created_at', ascending: false).limit(50));
     return rows.map<AppNotification>((r) => AppNotification.fromRow(r)).toList();
   }
 
@@ -437,13 +443,13 @@ class Backend {
   }
 
   static Future<List<Traveler>> travelers() async {
-    final rows = await _c.from('profiles_view').select().order('created_at', ascending: false).limit(300);
+    final rows = await Offline.rows('travelers', () => _c.from('profiles_view').select().order('created_at', ascending: false).limit(300));
     return rows.map<Traveler>((r) => Traveler.fromRow(r)).toList();
   }
 
   // ---- buddies ----
   static Future<List<Map<String, dynamic>>> buddyRows() async =>
-      List<Map<String, dynamic>>.from(await _c.from('buddy_requests').select().or('from_id.eq.$uid,to_id.eq.$uid'));
+      Offline.rows('buddies', () async => List<Map<String, dynamic>>.from(await _c.from('buddy_requests').select().or('from_id.eq.$uid,to_id.eq.$uid')));
 
   static Future<void> sendBuddyRequest(String to) async => _c.from('buddy_requests').insert({'from_id': uid, 'to_id': to});
   static Future<void> cancelBuddyRequest(String to) async => _c.from('buddy_requests').delete().eq('from_id', uid!).eq('to_id', to);
@@ -576,7 +582,7 @@ class Backend {
 
   // ---- trips ----
   static Future<List<TripPlan>> trips() async {
-    final rows = await _c.from('trips').select('*, trip_members(user_id), trip_stops(*)').order('start_date');
+    final rows = await Offline.rows('trips', () => _c.from('trips').select('*, trip_members(user_id), trip_stops(*)').order('start_date'));
     return rows.map<TripPlan>((r) {
       final days = (r['days'] as num).toInt();
       final stops = List<Map<String, dynamic>>.from(r['trip_stops'] as List? ?? const []);

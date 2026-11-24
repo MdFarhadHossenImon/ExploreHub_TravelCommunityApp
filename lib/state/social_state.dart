@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 
 import '../core/env.dart';
 import '../data/backend.dart';
+import '../data/offline.dart';
 import '../data/models.dart';
 import '../data/social.dart';
 
@@ -46,7 +47,7 @@ class SocialState extends ChangeNotifier {
         notifyListeners();
       });
     } catch (e) {
-      say(errText(e));
+      if (Offline.online.value) say(errText(e));
     }
     loading = false;
     notifyListeners();

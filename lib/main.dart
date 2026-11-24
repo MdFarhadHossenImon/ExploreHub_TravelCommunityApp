@@ -9,6 +9,8 @@ import 'package:supabase_flutter/supabase_flutter.dart' show AuthChangeEvent;
 import 'core/env.dart';
 import 'core/theme.dart';
 import 'data/backend.dart';
+import 'data/offline.dart';
+import 'widgets/offline_banner.dart';
 import 'screens/auth.dart';
 import 'screens/shell.dart';
 import 'screens/splash_onboarding.dart';
@@ -20,6 +22,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = !kPreview; // fonts are bundled in assets/google_fonts
   await loadLang();
+  await Offline.init();
   await Backend.init(); // no-op in demo mode (no --dart-define keys)
   runApp(
     MultiProvider(
@@ -47,6 +50,12 @@ class _ExploreHubAppState extends State<ExploreHubApp> {
     if (!Backend.on) return;
     final state = context.read<AppState>();
     final social = context.read<SocialState>();
+    // Back online: refresh everything that was shown from the saved copy.
+    Offline.onReconnect = () {
+      if (Backend.user == null) return;
+      state.pullRefresh();
+      social.load();
+    };
     _sub = Backend.authChanges.listen((e) async {
       final ctx = navKey.currentContext;
       // Load buddies, chats, groups, trips and stories whenever a session starts.
@@ -97,6 +106,7 @@ class _ExploreHubAppState extends State<ExploreHubApp> {
       scaffoldMessengerKey: messengerKey,
       theme: buildTheme(),
       home: const SplashScreen(),
+      builder: (context, child) => OfflineBanner(child: child!),
     );
   }
 }

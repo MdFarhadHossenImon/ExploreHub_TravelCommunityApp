@@ -887,4 +887,7 @@ const _bn = <String, String>{
   'Wind {0} km/h · Humidity {1}%': 'বাতাস {0} কিমি/ঘণ্টা · আর্দ্রতা {1}%',
   'Book a Trip  ·  {0}/person': 'ট্রিপ বুক করুন  ·  {0}/জন',
   'Book a Trip': 'ট্রিপ বুক করুন',
+  'Offline: showing your saved places, trips and tickets': 'অফলাইন: আপনার সংরক্ষিত জায়গা, ট্রিপ আর টিকিট দেখানো হচ্ছে',
+  'You are offline. This needs internet, try again when you are connected.': 'আপনি অফলাইনে আছেন। এর জন্য ইন্টারনেট লাগবে, সংযোগ পেলে আবার চেষ্টা করুন।',
+  'Something went wrong. Check your connection and try again.': 'কিছু একটা সমস্যা হয়েছে। সংযোগ দেখে আবার চেষ্টা করুন।',
 };
