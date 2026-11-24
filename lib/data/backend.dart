@@ -818,9 +818,12 @@ class Backend {
 
   static Future<Guide?> myGuide() async {
     if (uid == null) return null;
-    final r = await _c.from('guides').select().eq('user_id', uid!).maybeSingle();
+    final r = await _c.from('guides').select().eq('user_id', uid!).neq('status', 'left').maybeSingle();
     return r == null ? null : Guide.fromRow(r);
   }
+
+  /// Unverified guides can go back to being a traveler. Verified guides cannot.
+  static Future<void> leaveGuide() => _c.rpc('leave_guide');
 
   /// Basic guide signup / edit. Verification is separate (documents + admin approval).
   static Future<void> saveGuide(Map<String, dynamic> row) async {

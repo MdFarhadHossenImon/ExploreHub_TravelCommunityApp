@@ -296,6 +296,34 @@ class _GuideSignupScreenState extends State<GuideSignupScreen> {
     }
   }
 
+  Future<void> _leave() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Stop being a guide?'),
+        content: const Text('Your guide profile and badge will be removed and you will be a traveler again. Any pending verification request is withdrawn. You can sign up again later.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+          FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.redAccent), onPressed: () => Navigator.pop(c, true), child: const Text('Remove')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await Backend.leaveGuide();
+      if (!mounted) return;
+      await context.read<AppState>().pullRefresh();
+      if (!mounted) return;
+      toast(context, 'You are a traveler again');
+      Navigator.pop(context);
+    } catch (e) {
+      if (mounted) toast(context, errText(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Widget _f(TextEditingController c, String label, {String? hint, TextInputType? kb, int lines = 1}) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: TextField(controller: c, keyboardType: kb, maxLines: lines, decoration: InputDecoration(labelText: label, hintText: hint)),
@@ -322,6 +350,20 @@ class _GuideSignupScreenState extends State<GuideSignupScreen> {
           _f(_bio, 'About you and your tours', hint: 'What do you show travelers? Any special skills?', lines: 4),
           const SizedBox(height: 6),
           PrimaryButton(_busy ? 'Saving...' : (widget.existing == null ? 'Sign up as a guide' : 'Save changes'), icon: Icons.check_rounded, onPressed: _busy ? null : _save),
+          if (widget.existing != null) ...[
+            const SizedBox(height: 22),
+            const Divider(),
+            const SizedBox(height: 8),
+            if (widget.existing!.verified)
+              const Text('Verified guides cannot remove the guide role. Contact support if you need to stop guiding.', style: TextStyle(color: C.muted, fontSize: 12.5))
+            else
+              TextButton.icon(
+                style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                onPressed: _busy ? null : _leave,
+                icon: const Icon(Icons.logout_rounded),
+                label: const Text('Stop being a guide'),
+              ),
+          ],
         ]),
       );
 }
