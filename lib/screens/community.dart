@@ -518,7 +518,7 @@ class PostCard extends StatelessWidget {
                   message: 'See who reacted',
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
-                    child: Text(count, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, decoration: TextDecoration.underline, decorationStyle: TextDecorationStyle.dotted)),
+                    child: Text(count, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                   ),
                 ),
               ),
