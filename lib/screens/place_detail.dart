@@ -13,6 +13,9 @@ import '../widgets/common.dart';
 import '../widgets/pull_refresh.dart';
 import '../widgets/feed_video.dart';
 import '../widgets/place_extras.dart';
+import '../widgets/route_plan.dart';
+import '../data/route_planner.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show Supabase;
 import 'booking_flow.dart';
 import 'shell.dart';
 import 'stays.dart';
@@ -35,11 +38,24 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   bool _more = false;
   late final List<Review> _reviews = Backend.on ? <Review>[] : List.of(reviewsSeed);
   late String _aboutText = widget.place.about;
+  String? _history;
+  bool _historyMore = false;
+
+  Future<void> _loadHistory() async {
+    String? h;
+    try {
+      final r = await Supabase.instance.client.from('places').select('history').eq('id', widget.place.id).maybeSingle();
+      h = r?['history'] as String?;
+    } catch (_) {}
+    h ??= await RoutePlanner.history(widget.place);
+    if (mounted && h != null && h.isNotEmpty) setState(() => _history = h);
+  }
 
   @override
   void initState() {
     super.initState();
     if (Backend.on) _loadReviews();
+    if (Backend.on) _loadHistory();
     if (Backend.on && _aboutText.isEmpty) {
       Backend.placeAbout(widget.place.id).then((t) {
         if (mounted && t != null) setState(() => _aboutText = t);
@@ -164,7 +180,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   Widget _about() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('About', style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
-        Text(_aboutText.isEmpty ? 'Loading details...' : _aboutText, maxLines: _more ? null : 4, overflow: _more ? TextOverflow.visible : TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 13, height: 1.6)),
+        Text(_aboutText.isEmpty ? 'Loading details...' : _aboutText,
+            maxLines: _more ? null : 4, overflow: _more ? TextOverflow.visible : TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 13, height: 1.6)),
         GestureDetector(
           onTap: () => setState(() => _more = !_more),
           child: Padding(
@@ -172,6 +189,23 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             child: Text(_more ? 'Show less' : 'Read more', style: const TextStyle(color: C.danger, fontSize: 13)),
           ),
         ),
+        if (_history != null) ...[
+          const SizedBox(height: 18),
+          const Row(children: [
+            Icon(Icons.history_edu_rounded, size: 18, color: C.primary),
+            SizedBox(width: 6),
+            Text('History', style: TextStyle(fontWeight: FontWeight.w600)),
+          ]),
+          const SizedBox(height: 8),
+          Text(_history!, maxLines: _historyMore ? null : 6, overflow: _historyMore ? TextOverflow.visible : TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 13, height: 1.6)),
+          GestureDetector(
+            onTap: () => setState(() => _historyMore = !_historyMore),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(_historyMore ? 'Show less' : 'Read the full history', style: const TextStyle(color: C.danger, fontSize: 13)),
+            ),
+          ),
+        ],
         if ((p.imageUrl ?? '').contains('wikimedia.org'))
           const Padding(
             padding: EdgeInsets.only(top: 10),
@@ -299,59 +333,31 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       ]);
 
   Widget _howToGo() {
-    final steps = p.routes;
+    final local = p.lastDetail.isNotEmpty;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('How to get to ${p.name}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
       const SizedBox(height: 4),
-      const Text('Step by step from your city, with tickets you can book right here.', style: TextStyle(color: C.muted, fontSize: 12.5)),
-      const SizedBox(height: 16),
-      for (var i = 0; i < steps.length; i++)
-        IntrinsicHeight(
-          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Column(children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(color: C.primary, shape: BoxShape.circle),
-                child: Icon(modeIcon(steps[i].mode), color: C.on, size: 18),
-              ),
-              if (i < steps.length - 1) Expanded(child: Container(width: 2, color: C.line)),
-            ]),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 14),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.line)),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(steps[i].title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 6),
-                  Text(steps[i].detail, style: const TextStyle(color: C.muted, fontSize: 12.5, height: 1.5)),
-                  if (steps[i].duration.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Wrap(spacing: 8, children: [
-                      _Chip(Icons.schedule_rounded, steps[i].duration),
-                      if (steps[i].cost.isNotEmpty) _Chip(Icons.payments_outlined, steps[i].cost),
-                    ]),
-                  ],
-                  if (steps[i].action != null) ...[
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 38,
-                      child: OutlinedButton.icon(
-                        onPressed: () => go(context, TransportScreen(type: steps[i].action!, to: p.hub)),
-                        icon: Icon(modeIcon(steps[i].action!), size: 16),
-                        label: Text(
-                            'Find ${steps[i].action == 'flight' ? 'flights' : steps[i].action == 'train' ? 'trains' : 'buses'}',
-                            style: const TextStyle(fontSize: 12.5)),
-                      ),
-                    ),
-                  ],
-                ]),
-              ),
-            ),
+      const Text('Real road route with the main towns on the way. Change the start city any time.', style: TextStyle(color: C.muted, fontSize: 12.5)),
+      const SizedBox(height: 14),
+      if (p.lat != null && p.lng != null) RoutePlanView(place: p) else const Text('Route not available for this place yet.', style: TextStyle(color: C.muted)),
+      if (local) ...[
+        const SizedBox(height: 18),
+        const Text('Local tip for the last stretch', style: TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.line)),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(modeIcon(p.lastMode), color: C.primary),
+            const SizedBox(width: 10),
+            Expanded(child: Text('${p.lastDetail}${p.lastDuration.isNotEmpty ? '  (${p.lastDuration})' : ''}', style: const TextStyle(color: C.muted, fontSize: 12.5, height: 1.5))),
           ]),
         ),
+      ],
+      if (p.season.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        Text('Best time to visit: ${p.season}', style: const TextStyle(color: C.muted, fontSize: 12.5)),
+      ],
     ]);
   }
 
@@ -523,24 +529,6 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   }
 }
 
-class _Chip extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  const _Chip(this.icon, this.text);
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(color: C.tint, borderRadius: BorderRadius.circular(20)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 13, color: C.primary),
-          const SizedBox(width: 5),
-          Text(text, style: const TextStyle(fontSize: 11.5, color: C.primaryDark)),
-        ]),
-      );
-}
-
-
-/// Daily cost guide for three travel styles, from the place's budget range.
 class _BudgetCard extends StatelessWidget {
   final Place p;
   const _BudgetCard(this.p);
@@ -574,8 +562,7 @@ class _BudgetCard extends StatelessWidget {
         tier('Comfort', Icons.diamond_outlined, high, 'Upscale stay, tours, car'),
       ]),
       const SizedBox(height: 6),
-      Text('Estimated in US dollars from typical costs in ${p.country}. Entry tickets and flights are extra.',
-          style: const TextStyle(fontSize: 11, color: C.muted)),
+      Text('Estimated in US dollars from typical costs in ${p.country}. Entry tickets and flights are extra.', style: const TextStyle(fontSize: 11, color: C.muted)),
     ]);
   }
 }
