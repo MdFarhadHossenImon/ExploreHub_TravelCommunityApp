@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'waylo.dart';
 import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
@@ -47,6 +48,8 @@ List<Widget> headerActions(BuildContext context, {bool withSearch = true}) {
   final s = context.watch<AppState>();
   final social = context.watch<SocialState>();
   return [
+    CircleAction(Icons.explore_rounded, () => go(context, const WayloScreen()), tooltip: 'Waylo'),
+    const SizedBox(width: 8),
     if (withSearch) ...[
       CircleAction(Icons.search_rounded, () => go(context, const GlobalSearchScreen()), tooltip: tr('Search')),
       const SizedBox(width: 8),

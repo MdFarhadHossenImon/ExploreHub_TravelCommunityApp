@@ -38,6 +38,7 @@ flutter:
     - assets/google_fonts/
     - assets/world.json
     - assets/phrasebook.json
+    - assets/waylo_guide.json
   fonts:
     - family: NotoSansBengali
       fonts:

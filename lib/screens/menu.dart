@@ -5,6 +5,7 @@ import 'passport.dart';
 import 'phrasebook.dart';
 import 'festivals.dart';
 import 'ai_planner.dart';
+import 'waylo.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -43,6 +44,7 @@ class MenuScreen extends StatelessWidget {
             ? 3
             : 2;
     final items = <(IconData, Color, String, String?, VoidCallback)>[
+      (Icons.explore_rounded, wayloColor, 'Waylo', 'Ask me anything', () => go(context, const WayloScreen())),
       (Icons.people_alt_rounded, const Color(0xFF6FB7E9), 'Travel buddies', social.incoming.isEmpty ? null : '${social.incoming.length} new', () => go(context, const FriendsScreen())),
       (Icons.chat_bubble_rounded, const Color(0xFFB68CF0), 'Messages', social.unreadChats == 0 ? null : '${social.unreadChats} unread', () => go(context, const MessagesScreen())),
       (Icons.groups_rounded, const Color(0xFF7CC08D), 'Groups', '${social.joined.length} joined', () => go(context, const GroupsScreen())),

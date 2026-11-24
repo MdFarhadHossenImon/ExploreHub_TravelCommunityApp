@@ -673,6 +673,19 @@ class Backend {
     }
   }
 
+  /// Waylo assistant (Edge Function `waylo`). Throws [PlannerError] with code `not_configured` when the AI key is not set.
+  static Future<Map<String, dynamic>> waylo(List<Map<String, String>> messages) async {
+    try {
+      final res = await _c.functions.invoke('waylo', body: {'messages': messages});
+      return Map<String, dynamic>.from(res.data as Map);
+    } on FunctionException catch (e) {
+      final d = e.details;
+      final code = d is Map ? (d['error'] ?? '').toString() : '';
+      final msg = d is Map ? (d['message'] ?? '').toString() : '';
+      throw PlannerError(code.isEmpty ? 'server' : code, msg.isEmpty ? 'Waylo is busy. Please try again.' : msg);
+    }
+  }
+
   // ---- live location & SOS ----
   static Future<void> shareLocation(double lat, double lng, double? accuracy, DateTime until) async => _c.from('live_locations').upsert({
         'user_id': uid,
