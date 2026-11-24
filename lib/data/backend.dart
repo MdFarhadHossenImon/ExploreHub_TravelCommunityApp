@@ -674,9 +674,9 @@ class Backend {
   }
 
   /// Waylo assistant (Edge Function `waylo`). Throws [PlannerError] with code `not_configured` when the AI key is not set.
-  static Future<Map<String, dynamic>> waylo(List<Map<String, String>> messages) async {
+  static Future<Map<String, dynamic>> waylo(List<Map<String, String>> messages, {String lang = 'en'}) async {
     try {
-      final res = await _c.functions.invoke('waylo', body: {'messages': messages});
+      final res = await _c.functions.invoke('waylo', body: {'messages': messages, 'lang': lang});
       return Map<String, dynamic>.from(res.data as Map);
     } on FunctionException catch (e) {
       final d = e.details;

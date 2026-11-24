@@ -117,23 +117,8 @@ class _Guide {
   static List<String> _words(String s) =>
       s.toLowerCase().split(RegExp(r'[\s,.?!।:;()"\x27/-]+')).where((w) => w.length > 1 && !_stop.contains(w)).toList();
 
-  /// Best guide answer, a place answer, or a friendly "don't know".
-  String answer(String q) {
-    final words = _words(q);
-    final lower = q.toLowerCase();
-    final bn = isBangla || RegExp('[\u0980-\u09FF]').hasMatch(q); // answer Bangla questions in Bangla
-
-    // A place the app knows about.
-    Place? place;
-    for (final p in places) {
-      final n = p.name.toLowerCase();
-      if (lower.contains(n) || words.any((w) => w.length > 3 && n.split(' ').contains(w))) {
-        place = p;
-        break;
-      }
-    }
-
-    // Score sections; words that appear in fewer sections count more.
+  /// The best guide section for these words and its score; words that appear in fewer sections count more.
+  (double, Map<String, dynamic>?) _match(List<String> words) {
     final kws = [for (final s in sections) _words(s['kw'] as String)];
     double weight(String w) {
       final n = kws.where((k) => k.contains(w)).length;
@@ -157,6 +142,29 @@ class _Guide {
         hit = sections[i];
       }
     }
+    return (best, hit);
+  }
+
+  /// True when the question is clearly about using ExploreHub, so the guide answers it on the phone.
+  bool isAppQuestion(String q) => _match(_words(q)).$1 >= 1;
+
+  /// Best guide answer, a place answer, or a friendly "don't know".
+  String answer(String q) {
+    final words = _words(q);
+    final lower = q.toLowerCase();
+    final bn = isBangla || RegExp('[\u0980-\u09FF]').hasMatch(q); // answer Bangla questions in Bangla
+
+    // A place the app knows about.
+    Place? place;
+    for (final p in places) {
+      final n = p.name.toLowerCase();
+      if (lower.contains(n) || words.any((w) => w.length > 3 && n.split(' ').contains(w))) {
+        place = p;
+        break;
+      }
+    }
+
+    final (best, hit) = _match(words);
 
     if (place != null && best < 1) {
       final p = place;
@@ -168,7 +176,7 @@ class _Guide {
       final a = hit['action'] as String?;
       return '${bn ? hit['bn'] : hit['en']}${a == null ? '' : '\n[[open:$a]]'}';
     }
-    return tr("I'm not sure about that one yet. Ask me how to use ExploreHub (posting, trips, bookings, SOS…) or name a place, like \"Sajek Valley\".");
+    return tr("I'm not sure about that one yet. Ask me how to use ExploreHub (posting, trips, bookings, SOS…), name a place, like \"Sajek Valley\", or ask about the weather or today's dollar rate.");
   }
 }
 
@@ -185,7 +193,7 @@ class _WayloScreenState extends State<WayloScreen> {
   final _scroll = ScrollController();
   final List<_Msg> _msgs = [];
   bool _busy = false;
-  static bool _aiOff = false; // the server said the AI is not set up: use the guide for this session
+  static bool _aiOff = false; // the server has no AI key: answer app questions with the guide, send the rest to the free live search
 
   @override
   void initState() {
@@ -226,11 +234,16 @@ class _WayloScreenState extends State<WayloScreen> {
     _toEnd();
     String reply;
     try {
-      if (Backend.on && !_aiOff) {
+      final guide = await _Guide.load();
+      // Without the AI, app questions are answered here; everything else goes to the free live search
+      // (weather, exchange rates, Wikivoyage / Wikipedia).
+      if (Backend.on && !(_aiOff && guide.isAppQuestion(text))) {
         final history = [
           for (final m in _msgs.length > 12 ? _msgs.sublist(_msgs.length - 12) : _msgs) {'role': m.me ? 'user' : 'assistant', 'content': m.text}
         ];
-        reply = '${(await Backend.waylo(history))['reply'] ?? ''}';
+        final res = await Backend.waylo(history, lang: isBangla ? 'bn' : 'en');
+        if (res['mode'] == 'free') _aiOff = true;
+        reply = '${res['reply'] ?? ''}';
       } else {
         await Future<void>.delayed(const Duration(milliseconds: 350));
         reply = (await _Guide.load()).answer(text);
@@ -315,6 +328,8 @@ class _WayloScreenState extends State<WayloScreen> {
       'How do I share a video?',
       'How does SOS work?',
       'Best time to visit Sajek Valley?',
+      'Weather in Sylhet this week?',
+      '100 dollars in taka today?',
       'How do I find a travel buddy?',
       'How do I book a hotel?',
     ];

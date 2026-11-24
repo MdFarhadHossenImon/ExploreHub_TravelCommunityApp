@@ -1067,4 +1067,7 @@ const _bn = <String, String>{
   'How do I book a hotel?': 'হোটেল বুক করব কীভাবে?',
   'I\'m not sure about that one yet. Ask me how to use ExploreHub (posting, trips, bookings, SOS…) or name a place, like "Sajek Valley".': 'এটা এখনো ঠিক জানি না। ExploreHub কীভাবে চালাবেন (পোস্ট, ট্রিপ, বুকিং, SOS…) জিজ্ঞেস করুন, বা কোনো জায়গার নাম লিখুন, যেমন "Sajek Valley"।',
   'Waylo is busy. Please try again.': 'Waylo এখন ব্যস্ত। আবার চেষ্টা করুন।',
+  'Weather in Sylhet this week?': 'এই সপ্তাহে সিলেটের আবহাওয়া কেমন?',
+  '100 dollars in taka today?': 'আজ ১০০ ডলার কত টাকা?',
+  'I\'m not sure about that one yet. Ask me how to use ExploreHub (posting, trips, bookings, SOS…), name a place, like "Sajek Valley", or ask about the weather or today\'s dollar rate.': 'এটা এখনো ঠিক জানি না। ExploreHub কীভাবে চালাবেন (পোস্ট, ট্রিপ, বুকিং, SOS…) জিজ্ঞেস করুন, কোনো জায়গার নাম লিখুন, যেমন "Sajek Valley", অথবা আবহাওয়া বা আজকের ডলার রেট জিজ্ঞেস করুন।',
 };
