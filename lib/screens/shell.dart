@@ -74,7 +74,7 @@ class Shell extends StatelessWidget {
         if (Bp.isWide(context)) {
           return Scaffold(body: Row(children: [_SideRail(index: i), Expanded(child: body)]));
         }
-        return Scaffold(extendBody: true, body: body, bottomNavigationBar: _PillBar(index: i));
+        return Scaffold(extendBody: false, body: body, bottomNavigationBar: _PillBar(index: i));
       },
     );
   }
