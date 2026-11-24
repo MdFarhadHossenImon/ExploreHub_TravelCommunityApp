@@ -9,6 +9,7 @@ import '../data/models.dart';
 import '../state/app_state.dart';
 import '../state/social_state.dart';
 import '../widgets/common.dart';
+import '../widgets/globe.dart';
 import '../widgets/pull_refresh.dart';
 import 'notifications.dart';
 import 'meetups.dart';
@@ -46,6 +47,22 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Constrained(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _Header(unread: s.unread, name: s.name, wide: wide),
+
+            // 3D globe explorer
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: const RadialGradient(center: Alignment(0, -.2), radius: 1.1, colors: [Color(0xFF1F3B3A), Color(0xFF0F1F1F)]),
+                    border: Border.all(color: C.line),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: ExploreGlobe(height: wide ? 460 : 380),
+                ),
+              ),
+            ),
 
             // Services marketplace
             const SectionHeader('Book everything for your trip'),

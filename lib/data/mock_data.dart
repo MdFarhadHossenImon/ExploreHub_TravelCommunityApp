@@ -9,7 +9,7 @@ const cities = [
 
 final List<Place> places = <Place>[
   Place(
-    id: 'raja-ampat', name: 'Raja Ampat Islands', location: 'West Papua',
+    id: 'raja-ampat', name: 'Raja Ampat Islands', lat: -0.23, lng: 130.52, location: 'West Papua',
     country: 'Indonesia', category: 'Beach', hub: 'Jakarta', rating: 4.9,
     reviews: 150, price: 85,
     about:
@@ -21,7 +21,7 @@ final List<Place> places = <Place>[
     facilities: ['Boat transfer', 'Snorkel gear', 'Homestay', 'Breakfast'],
   ),
   Place(
-    id: 'kaptai', name: 'Kaptai Lake', location: 'Rangamati',
+    id: 'kaptai', name: 'Kaptai Lake', lat: 22.5, lng: 92.21, location: 'Rangamati',
     country: 'Bangladesh', category: 'Lakes', hub: 'Chattogram', rating: 4.8,
     reviews: 320, price: 50,
     about:
@@ -45,7 +45,7 @@ final List<Place> places = <Place>[
     facilities: ['Beach access', 'Hotel', 'Seafood', 'Parasailing'],
   ),
   Place(
-    id: 'sajek', name: 'Sajek Valley', location: 'Rangamati Hill District',
+    id: 'sajek', name: 'Sajek Valley', lat: 23.38, lng: 92.29, location: 'Rangamati Hill District',
     country: 'Bangladesh', category: 'Mountains', hub: 'Chattogram', rating: 4.7,
     reviews: 540, price: 60,
     about:
@@ -57,7 +57,7 @@ final List<Place> places = <Place>[
     facilities: ['Cottage', 'Jeep transfer', 'Campfire', 'Local meals'],
   ),
   Place(
-    id: 'kanchenjunga', name: 'Kanchenjunga Base Camp', location: 'Taplejung',
+    id: 'kanchenjunga', name: 'Kanchenjunga Base Camp', lat: 27.7, lng: 88.15, location: 'Taplejung',
     country: 'Nepal', category: 'Mountains', hub: 'Kathmandu', rating: 4.9,
     reviews: 88, price: 320,
     about:
@@ -69,7 +69,7 @@ final List<Place> places = <Place>[
     facilities: ['Permits', 'Licensed guide', 'Porter', 'Tea houses'],
   ),
   Place(
-    id: 'santorini', name: 'Santorini', location: 'Cyclades',
+    id: 'santorini', name: 'Santorini', lat: 36.39, lng: 25.46, location: 'Cyclades',
     country: 'Greece', category: 'City', hub: 'Athens', rating: 4.8,
     reviews: 2100, price: 140,
     about:
@@ -81,7 +81,7 @@ final List<Place> places = <Place>[
     facilities: ['Caldera view', 'Breakfast', 'Airport pickup', 'Wine tour'],
   ),
   Place(
-    id: 'kyoto', name: 'Kyoto', location: 'Kansai Region',
+    id: 'kyoto', name: 'Kyoto', lat: 35.01, lng: 135.77, location: 'Kansai Region',
     country: 'Japan', category: 'City', hub: 'Osaka', rating: 4.9,
     reviews: 3400, price: 110,
     about:
@@ -93,7 +93,7 @@ final List<Place> places = <Place>[
     facilities: ['Ryokan stay', 'Rail pass help', 'Tea ceremony', 'Breakfast'],
   ),
   Place(
-    id: 'machu-picchu', name: 'Machu Picchu', location: 'Cusco Region',
+    id: 'machu-picchu', name: 'Machu Picchu', lat: -13.16, lng: -72.55, location: 'Cusco Region',
     country: 'Peru', category: 'Camp', hub: 'Lima', rating: 4.9,
     reviews: 5200, price: 180,
     about:
@@ -105,7 +105,7 @@ final List<Place> places = <Place>[
     facilities: ['Entry ticket', 'Train', 'Guide', 'Camping gear'],
   ),
   Place(
-    id: 'sahara', name: 'Merzouga Desert Camp', location: 'Erg Chebbi',
+    id: 'sahara', name: 'Merzouga Desert Camp', lat: 31.1, lng: -4.01, location: 'Erg Chebbi',
     country: 'Morocco', category: 'Camp', hub: 'Marrakech', rating: 4.7,
     reviews: 640, price: 95,
     about:
