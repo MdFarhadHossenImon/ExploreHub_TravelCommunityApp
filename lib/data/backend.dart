@@ -627,6 +627,38 @@ class Backend {
     return rows.map(SameTimeMatch.fromRow).toList();
   }
 
+  // ---- live location & SOS ----
+  static Future<void> shareLocation(double lat, double lng, double? accuracy, DateTime until) async => _c.from('live_locations').upsert({
+        'user_id': uid,
+        'lat': lat,
+        'lng': lng,
+        'accuracy': accuracy,
+        'sharing_until': until.toUtc().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      });
+
+  static Future<void> stopSharingLocation() async =>
+      _c.from('live_locations').update({'sharing_until': DateTime.now().toUtc().toIso8601String()}).eq('user_id', uid!);
+
+  /// Your own row plus every buddy who is sharing right now (Row Level Security limits it to buddies).
+  static Future<List<Map<String, dynamic>>> liveLocations() async => List<Map<String, dynamic>>.from(await _c
+      .from('live_locations')
+      .select('user_id, lat, lng, accuracy, sharing_until, updated_at, who:profiles(name, avatar_url)')
+      .gt('sharing_until', DateTime.now().toUtc().toIso8601String()));
+
+  static Future<String> sendSos(double? lat, double? lng, String message) async =>
+      (await _c.rpc('send_sos', params: {'p_lat': lat, 'p_lng': lng, 'p_message': message})) as String;
+
+  static Future<void> resolveSos() async => _c.rpc('resolve_sos');
+
+  static Future<Map<String, dynamic>?> sosAlert(String id) async => _c.from('sos_alerts').select().eq('id', id).maybeSingle();
+
+  /// Nearest city, its country and the local emergency numbers.
+  static Future<Map<String, dynamic>?> emergencyAt(double lat, double lng) async {
+    final r = await _c.rpc('emergency_at', params: {'p_lat': lat, 'p_lng': lng}) as List;
+    return r.isEmpty ? null : Map<String, dynamic>.from(r.first as Map);
+  }
+
   static Future<void> updateTrip(String id, Map<String, dynamic> fields) async => _c.from('trips').update(fields).eq('id', id);
   static Future<void> deleteTrip(String id) async => _c.from('trips').delete().eq('id', id);
   static Future<void> inviteToTrip(String tripId, String userId) async =>

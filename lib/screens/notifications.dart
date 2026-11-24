@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/i18n.dart';
+import 'live_sos.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme.dart';
@@ -41,6 +42,8 @@ import 'trips.dart';
       return (Icons.flight_rounded, const Color(0xFF0090FF));
     case 'community':
       return (Icons.favorite_rounded, const Color(0xFFE5484D));
+    case 'sos':
+      return (Icons.sos_rounded, const Color(0xFFE5484D));
     default:
       return (Icons.notifications_rounded, C.primary);
   }
@@ -55,6 +58,9 @@ Future<void> openNotification(BuildContext context, AppNotification n) async {
   final type = n.targetType;
   try {
     switch (type) {
+      case 'sos':
+        await openSos(context, id, n.actorId);
+        return;
       case 'post':
         if (id == null) break;
         final p = await Backend.postById(id);

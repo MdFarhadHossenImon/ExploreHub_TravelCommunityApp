@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/i18n.dart';
+import 'live_sos.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/theme.dart';
@@ -41,6 +42,35 @@ class _SafetyCenterScreenState extends State<SafetyCenterScreen> {
   Widget build(BuildContext context) => ScreenScaffold(
         title: tr('Safety center'),
         body: ListView(padding: const EdgeInsets.all(16), children: [
+          Material(
+            color: C.danger,
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => go(context, const SosScreen()),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(children: [
+                  const Icon(Icons.sos_rounded, color: Colors.white, size: 34),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(tr('SOS: alert your buddies'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+                      Text(tr('Sends your location to every travel buddy in one press.'), style: const TextStyle(color: Colors.white, fontSize: 12.5)),
+                    ]),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: Colors.white),
+                ]),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () => go(context, const LiveMapScreen()),
+            icon: const Icon(Icons.share_location_rounded, size: 18),
+            label: Text(tr('Share live location with buddies')),
+          ),
+          const SizedBox(height: 18),
           Text(tr('Emergency numbers'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
           const SizedBox(height: 8),
           if (Backend.on)
