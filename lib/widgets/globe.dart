@@ -634,20 +634,34 @@ class _GlobePainter extends CustomPainter {
       if (room(rect)) MapText.paint(canvas, t, rect.topLeft + const Offset(2, 2));
     }
 
-    // country names: letter-spaced capitals with a soft halo; they fade out once cities take over
+    // country names: lie on the globe's surface (they curve and foreshorten with it, like a real globe),
+    // in a light, letter-spaced face with a soft halo; they fade out once cities take over
     final cAlpha = (1 - (ppd - 22) / 18).clamp(0.0, 1.0);
     if (w != null && cAlpha > 0) {
-      final maxRank = ppd < 3.3 ? 4 : (ppd < 4.6 ? 5 : (ppd < 7 ? 6 : 7));
+      final maxRank = ppd < 3.3 ? 3 : (ppd < 4.6 ? 4 : (ppd < 7 ? 5 : 7));
       final grow = 1 + (ppd - 2.8).clamp(0.0, 12.0) * .035;
       canvas.saveLayer(Offset.zero & size, Paint()..color = Colors.white.withValues(alpha: cAlpha));
       for (final ct in w.countries) {
         if (ct.rank > maxRank) continue;
         final la = ct.lat * _deg, dl = ct.lon * _deg - lon * _deg;
-        final cosc = sp * math.sin(la) + cp * math.cos(la) * math.cos(dl);
-        if (cosc < .3) continue;
-        final o = Offset(c.dx + r * math.cos(la) * math.sin(dl), c.dy - r * (cp * math.sin(la) - sp * math.cos(la) * math.cos(dl)));
-        final fs = ((ct.rank <= 2 ? 11.5 : ct.rank == 3 ? 10.5 : ct.rank == 4 ? 9.5 : 9.0) * grow * 2).round() / 2;
-        area(ct.name.toUpperCase(), o, font(fs, FontWeight.w700, const Color(0xFFF4EBDC), spacing: ct.rank <= 3 ? 1.8 : 1.2), 'country');
+        final sla = math.sin(la), cla = math.cos(la), sdl = math.sin(dl), cdl = math.cos(dl);
+        final cosc = sp * sla + cp * cla * cdl;
+        if (cosc < .28) continue;
+        final o = Offset(c.dx + r * cla * sdl, c.dy - r * (cp * sla - sp * cla * cdl));
+        final fs = ((ct.rank <= 2 ? 11.0 : ct.rank == 3 ? 10.0 : 9.0) * grow * 2).round() / 2;
+        final t = MapText.of(ct.name.toUpperCase(), font(fs, FontWeight.w600, const Color(0xFFF7EFE2), spacing: ct.rank <= 3 ? 2.0 : 1.4), kind: 'country3d', halo: const Color(0xA60B1F21), haloWidth: 2.6);
+        // the surface's east and south directions on screen at this point
+        final ex = cdl, ey = -sp * sdl;
+        final sx = sla * sdl, sy = cp * cla + sp * sla * cdl;
+        final tw = t.$2.width, th = t.$2.height;
+        // room check with the label's projected footprint
+        final hw = (tw / 2 * ex.abs() + th / 2 * sx.abs()), hh = (tw / 2 * ey.abs() + th / 2 * sy.abs());
+        final rect = Rect.fromCenter(center: o, width: hw * 2, height: hh * 2).inflate(2);
+        if (!room(rect)) continue;
+        canvas.save();
+        canvas.transform(Float64List.fromList([ex, ey, 0, 0, sx, sy, 0, 0, 0, 0, 1, 0, o.dx, o.dy, 0, 1]));
+        MapText.paint(canvas, t, Offset(-tw / 2, -th / 2));
+        canvas.restore();
       }
       canvas.restore();
     }
