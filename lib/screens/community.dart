@@ -376,16 +376,7 @@ class PostCard extends StatelessWidget {
         ]),
       );
 
-  void _openAuthor(BuildContext context) {
-    final s = context.read<AppState>();
-    final mine = Backend.on ? post.userId == Backend.uid : post.userName == s.name;
-    final t = mine
-        ? me(s)
-        : (travelerForPost(post) ??
-            Traveler(
-                id: post.userId ?? post.userName, name: post.userName, seed: post.userSeed, handle: post.userName.toLowerCase().replaceAll(' ', '.'), home: 'Traveler', bio: '', countries: const []));
-    go(context, TravelerProfileScreen(traveler: t));
-  }
+  void _openAuthor(BuildContext context) => openPostAuthor(context, post);
 
   Future<void> _pickReaction(BuildContext context, Offset at) async {
     final s = context.read<AppState>();
@@ -1154,4 +1145,16 @@ class _CommentsSheetState extends State<CommentsSheet> {
       ),
     );
   }
+}
+
+/// Opens the profile of whoever wrote a post.
+void openPostAuthor(BuildContext context, Post post) {
+  final s = context.read<AppState>();
+  final mine = Backend.on ? post.userId == Backend.uid : post.userName == s.name;
+  final t = mine
+      ? me(s)
+      : (travelerForPost(post) ??
+          Traveler(
+              id: post.userId ?? post.userName, name: post.userName, seed: post.userSeed, handle: post.userName.toLowerCase().replaceAll(' ', '.'), home: 'Traveler', bio: '', countries: const []));
+  go(context, TravelerProfileScreen(traveler: t));
 }

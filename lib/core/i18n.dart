@@ -1109,4 +1109,6 @@ const _bn = <String, String>{
   'Who can see this post?': 'এই পোস্ট কে দেখতে পাবে?',
   'Audience': 'কে দেখবে',
   'Only public posts can be shared': 'শুধু পাবলিক পোস্ট শেয়ার করা যায়',
+  'The next video starts when one ends': 'একটি ভিডিও শেষ হলে পরেরটি শুরু হবে',
+  'More options': 'আরও অপশন',
 };

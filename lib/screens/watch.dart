@@ -72,32 +72,41 @@ class _WatchScreenState extends State<WatchScreen> {
   }
 }
 
+/// A small ⋮ button; its menu holds the Auto scroll option.
 class _AutoScrollToggle extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
-        valueListenable: watchAutoScroll,
-        builder: (context, on, _) => Material(
-          color: const Color(0x66000000),
-          borderRadius: BorderRadius.circular(20),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: () {
-              setWatchAutoScroll(!on);
-              say(on ? tr('Auto scroll off') : tr('Auto scroll on: the next video starts when one ends'));
-            },
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.swipe_up_rounded, color: Colors.white, size: 18),
-                const SizedBox(width: 6),
-                Text(tr('Auto scroll'), style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w600)),
-                SizedBox(
-                  height: 28,
-                  child: FittedBox(child: Switch(value: on, activeColor: C.primary, onChanged: setWatchAutoScroll)),
-                ),
-              ]),
-            ),
+  Future<void> _open(BuildContext context) => showModalBottomSheet(
+        context: context,
+        constraints: const BoxConstraints(maxWidth: 560),
+        builder: (c) => SafeArea(
+          child: ValueListenableBuilder<bool>(
+            valueListenable: watchAutoScroll,
+            builder: (c, on, _) => Column(mainAxisSize: MainAxisSize.min, children: [
+              const SizedBox(height: 8),
+              SwitchListTile(
+                secondary: const Icon(Icons.swipe_up_rounded, color: C.primary),
+                title: Text(tr('Auto scroll'), style: const TextStyle(fontWeight: FontWeight.w700)),
+                subtitle: Text(tr('The next video starts when one ends'), style: const TextStyle(color: C.muted, fontSize: 12)),
+                value: on,
+                activeColor: C.primary,
+                onChanged: (v) {
+                  setWatchAutoScroll(v);
+                  say(v ? tr('Auto scroll on: the next video starts when one ends') : tr('Auto scroll off'));
+                },
+              ),
+              const SizedBox(height: 8),
+            ]),
           ),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: const Color(0x66000000),
+        shape: const CircleBorder(),
+        child: IconButton(
+          tooltip: tr('More options'),
+          onPressed: () => _open(context),
+          icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
         ),
       );
 }
@@ -175,11 +184,18 @@ class _ReelState extends State<_Reel> {
           right: 76,
           bottom: 28,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            Row(children: [
-              Avatar(p.userSeed as String, name: p.userName as String, radius: 16),
-              const SizedBox(width: 8),
-              Flexible(child: Text(p.userName as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600))),
-            ]),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => openPostAuthor(context, p),
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Avatar(p.userSeed, name: p.userName, radius: 16),
+                  const SizedBox(width: 8),
+                  Flexible(child: Text(p.userName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600))),
+                ]),
+              ),
+            ),
             const SizedBox(height: 10),
             Text((p.videoTitle ?? '') as String, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
