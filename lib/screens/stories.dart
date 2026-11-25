@@ -193,6 +193,8 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
       if (st == AnimationStatus.completed) _next();
     });
   final _reply = TextEditingController();
+  final _bursts = <(int, String)>[]; // floating emoji after a reaction
+  int _burstId = 0;
 
   @override
   void initState() {
@@ -265,6 +267,7 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
             onLongPressEnd: (_) => _ac.forward(),
             child: Stack(fit: StackFit.expand, children: [
               AppImage(st.imageSeed, radius: 0),
+              for (final b in _bursts) _EmojiBurst(key: ValueKey(b.$1), emoji: b.$2, onDone: () => setState(() => _bursts.removeWhere((x) => x.$1 == b.$1))),
               const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(colors: [Color(0x99000000), Colors.transparent, Colors.transparent, Color(0xCC000000)], stops: [0, .2, .65, 1], begin: Alignment.topCenter, end: Alignment.bottomCenter),
@@ -355,7 +358,7 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
                             onTap: _ac.stop,
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
-                              hintText: 'Reply to ${t!.first}...',
+                              hintText: tr('Reply to {name}...').replaceAll('{name}', t!.first),
                               hintStyle: const TextStyle(color: Colors.white70),
                               fillColor: Colors.white12,
                               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Colors.white38)),
@@ -364,10 +367,23 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
                             onSubmitted: (v) => _send(t, v),
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        for (final e in const ['❤️', '😍', '🧭'])
-                          InkWell(onTap: () => _send(t, e), child: Padding(padding: const EdgeInsets.all(4), child: Text(tr(e), style: const TextStyle(fontSize: 24)))),
+                        IconButton(
+                          tooltip: tr('Send'),
+                          onPressed: () => _send(t, _reply.text),
+                          icon: const Icon(Icons.send_rounded, color: Colors.white),
+                        ),
                       ]),
+                    if (!mine) ...[
+                      const SizedBox(height: 8),
+                      Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                        for (final e in storyReactions)
+                          InkResponse(
+                            onTap: () => _react(st, t!, e),
+                            radius: 26,
+                            child: Padding(padding: const EdgeInsets.all(4), child: Text(e, style: const TextStyle(fontSize: 27))),
+                          ),
+                      ]),
+                    ],
                   ]),
                 ),
               ),
@@ -378,17 +394,64 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
     );
   }
 
+  void _react(Story st, Traveler t, String e) {
+    context.read<SocialState>().reactStory(st, t, e);
+    setState(() => _bursts.add((_burstId++, e)));
+    toast(context, tr('Reaction sent to {name}').replaceAll('{name}', t.first));
+  }
+
   void _send(Traveler t, String v) {
     if (v.trim().isEmpty) return;
     final social = context.read<SocialState>();
-    social.send(social.chatWith(t), v.trim());
+    final list = social.storyQueue;
+    social.replyStory(list[_i.clamp(0, list.length - 1)], t, v.trim());
     _reply.clear();
-    toast(context, 'Sent to ${t.first}');
+    toast(context, tr('Reply sent to {name}').replaceAll('{name}', t.first));
     FocusScope.of(context).unfocus();
     _ac.forward();
   }
 }
 
+
+const storyReactions = ['💖', '😂', '😮', '😍', '👏', '🔥'];
+
+/// A big emoji that floats up and fades after you react to a story.
+class _EmojiBurst extends StatefulWidget {
+  final String emoji;
+  final VoidCallback onDone;
+  const _EmojiBurst({super.key, required this.emoji, required this.onDone});
+  @override
+  State<_EmojiBurst> createState() => _EmojiBurstState();
+}
+
+class _EmojiBurstState extends State<_EmojiBurst> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1300))
+    ..forward().whenComplete(() {
+      if (mounted) widget.onDone();
+    });
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+        child: AnimatedBuilder(
+          animation: _c,
+          builder: (_, __) {
+            final v = Curves.easeOut.transform(_c.value);
+            return Align(
+              alignment: Alignment(0, .5 - 1.0 * v),
+              child: Opacity(
+                opacity: (1 - _c.value).clamp(0.0, 1.0),
+                child: Transform.scale(scale: .6 + 1.6 * v, child: Text(widget.emoji, style: const TextStyle(fontSize: 64))),
+              ),
+            );
+          },
+        ),
+      );
+}
 
 /// "N viewers" pill on your own story; tap to see who watched it, Facebook style.
 class _ViewersPill extends StatefulWidget {
@@ -401,7 +464,7 @@ class _ViewersPill extends StatefulWidget {
 }
 
 class _ViewersPillState extends State<_ViewersPill> {
-  List<(String, String, String, DateTime)>? _viewers;
+  List<(String, String, String, DateTime, String?)>? _viewers;
 
   @override
   void initState() {
@@ -415,7 +478,7 @@ class _ViewersPillState extends State<_ViewersPill> {
       final now = DateTime.now();
       setState(() => _viewers = [
             for (var i = 0; i < travelers.length && i < 4; i++)
-              (travelers[i].id, travelers[i].name, travelers[i].seed, now.subtract(Duration(minutes: 7 * (i + 1))))
+              (travelers[i].id, travelers[i].name, travelers[i].seed, now.subtract(Duration(minutes: 7 * (i + 1))), i == 0 ? '💖' : i == 2 ? '😍' : null)
           ]);
       return;
     }
@@ -470,6 +533,7 @@ class _ViewersPillState extends State<_ViewersPill> {
                       leading: Avatar(v[i].$3, name: v[i].$2, radius: 20),
                       title: Text(v[i].$2, style: const TextStyle(fontWeight: FontWeight.w600)),
                       subtitle: Text(_ago(v[i].$4), style: const TextStyle(fontSize: 12, color: C.muted)),
+                      trailing: v[i].$5 == null ? null : Text(v[i].$5!, style: const TextStyle(fontSize: 22)),
                     ),
                   ),
           ),

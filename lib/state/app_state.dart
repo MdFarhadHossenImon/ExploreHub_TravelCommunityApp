@@ -364,6 +364,7 @@ class AppState extends ChangeNotifier {
     required String caption,
     String? placeId,
     bool isVideo = false,
+    String audience = 'public',
   }) {
     posts.insert(
       0,
@@ -377,6 +378,7 @@ class AppState extends ChangeNotifier {
         isVideo: isVideo,
         videoTitle: isVideo ? caption.split('.').first : null,
         time: 'now',
+        audience: audience,
       ),
     );
     notifyListeners();
@@ -393,11 +395,12 @@ class AppState extends ChangeNotifier {
     bool isVideo = false,
     String? locationName,
     String? locationCountry,
+    String audience = 'public',
   }) async {
     try {
       final url = bytes == null ? '' : await Backend.upload(bytes, ext, mime);
       await Backend.createPost(caption: caption, mediaUrl: url, placeId: placeId, isVideo: bytes != null && isVideo,
-          locationName: locationName, locationCountry: locationCountry);
+          locationName: locationName, locationCountry: locationCountry, audience: audience);
       posts..clear()..addAll(await Backend.posts());
       await refreshStats();
       notifyListeners();
@@ -427,17 +430,20 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<bool> editPost(Post p, String caption) async {
+  Future<bool> editPost(Post p, String caption, {String? audience}) async {
     final before = p.caption;
+    final beforeAudience = p.audience;
     p.caption = caption;
+    if (audience != null) p.audience = audience;
     p.edited = true;
     notifyListeners();
     if (!Backend.on) return true;
     try {
-      await Backend.editPost(p.id, caption);
+      await Backend.editPost(p.id, caption, audience: audience);
       return true;
     } catch (e) {
       p.caption = before;
+      p.audience = beforeAudience;
       notifyListeners();
       say(errText(e));
       return false;

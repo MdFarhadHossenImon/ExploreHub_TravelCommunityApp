@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 
@@ -254,6 +255,19 @@ class SocialState extends ChangeNotifier {
     if (!own) _guard(() => Backend.markStorySeen(id));
   }
 
+  /// Reacts to a story: saved on the story and sent to the owner as a chat message.
+  void reactStory(Story st, Traveler owner, String emoji) {
+    seenStories.add(st.id);
+    send(chatWith(owner), '$emoji · Reacted to your story${st.caption.isEmpty ? '' : ' "${st.caption.length > 40 ? '${st.caption.substring(0, 40)}…' : st.caption}"'}');
+    _guard(() => Backend.reactStory(st.id, emoji));
+  }
+
+  /// Replies to a story privately in chat, quoting it.
+  void replyStory(Story st, Traveler owner, String text) {
+    final quote = st.caption.isEmpty ? '' : ' "${st.caption.length > 40 ? '${st.caption.substring(0, 40)}…' : st.caption}"';
+    send(chatWith(owner), '↩️ Replied to your story$quote: $text');
+  }
+
   /// Demo story (sample image).
   void addStory(String imageSeed, String caption) {
     stories.insert(0, Story('s${DateTime.now().millisecondsSinceEpoch}', meId, imageSeed, caption, 'now'));
@@ -343,6 +357,34 @@ class SocialState extends ChangeNotifier {
       final i = conv.messages.indexOf(m);
       if (i >= 0) conv.messages[i] = Message(m.fromId, m.text, m.time, at: m.at, id: id);
     }, () => conv.messages.remove(m));
+  }
+
+  /// Sends a photo. It shows at once from its bytes and uploads to the chat's private folder.
+  void sendPhoto(Conversation c, Uint8List bytes, String ext, String mime) {
+    c = current(c);
+    final m = Message(meId, '📷 Photo', 'Now', at: DateTime.now(), bytes: bytes);
+    c.messages.add(m);
+    conversations
+      ..remove(c)
+      ..insert(0, c);
+    notifyListeners();
+    if (!Backend.on || c.id.startsWith('pending-')) return;
+    final conv = c;
+    _guard(() async {
+      final path = await Backend.uploadChatPhoto(conv.id, bytes, ext, mime);
+      final id = await Backend.sendMessage(conv.id, m.text, mediaPath: path);
+      final i = conv.messages.indexOf(m);
+      if (i >= 0) conv.messages[i] = Message(m.fromId, m.text, m.time, at: m.at, id: id, media: path, bytes: bytes);
+    }, () => conv.messages.remove(m));
+  }
+
+  /// Marks a chat read on the server (also while it is open and new messages arrive).
+  void markRead(Conversation c) {
+    c = current(c);
+    final had = c.unread;
+    c.unread = 0;
+    if (had > 0) notifyListeners();
+    if (Backend.on && !c.id.startsWith('pending-')) _guard(() => Backend.markConversationRead(c.id));
   }
 
   /// Deletes one of your own messages for everyone.

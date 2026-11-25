@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'models.dart';
 
 DateTime _t(dynamic v) => DateTime.parse(v as String).toLocal();
@@ -73,7 +74,12 @@ class Message {
   final DateTime? at;
   /// Database id (live mode), used to delete the message.
   final String? id;
-  const Message(this.fromId, this.text, this.time, {this.imageSeed, this.at, this.id});
+  /// Storage path of a photo in the private `chat-media` bucket (live mode).
+  final String? media;
+  /// The photo's bytes while it is still uploading, so it shows at once.
+  final Uint8List? bytes;
+  const Message(this.fromId, this.text, this.time, {this.imageSeed, this.at, this.id, this.media, this.bytes});
+  bool get isPhoto => media != null || bytes != null || imageSeed != null;
 }
 
 class Conversation {

@@ -156,6 +156,9 @@ class Post {
   bool edited;
   final List<Comment> comments;
 
+  /// Who can see it: 'public', 'buddies' or 'private' (only me).
+  String audience;
+
   /// The post this one re-shares, if any.
   final Post? shared;
 
@@ -181,6 +184,7 @@ class Post {
     this.edited = false,
     this.shared,
     this.locationLabel,
+    this.audience = 'public',
   })  : comments = comments ?? [],
         commentCount = commentCount ?? (comments?.length ?? 0);
 
@@ -203,6 +207,7 @@ class Post {
       commentCount: (r['comment_count'] as num?)?.toInt() ?? 0,
       shareCount: (r['share_count'] as num?)?.toInt() ?? 0,
       edited: r['edited_at'] != null,
+      audience: r['audience'] as String? ?? 'public',
       locationLabel: r['location_name'] == null ? null : '${r['location_name']}, ${r['location_country'] ?? ''}',
       time: ago(DateTime.parse(r['created_at'] as String).toLocal()),
       shared: r['shared_post_id'] == null || r['shared_caption'] == null

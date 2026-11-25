@@ -307,8 +307,10 @@ class Backend {
     String? sharedPostId,
     String? locationName,
     String? locationCountry,
+    String audience = 'public',
   }) async {
     await _c.from('posts').insert({
+      'audience': audience,
       'caption': caption,
       'media_url': mediaUrl,
       'place_id': placeId,
@@ -321,8 +323,11 @@ class Backend {
     });
   }
 
-  static Future<void> editPost(String postId, String caption) async {
-    await _c.from('posts').update({'caption': caption, 'edited_at': DateTime.now().toUtc().toIso8601String()}).eq('id', postId);
+  static Future<void> editPost(String postId, String caption, {String? audience}) async {
+    await _c
+        .from('posts')
+        .update({'caption': caption, 'edited_at': DateTime.now().toUtc().toIso8601String(), if (audience != null) 'audience': audience})
+        .eq('id', postId);
   }
 
   /// Posts written by one traveler (for their profile page).
@@ -534,10 +539,10 @@ class Backend {
       (await _c.from('story_views').select('story_id').eq('user_id', uid!)).map<String>((r) => r['story_id'] as String).toSet();
 
   /// Who viewed one of my stories (newest first). Only the story owner can read these.
-  static Future<List<(String, String, String, DateTime)>> storyViewers(String storyId) async {
+  static Future<List<(String, String, String, DateTime, String?)>> storyViewers(String storyId) async {
     final rows = await _c
         .from('story_views')
-        .select('user_id, seen_at, viewer:profiles!story_views_user_id_fkey(name, avatar_url)')
+        .select('user_id, seen_at, reaction, viewer:profiles!story_views_user_id_fkey(name, avatar_url)')
         .eq('story_id', storyId)
         .neq('user_id', uid!)
         .order('seen_at', ascending: false);
@@ -548,9 +553,14 @@ class Backend {
           ((r['viewer'] as Map?)?['name'] as String?) ?? 'Traveler',
           ((r['viewer'] as Map?)?['avatar_url'] as String?) ?? '',
           DateTime.parse(r['seen_at'] as String).toLocal(),
+          r['reaction'] as String?,
         )
     ];
   }
+
+  /// Reacts to someone's story with an emoji (the owner sees it in the viewer list).
+  static Future<void> reactStory(String id, String emoji) async =>
+      _c.from('story_views').upsert({'story_id': id, 'user_id': uid, 'reaction': emoji});
 
   static Future<void> markStorySeen(String id) async =>
       _c.from('story_views').upsert({'story_id': id, 'user_id': uid});
@@ -590,15 +600,59 @@ class Backend {
 
   static Message messageFromRow(Map<String, dynamic> m) {
     final t = DateTime.parse(m['created_at'] as String).toLocal();
-    return Message(m['sender_id'] == uid ? meId : m['sender_id'] as String, m['body'] as String, clock(t), at: t, id: m['id']?.toString());
+    final media = m['media_url'] as String?;
+    return Message(m['sender_id'] == uid ? meId : m['sender_id'] as String, m['body'] as String, clock(t),
+        at: t, id: m['id']?.toString(), media: (media == null || media.isEmpty) ? null : media);
   }
 
   static Future<String> dmWith(String other) async => await _c.rpc('dm_with', params: {'other': other}) as String;
 
   /// Sends a message and returns its id.
-  static Future<String> sendMessage(String conversationId, String body) async {
-    final r = await _c.from('messages').insert({'conversation_id': conversationId, 'sender_id': uid, 'body': body}).select('id').single();
+  static Future<String> sendMessage(String conversationId, String body, {String? mediaPath}) async {
+    final r = await _c
+        .from('messages')
+        .insert({'conversation_id': conversationId, 'sender_id': uid, 'body': body, if (mediaPath != null) 'media_url': mediaPath})
+        .select('id')
+        .single();
     return r['id'].toString();
+  }
+
+  /// Uploads a chat photo to the private `chat-media` bucket as "<chat id>/<user id>-<time>.<ext>"
+  /// (only members of the chat can read it) and returns its storage path.
+  static Future<String> uploadChatPhoto(String conversationId, Uint8List bytes, String ext, String mime) async {
+    final path = '$conversationId/$uid-${DateTime.now().microsecondsSinceEpoch}.$ext';
+    await _c.storage.from('chat-media').uploadBinary(path, bytes, fileOptions: FileOptions(contentType: mime));
+    return path;
+  }
+
+  static final _chatUrls = <String, Future<String>>{};
+
+  /// A signed URL for a chat photo, cached for the session (valid for a day).
+  static Future<String> chatMediaUrl(String path) =>
+      _chatUrls[path] ??= _c.storage.from('chat-media').createSignedUrl(path, 86400).catchError((e) {
+        _chatUrls.remove(path);
+        throw e;
+      });
+
+  /// When each other member last read the chat.
+  static Future<Map<String, DateTime>> othersLastRead(String conversationId) async {
+    final rows = await _c.from('conversation_members').select('user_id, last_read_at').eq('conversation_id', conversationId).neq('user_id', uid!);
+    return {for (final r in rows) r['user_id'] as String: DateTime.parse(r['last_read_at'] as String).toLocal()};
+  }
+
+  /// A live channel for one chat that carries "typing" and "seen" signals between members.
+  /// Nothing is stored; a signal is only seen by members who have the chat open.
+  static RealtimeChannel chatSignals(String conversationId, void Function(String event, Map<String, dynamic> payload) cb) {
+    final ch = _c.channel('chat-$conversationId', opts: const RealtimeChannelConfig(self: false));
+    ch
+        .onBroadcast(event: 'typing', callback: (p) => cb('typing', p))
+        .onBroadcast(event: 'seen', callback: (p) => cb('seen', p))
+        .subscribe();
+    return ch;
+  }
+
+  static void signal(RealtimeChannel ch, String event) {
+    ch.sendBroadcastMessage(event: event, payload: {'user': uid, 'at': DateTime.now().toUtc().toIso8601String()});
   }
 
   static Future<void> deleteMessage(String id) async {

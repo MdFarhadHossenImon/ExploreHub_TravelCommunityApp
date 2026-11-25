@@ -20,6 +20,7 @@ import '../widgets/common.dart';
 import '../widgets/pull_refresh.dart';
 import '../widgets/feed_video.dart';
 import '../widgets/rich_caption.dart';
+import '../widgets/audience.dart';
 import '../widgets/social_widgets.dart';
 import 'feed_sidebars.dart';
 import 'place_detail.dart';
@@ -243,6 +244,7 @@ class PostCard extends StatelessWidget {
 
   /// Share sheet: re-post to your feed, send to a buddy in chat, or copy a link.
   void _share(BuildContext context) {
+    if (post.audience != 'public') return toast(context, tr('Only public posts can be shared'));
     final s = context.read<AppState>();
     final social = context.read<SocialState>();
     final original = post.shared ?? post;
@@ -315,16 +317,23 @@ class PostCard extends StatelessWidget {
   Future<void> _edit(BuildContext context) async {
     final ctl = TextEditingController(text: plainText(post.caption));
     final picked = mentionsIn(post.caption);
+    var aud = post.audience;
     final raw = await showDialog<String>(
       context: context,
       builder: (c) => AlertDialog(
         title: Text(tr('Edit post')),
         content: SizedBox(
           width: 420,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: ctl, maxLines: 6, minLines: 2, maxLength: 2000),
-            MentionBar(controller: ctl, picked: picked),
-          ]),
+          child: StatefulBuilder(
+            builder: (c, setD) => Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (post.groupId == null) ...[
+                AudienceButton(value: aud, onChanged: (v) => setD(() => aud = v)),
+                const SizedBox(height: 10),
+              ],
+              TextField(controller: ctl, maxLines: 6, minLines: 2, maxLength: 2000),
+              MentionBar(controller: ctl, picked: picked),
+            ]),
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c), child: Text(tr('Cancel'))),
@@ -333,8 +342,8 @@ class PostCard extends StatelessWidget {
       ),
     );
     final text = raw == null ? null : encodeMentions(raw, picked);
-    if (text != null && text.isNotEmpty && text != post.caption && context.mounted) {
-      final ok = await context.read<AppState>().editPost(post, text);
+    if (text != null && text.isNotEmpty && (text != post.caption || aud != post.audience) && context.mounted) {
+      final ok = await context.read<AppState>().editPost(post, text, audience: aud != post.audience ? aud : null);
       if (ok && context.mounted) toast(context, tr('Post updated'));
     }
   }
@@ -497,8 +506,17 @@ class PostCard extends StatelessWidget {
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(post.userName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-                    Text([groupName ?? post.time, if (post.edited) 'edited', if (place != null) place.name else if (post.locationLabel != null) post.locationLabel!].join(' · '),
-                        maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 11.5)),
+                    Row(children: [
+                      Flexible(
+                        child: Text([groupName ?? post.time, if (post.edited) 'edited', if (place != null) place.name else if (post.locationLabel != null) post.locationLabel!].join(' · '),
+                            maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 11.5)),
+                      ),
+                      if (groupName == null)
+                        Tooltip(
+                          message: audienceLabel(post.audience),
+                          child: Padding(padding: const EdgeInsets.only(left: 5), child: Icon(audienceIcon(post.audience), size: 12.5, color: C.muted)),
+                        ),
+                    ]),
                   ]),
                 ),
                 PopupMenuButton<String>(
@@ -573,7 +591,10 @@ class PostCard extends StatelessWidget {
                                 Flexible(child: Text(post.userName, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
                                 if (traveler?.verified ?? false) const Padding(padding: EdgeInsets.only(left: 3), child: Icon(Icons.verified_rounded, size: 13, color: C.primary)),
                               ]),
-                              Text(groupName ?? (post.edited ? '${post.time} · edited' : post.time), overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                              Row(mainAxisSize: MainAxisSize.min, children: [
+                                Flexible(child: Text(groupName ?? (post.edited ? '${post.time} · edited' : post.time), overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11))),
+                                if (groupName == null) Padding(padding: const EdgeInsets.only(left: 4), child: Icon(audienceIcon(post.audience), size: 11.5, color: Colors.white70)),
+                              ]),
                             ]),
                           ),
                           if (!mine && traveler != null && !social.buddies.contains(traveler.id)) ...[
@@ -717,6 +738,7 @@ class CreatePostScreen extends StatefulWidget {
 
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final _caption = TextEditingController();
+  String _audience = 'public';
   final _mentions = <String, String>{}; // @mentions picked while writing
   final _gallery = const ['gallery-1', 'gallery-2', 'gallery-3', 'gallery-4', 'gallery-5', 'gallery-6'];
   late String _picked = _gallery.first;
@@ -771,7 +793,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     final caption = encodeMentions(_caption.text.trim(), _mentions);
     if (caption.isEmpty) return toast(context, tr('Write a short caption'));
     if (!Backend.on) {
-      s.addPost(imageSeed: _picked, caption: caption, placeId: _placeId == _otherPlace ? null : _placeId, isVideo: _video);
+      s.addPost(imageSeed: _picked, caption: caption, placeId: _placeId == _otherPlace ? null : _placeId, isVideo: _video, audience: _audience);
     } else {
       setState(() => _busy = true);
       final other = _placeId == _otherPlace;
@@ -787,7 +809,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           placeId: other ? null : _placeId,
           isVideo: _video,
           locationName: other ? _otherName.text.trim() : null,
-          locationCountry: other ? _otherCountry : null);
+          locationCountry: other ? _otherCountry : null,
+          audience: _audience);
       if (!mounted) return;
       setState(() => _busy = false);
       if (!ok) return;
@@ -860,6 +883,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             }),
           ),
           const SizedBox(height: 16),
+          Row(children: [
+            Text(tr('Audience'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            const SizedBox(width: 10),
+            AudienceButton(value: _audience, onChanged: (v) => setState(() => _audience = v)),
+          ]),
+          const SizedBox(height: 12),
           LabeledField('Caption', 'Tell travelers what to know', controller: _caption, maxLines: 3),
           MentionBar(controller: _caption, picked: _mentions),
           Text(tr('Tag a place'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),

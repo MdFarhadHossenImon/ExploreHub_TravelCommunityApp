@@ -1,4 +1,9 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
+import '../data/backend.dart';
 import '../core/i18n.dart';
 import 'package:provider/provider.dart';
 
@@ -198,19 +203,123 @@ class ChatView extends StatefulWidget {
 class _ChatViewState extends State<ChatView> {
   final _ctl = TextEditingController();
   final _scroll = ScrollController();
+  RealtimeChannel? _signals;
+  DateTime _lastTypingSent = DateTime(2000);
+  final _typing = <String, DateTime>{}; // who is typing, until when
+  final _readAt = <String, DateTime>{}; // when each other member last read this chat
+  Timer? _typingTimer;
+  int _theirCount = -1;
+  bool _sendingPhoto = false;
+
+  bool get _live => Backend.on && !widget.conversation.id.startsWith('pending-');
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<SocialState>().markRead(widget.conversation);
+      _jumpToEnd();
+    });
+    if (_live) {
+      final id = widget.conversation.id;
+      _signals = Backend.chatSignals(id, _onSignal);
+      Backend.othersLastRead(id).then((m) {
+        if (mounted) setState(() => _readAt.addAll(m));
+      }).catchError((_) {});
+      // Tell the others we've seen the chat once the channel is up.
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        if (mounted && _signals != null) Backend.signal(_signals!, 'seen');
+      });
+    }
+  }
+
+  void _onSignal(String event, Map<String, dynamic> p) {
+    final data = p['payload'] is Map ? Map<String, dynamic>.from(p['payload'] as Map) : p;
+    final user = data['user'] as String?;
+    if (user == null || user == Backend.uid || !mounted) return;
+    setState(() {
+      if (event == 'typing') {
+        _typing[user] = DateTime.now().add(const Duration(seconds: 4));
+      } else if (event == 'seen') {
+        _readAt[user] = DateTime.now();
+        _typing.remove(user);
+      }
+    });
+    if (event == 'typing') {
+      _typingTimer?.cancel();
+      _typingTimer = Timer(const Duration(milliseconds: 4100), () {
+        if (mounted) setState(() => _typing.removeWhere((_, until) => until.isBefore(DateTime.now())));
+      });
+    }
+  }
+
+  void _onTyping(String v) {
+    if (_signals == null || v.trim().isEmpty) return;
+    final now = DateTime.now();
+    if (now.difference(_lastTypingSent) < const Duration(milliseconds: 2500)) return;
+    _lastTypingSent = now;
+    Backend.signal(_signals!, 'typing');
+  }
+
+  void _jumpToEnd({bool animate = false}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients) return;
+      final end = _scroll.position.maxScrollExtent;
+      animate ? _scroll.animateTo(end, duration: const Duration(milliseconds: 250), curve: Curves.easeOut) : _scroll.jumpTo(end);
+    });
+  }
 
   void _send([String? text]) {
     final v = (text ?? _ctl.text).trim();
     if (v.isEmpty) return;
     context.read<SocialState>().send(widget.conversation, v);
     _ctl.clear();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
-    });
+    _lastTypingSent = DateTime(2000);
+    _jumpToEnd(animate: true);
+  }
+
+  Future<void> _pickPhoto() async {
+    if (_sendingPhoto) return;
+    final f = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
+    if (f == null || !mounted) return;
+    setState(() => _sendingPhoto = true);
+    try {
+      final bytes = await f.readAsBytes();
+      if (bytes.length > 10 * 1024 * 1024) {
+        if (mounted) toast(context, tr('Photo is too large. Pick one up to 10 MB.'));
+        return;
+      }
+      final name = f.name.toLowerCase();
+      final dot = name.lastIndexOf('.');
+      var ext = dot > 0 ? name.substring(dot + 1) : 'jpg';
+      if (!const ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic'].contains(ext)) ext = 'jpg';
+      final mime = f.mimeType ?? (ext == 'png' ? 'image/png' : ext == 'webp' ? 'image/webp' : ext == 'gif' ? 'image/gif' : 'image/jpeg');
+      if (!mounted) return;
+      context.read<SocialState>().sendPhoto(widget.conversation, bytes, ext, mime);
+      _jumpToEnd(animate: true);
+    } finally {
+      if (mounted) setState(() => _sendingPhoto = false);
+    }
+  }
+
+  /// "Seen", "Sent" or "Sending…" for my last message.
+  String _status(Conversation cv) {
+    final last = cv.messages.last;
+    if (Backend.on && last.id == null) return tr('Sending…');
+    if (!Backend.on) return tr('Sent');
+    final at = last.at ?? DateTime.now();
+    final seenBy = cv.memberIds.where((u) => (_readAt[u] ?? DateTime(2000)).isAfter(at.subtract(const Duration(seconds: 1)))).toList();
+    if (seenBy.isEmpty) return tr('Sent');
+    if (!cv.isGroup) return tr('Seen');
+    if (seenBy.length == cv.memberIds.length) return tr('Seen by everyone');
+    return tr('Seen by {n}').replaceAll('{n}', seenBy.map((u) => travelerById(u).first).join(', '));
   }
 
   @override
   void dispose() {
+    _typingTimer?.cancel();
+    _signals?.unsubscribe();
     _ctl.dispose();
     _scroll.dispose();
     super.dispose();
@@ -221,6 +330,24 @@ class _ChatViewState extends State<ChatView> {
     context.watch<SocialState>();
     final cv = context.read<SocialState>().current(widget.conversation);
     final people = cv.memberIds.map(travelerById).toList();
+    final theirs = cv.messages.where((m) => m.fromId != meId).length;
+    if (theirs != _theirCount) {
+      final grew = _theirCount >= 0 && theirs > _theirCount;
+      _theirCount = theirs;
+      if (grew) {
+        // A new message came in while the chat is open: it's read, and the sender stopped typing.
+        for (final m in cv.messages.reversed.take(3)) {
+          _typing.remove(m.fromId);
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          context.read<SocialState>().markRead(cv);
+          if (_signals != null) Backend.signal(_signals!, 'seen');
+        });
+        _jumpToEnd(animate: true);
+      }
+    }
+    final typingNow = _typing.entries.where((e) => e.value.isAfter(DateTime.now())).map((e) => travelerById(e.key)).toList();
     return Column(children: [
       if (widget.showHeader)
         Container(
@@ -246,8 +373,9 @@ class _ChatViewState extends State<ChatView> {
         child: ListView.builder(
           controller: _scroll,
           padding: const EdgeInsets.fromLTRB(14, 16, 14, 10),
-          itemCount: cv.messages.length + 1,
+          itemCount: cv.messages.length + 1 + (typingNow.isEmpty ? 0 : 1),
           itemBuilder: (c, i) {
+            if (i == cv.messages.length + 1) return _TypingBubble(typingNow, showName: cv.isGroup);
             if (i == 0) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 18),
@@ -284,18 +412,23 @@ class _ChatViewState extends State<ChatView> {
                           ),
                         GestureDetector(
                           onLongPress: mine ? () => _confirmDelete(context, cv, m) : null,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                            decoration: BoxDecoration(
-                              color: mine ? C.primary : C.card,
-                              border: mine ? null : Border.all(color: C.line),
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: Text(m.text, style: TextStyle(color: mine ? C.on : C.ink, fontSize: 14, height: 1.35)),
-                          ),
+                          child: m.isPhoto
+                              ? ChatPhoto(m)
+                              : Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                                  decoration: BoxDecoration(
+                                    color: mine ? C.primary : C.card,
+                                    border: mine ? null : Border.all(color: C.line),
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: Text(m.text, style: TextStyle(color: mine ? C.on : C.ink, fontSize: 14, height: 1.35)),
+                                ),
                         ),
                         if (mine && i == cv.messages.length)
-                          Padding(padding: EdgeInsets.only(top: 3, right: 4), child: Text(tr('Hold a message to delete it'), style: TextStyle(color: C.muted, fontSize: 10.5))),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 3, right: 4),
+                            child: Text('${_status(cv)} · ${tr('Hold to delete')}', style: const TextStyle(color: C.muted, fontSize: 10.5)),
+                          ),
                       ]),
                     ),
                   ),
@@ -312,11 +445,18 @@ class _ChatViewState extends State<ChatView> {
           decoration: const BoxDecoration(border: Border(top: BorderSide(color: C.line))),
           child: Row(children: [
             IconButton(tooltip: tr('Share location'), onPressed: () => _send('📍 Shared my location'), icon: const Icon(Icons.location_on_rounded, color: C.primary)),
-            IconButton(tooltip: tr('Photo'), onPressed: () => toast(context, tr('Photo sharing uses your gallery')), icon: const Icon(Icons.image_rounded, color: C.primary)),
+            IconButton(
+              tooltip: tr('Send a photo'),
+              onPressed: _sendingPhoto ? null : _pickPhoto,
+              icon: _sendingPhoto
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.image_rounded, color: C.primary),
+            ),
             Expanded(
               child: TextField(
                 controller: _ctl,
                 onSubmitted: (_) => _send(),
+                onChanged: _onTyping,
                 decoration: InputDecoration(
                   hintText: tr('Message...'),
                   isDense: true,
@@ -332,6 +472,110 @@ class _ChatViewState extends State<ChatView> {
       ),
     ]);
   }
+}
+
+/// "Ayesha is typing…" with three bouncing dots.
+class _TypingBubble extends StatefulWidget {
+  final List<Traveler> who;
+  final bool showName;
+  const _TypingBubble(this.who, {this.showName = false});
+  @override
+  State<_TypingBubble> createState() => _TypingBubbleState();
+}
+
+class _TypingBubbleState extends State<_TypingBubble> with SingleTickerProviderStateMixin {
+  late final _anim = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat();
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.who.first;
+    final label = widget.who.length == 1 ? tr('{name} is typing…').replaceAll('{name}', t.first) : tr('Several people are typing…');
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        Avatar(t.seed, name: t.name, radius: 14),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(color: C.card, border: Border.all(color: C.line), borderRadius: BorderRadius.circular(18)),
+          child: AnimatedBuilder(
+            animation: _anim,
+            builder: (_, __) => Row(mainAxisSize: MainAxisSize.min, children: [
+              for (var k = 0; k < 3; k++)
+                Transform.translate(
+                  offset: Offset(0, -3 * sin(((_anim.value - k * 0.18) % 1.0) * pi).clamp(0.0, 1.0)),
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: const BoxDecoration(color: C.muted, shape: BoxShape.circle),
+                  ),
+                ),
+            ]),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Flexible(child: Text(label, style: const TextStyle(color: C.muted, fontSize: 11.5), overflow: TextOverflow.ellipsis)),
+      ]),
+    );
+  }
+}
+
+/// A photo in a chat: shown from memory while uploading, then from a private signed link.
+class ChatPhoto extends StatelessWidget {
+  final Message m;
+  const ChatPhoto(this.m, {super.key});
+
+  Widget _image(BoxFit fit) {
+    if (m.bytes != null) return Image.memory(m.bytes!, fit: fit, gaplessPlayback: true);
+    if (m.media != null && Backend.on) {
+      return FutureBuilder<String>(
+        future: Backend.chatMediaUrl(m.media!),
+        builder: (_, snap) => snap.hasData
+            ? Image.network(snap.data!, fit: fit, errorBuilder: (_, __, ___) => const _PhotoMissing())
+            : snap.hasError
+                ? const _PhotoMissing()
+                : const Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))),
+      );
+    }
+    if (m.imageSeed != null) return Image.network('https://picsum.photos/seed/${m.imageSeed}/600/600', fit: fit);
+    return const _PhotoMissing();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => showDialog(
+        context: context,
+        barrierColor: Colors.black87,
+        builder: (c) => GestureDetector(
+          onTap: () => Navigator.pop(c),
+          child: InteractiveViewer(maxScale: 5, child: Center(child: _image(BoxFit.contain))),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 220,
+          height: 260,
+          color: C.line,
+          child: _image(BoxFit.cover),
+        ),
+      ),
+    );
+  }
+}
+
+class _PhotoMissing extends StatelessWidget {
+  const _PhotoMissing();
+  @override
+  Widget build(BuildContext context) =>
+      Center(child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.broken_image_outlined, color: C.muted), Text(tr('Photo unavailable'), style: const TextStyle(color: C.muted, fontSize: 11))]));
 }
 
 Future<void> _confirmDelete(BuildContext context, Conversation cv, Message m) async {
