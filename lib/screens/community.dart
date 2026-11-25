@@ -19,6 +19,7 @@ import '../state/social_state.dart';
 import '../widgets/common.dart';
 import '../widgets/pull_refresh.dart';
 import '../widgets/feed_video.dart';
+import '../widgets/rich_caption.dart';
 import '../widgets/social_widgets.dart';
 import 'feed_sidebars.dart';
 import 'place_detail.dart';
@@ -188,68 +189,12 @@ class PostCard extends StatelessWidget {
   const PostCard(this.post, {super.key, this.groupName});
 
   void _comments(BuildContext context) {
-    final ctl = TextEditingController();
     context.read<AppState>().loadComments(post);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       constraints: const BoxConstraints(maxWidth: 640),
-      builder: (c) => Consumer<AppState>(
-        builder: (c, s, _) => Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(c).viewInsets.bottom),
-          child: SizedBox(
-            height: MediaQuery.of(c).size.height * 0.7,
-            child: Column(children: [
-              Container(width: 40, height: 4, margin: const EdgeInsets.only(top: 10), decoration: BoxDecoration(color: C.line, borderRadius: BorderRadius.circular(2))),
-              Padding(padding: EdgeInsets.all(14), child: Text(tr('Comments'), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16))),
-              const Divider(height: 1),
-              Expanded(
-                child: post.comments.isEmpty
-                    ? const EmptyState(Icons.chat_bubble_outline_rounded, 'No comments yet', 'Start the conversation.')
-                    : ListView(padding: const EdgeInsets.symmetric(vertical: 8), children: [
-                        for (final cm in post.comments)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
-                            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Avatar(cm.user.toLowerCase(), name: cm.user, radius: 16),
-                              const SizedBox(width: 10),
-                              Flexible(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  decoration: BoxDecoration(color: C.bg, borderRadius: BorderRadius.circular(16)),
-                                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                    Text(cm.user, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
-                                    const SizedBox(height: 2),
-                                    Text(cm.text, style: const TextStyle(fontSize: 13.5, height: 1.35)),
-                                  ]),
-                                ),
-                              ),
-                            ]),
-                          ),
-                      ]),
-              ),
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-                  child: Row(children: [
-                    Avatar(s.avatarSeed, name: s.name, radius: 16),
-                    const SizedBox(width: 8),
-                    Expanded(child: TextField(controller: ctl, decoration: InputDecoration(hintText: tr('Write a comment...'), isDense: true))),
-                    IconButton(
-                      icon: const Icon(Icons.send_rounded, color: C.primary),
-                      onPressed: () {
-                        if (ctl.text.trim().isEmpty) return;
-                        s.addComment(post, ctl.text.trim());
-                        ctl.clear();
-                      },
-                    ),
-                  ]),
-                ),
-              ),
-            ]),
-          ),
-        ),
-      ),
+      builder: (c) => CommentsSheet(post),
     );
   }
 
@@ -368,18 +313,26 @@ class PostCard extends StatelessWidget {
   }
 
   Future<void> _edit(BuildContext context) async {
-    final ctl = TextEditingController(text: post.caption);
-    final text = await showDialog<String>(
+    final ctl = TextEditingController(text: plainText(post.caption));
+    final picked = mentionsIn(post.caption);
+    final raw = await showDialog<String>(
       context: context,
       builder: (c) => AlertDialog(
         title: Text(tr('Edit post')),
-        content: TextField(controller: ctl, maxLines: 6, minLines: 2, maxLength: 2000),
+        content: SizedBox(
+          width: 420,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: ctl, maxLines: 6, minLines: 2, maxLength: 2000),
+            MentionBar(controller: ctl, picked: picked),
+          ]),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c), child: Text(tr('Cancel'))),
           FilledButton(onPressed: () => Navigator.pop(c, ctl.text.trim()), child: Text(tr('Save'))),
         ],
       ),
     );
+    final text = raw == null ? null : encodeMentions(raw, picked);
     if (text != null && text.isNotEmpty && text != post.caption && context.mounted) {
       final ok = await context.read<AppState>().editPost(post, text);
       if (ok && context.mounted) toast(context, tr('Post updated'));
@@ -408,7 +361,7 @@ class PostCard extends StatelessWidget {
                 Expanded(child: Text(o.userName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5))),
               ]),
               const SizedBox(height: 6),
-              Text(o.caption, maxLines: 4, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13.5, height: 1.4)),
+              RichCaption(o.caption, maxLines: 4, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13.5, height: 1.4)),
             ]),
           ),
         ]),
@@ -565,7 +518,7 @@ class PostCard extends StatelessWidget {
                 ),
               ]),
               const SizedBox(height: 12),
-              Text(post.caption, style: TextStyle(fontSize: post.shared == null ? 17 : 14.5, height: 1.45, fontWeight: post.shared == null ? FontWeight.w600 : FontWeight.w500)),
+              RichCaption(post.caption, style: TextStyle(fontSize: post.shared == null ? 17 : 14.5, height: 1.45, fontWeight: post.shared == null ? FontWeight.w600 : FontWeight.w500)),
               if (post.shared != null) _sharedBox(context, post.shared!),
             ]),
           )
@@ -737,13 +690,10 @@ class PostCard extends StatelessWidget {
         if (post.imageSeed.isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-            child: Text.rich(
-              TextSpan(children: [
-                TextSpan(text: '${post.userName.split(' ').first}  ', style: const TextStyle(fontWeight: FontWeight.w800)),
-                TextSpan(text: post.caption),
-              ]),
-              style: const TextStyle(fontSize: 14, height: 1.45),
-            ),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('${post.userName.split(' ').first}  ', style: const TextStyle(fontSize: 14, height: 1.45, fontWeight: FontWeight.w800)),
+              Expanded(child: RichCaption(post.caption, style: const TextStyle(fontSize: 14, height: 1.45))),
+            ]),
           ),
         if (post.commentCount > 0)
           Padding(
@@ -767,6 +717,7 @@ class CreatePostScreen extends StatefulWidget {
 
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final _caption = TextEditingController();
+  final _mentions = <String, String>{}; // @mentions picked while writing
   final _gallery = const ['gallery-1', 'gallery-2', 'gallery-3', 'gallery-4', 'gallery-5', 'gallery-6'];
   late String _picked = _gallery.first;
   bool _video = false;
@@ -817,7 +768,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   Future<void> _post() async {
     final s = context.read<AppState>();
-    final caption = _caption.text.trim();
+    final caption = encodeMentions(_caption.text.trim(), _mentions);
     if (caption.isEmpty) return toast(context, tr('Write a short caption'));
     if (!Backend.on) {
       s.addPost(imageSeed: _picked, caption: caption, placeId: _placeId == _otherPlace ? null : _placeId, isVideo: _video);
@@ -910,6 +861,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ),
           const SizedBox(height: 16),
           LabeledField('Caption', 'Tell travelers what to know', controller: _caption, maxLines: 3),
+          MentionBar(controller: _caption, picked: _mentions),
           Text(tr('Tag a place'), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
           DropdownButtonFormField<String?>(
@@ -1014,4 +966,163 @@ Future<void> showReactions(BuildContext context, Post post) async {
       ),
     ),
   );
+}
+
+
+/// Comments with one level of replies, likes on comments, and delete for your own.
+class CommentsSheet extends StatefulWidget {
+  final Post post;
+  const CommentsSheet(this.post, {super.key});
+  @override
+  State<CommentsSheet> createState() => _CommentsSheetState();
+}
+
+class _CommentsSheetState extends State<CommentsSheet> {
+  final _ctl = TextEditingController();
+  final _focus = FocusNode();
+  final _picked = <String, String>{};
+  Comment? _replyTo;
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _reply(Comment c) {
+    setState(() => _replyTo = c);
+    if (c.userId != null) _picked[c.user] = c.userId!;
+    final tag = c.userId != null ? '@${c.user} ' : '@${c.user.split(' ').first} ';
+    if (!_ctl.text.startsWith(tag)) _ctl.text = tag + _ctl.text;
+    _ctl.selection = TextSelection.collapsed(offset: _ctl.text.length);
+    _focus.requestFocus();
+  }
+
+  void _send(AppState s) {
+    final t = _ctl.text.trim();
+    if (t.isEmpty) return;
+    s.addComment(widget.post, encodeMentions(t, _picked), replyTo: _replyTo);
+    _ctl.clear();
+    _picked.clear();
+    setState(() => _replyTo = null);
+  }
+
+  bool _mine(AppState s, Comment c) => Backend.on ? (c.userId != null && c.userId == Backend.uid) : c.id?.startsWith('local-') == true && c.user == s.name.split(' ').first;
+
+  Widget _bubble(AppState s, Comment c, {bool reply = false}) {
+    final mine = _mine(s, c);
+    final small = TextStyle(fontSize: 12, color: C.muted, fontWeight: FontWeight.w600);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(reply ? 58 : 16, 6, 16, 2),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Avatar(c.avatar ?? c.user.toLowerCase(), name: c.user, radius: reply ? 13 : 16),
+        const SizedBox(width: 10),
+        Flexible(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Stack(clipBehavior: Clip.none, children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(color: C.bg, borderRadius: BorderRadius.circular(16)),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(c.user, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  RichCaption(c.text, style: const TextStyle(fontSize: 13.5, height: 1.35)),
+                ]),
+              ),
+              if (c.likes > 0)
+                Positioned(
+                  right: -6,
+                  bottom: -8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(10), border: Border.all(color: C.line)),
+                    child: Text('❤️ ${c.likes}', style: const TextStyle(fontSize: 11)),
+                  ),
+                ),
+            ]),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 6, 0, 2),
+              child: Wrap(spacing: 14, children: [
+                if (c.at != null) Text(ago(c.at!), style: small),
+                InkWell(
+                  onTap: () => s.toggleCommentLike(c),
+                  child: Text(tr('Like'), style: small.copyWith(color: c.liked ? C.danger : C.muted, fontWeight: FontWeight.w800)),
+                ),
+                InkWell(onTap: () => _reply(c), child: Text(tr('Reply'), style: small)),
+                if (mine) InkWell(onTap: () => s.deleteComment(widget.post, c), child: Text(tr('Delete'), style: small)),
+              ]),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<AppState>();
+    final all = widget.post.comments;
+    final ids = {for (final c in all) if (c.id != null) c.id};
+    final top = all.where((c) => c.parentId == null || !ids.contains(c.parentId)).toList();
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: Column(children: [
+          Container(width: 40, height: 4, margin: const EdgeInsets.only(top: 10), decoration: BoxDecoration(color: C.line, borderRadius: BorderRadius.circular(2))),
+          Padding(padding: const EdgeInsets.all(14), child: Text(tr('Comments'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16))),
+          const Divider(height: 1),
+          Expanded(
+            child: all.isEmpty
+                ? const EmptyState(Icons.chat_bubble_outline_rounded, 'No comments yet', 'Start the conversation.')
+                : ListView(padding: const EdgeInsets.symmetric(vertical: 8), children: [
+                    for (final c in top) ...[
+                      _bubble(s, c),
+                      for (final r in all.where((x) => x.parentId != null && x.parentId == c.id)) _bubble(s, r, reply: true),
+                    ],
+                  ]),
+          ),
+          if (_replyTo != null)
+            Container(
+              color: C.bg,
+              padding: const EdgeInsets.fromLTRB(16, 6, 4, 6),
+              child: Row(children: [
+                Icon(Icons.reply_rounded, size: 16, color: C.muted),
+                const SizedBox(width: 6),
+                Expanded(child: Text(tr('Replying to {name}').replaceAll('{name}', _replyTo!.user), style: TextStyle(fontSize: 12.5, color: C.muted))),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: () => setState(() {
+                    _replyTo = null;
+                    _ctl.clear();
+                  }),
+                ),
+              ]),
+            ),
+          MentionBar(controller: _ctl, picked: _picked),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+              child: Row(children: [
+                Avatar(s.avatarSeed, name: s.name, radius: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _ctl,
+                    focusNode: _focus,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _send(s),
+                    decoration: InputDecoration(hintText: tr(_replyTo == null ? 'Write a comment...' : 'Write a reply...'), isDense: true),
+                  ),
+                ),
+                IconButton(icon: const Icon(Icons.send_rounded, color: C.primary), onPressed: () => _send(s)),
+              ]),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
 }

@@ -10,6 +10,7 @@ import '../core/theme.dart';
 import '../data/backend.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/personal_fields.dart';
 import 'shell.dart';
 
 /// Signs the user in, loads their data and opens the app.
@@ -198,21 +199,34 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final _form = GlobalKey<FormState>();
+  final _name = TextEditingController();
+  final _phone = TextEditingController();
   final _email0 = TextEditingController();
   final _pass0 = TextEditingController();
   final _confirm = TextEditingController();
-  bool _busy = false;
+  String? _gender;
+  DateTime? _birth;
+  bool _busy = false, _tried = false;
 
   Future<void> _submit() async {
-    if (!_form.currentState!.validate()) return;
+    setState(() => _tried = true);
+    final ok = _form.currentState!.validate();
+    if (!ok || _gender == null || _birth == null) return;
     final mail = _email0.text.trim();
+    final name = _name.text.trim();
     if (!Backend.on) {
+      context.read<AppState>().updateName(name);
       go(context, OtpScreen(email: mail));
       return;
     }
     setState(() => _busy = true);
     try {
-      final res = await Backend.signUp(mail, _pass0.text);
+      final res = await Backend.signUp(mail, _pass0.text, details: {
+        'name': name,
+        'gender': _gender!,
+        'phone': normalPhone(_phone.text),
+        'birth_date': _birth!.toIso8601String().substring(0, 10),
+      });
       if (!mounted) return;
       if (res.session != null) {
         await _enterApp(context); // email confirmation is switched off in your project
@@ -228,6 +242,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
+    _name.dispose();
+    _phone.dispose();
     _email0.dispose();
     _pass0.dispose();
     _confirm.dispose();
@@ -242,6 +258,15 @@ class _SignupScreenState extends State<SignupScreen> {
           key: _form,
           child: ListView(padding: const EdgeInsets.all(20), children: [
             const SizedBox(height: 12),
+            LabeledField('Full name', 'Your name', controller: _name, validator: (v) => (v ?? '').trim().length < 2 ? tr('Enter your name') : null),
+            PersonalFields(
+              gender: _gender,
+              onGender: (g) => setState(() => _gender = g),
+              phone: _phone,
+              birth: _birth,
+              onBirth: (d) => setState(() => _birth = d),
+              showErrors: _tried,
+            ),
             LabeledField('Email', 'Text your email', controller: _email0, keyboard: TextInputType.emailAddress, validator: _email),
             LabeledField('Password', 'At least 8 characters', controller: _pass0, obscure: true, validator: _pass),
             LabeledField('Confirm password', 'Text your password again',

@@ -40,8 +40,23 @@ class Backend {
   /// Where links in auth emails send people back to: this web page, or the app's deep link on phones.
   static String get returnUrl => kIsWeb ? '${Uri.base.origin}${Uri.base.path}' : Env.authRedirect;
 
-  static Future<AuthResponse> signUp(String email, String password) =>
-      _c.auth.signUp(email: email, password: password, emailRedirectTo: returnUrl);
+  /// [details]: name, gender, phone, birth_date (yyyy-mm-dd). Name goes on the public profile;
+  /// the rest is kept private (profile_private, readable only by the person).
+  static Future<AuthResponse> signUp(String email, String password, {Map<String, String>? details}) =>
+      _c.auth.signUp(email: email, password: password, emailRedirectTo: returnUrl, data: details);
+
+  static Future<Map<String, dynamic>?> privateDetails() async =>
+      await _c.from('profile_private').select('gender, phone, birth_date').eq('user_id', uid!).maybeSingle();
+
+  static Future<void> savePrivateDetails({String? gender, String? phone, DateTime? birthDate}) async {
+    await _c.from('profile_private').upsert({
+      'user_id': uid,
+      'gender': gender,
+      'phone': (phone == null || phone.trim().isEmpty) ? null : phone.trim(),
+      'birth_date': birthDate == null ? null : birthDate.toIso8601String().substring(0, 10),
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    });
+  }
 
   static Future<AuthResponse> signIn(String email, String password) =>
       _c.auth.signInWithPassword(email: email, password: password);
@@ -162,6 +177,12 @@ class Backend {
     return rows.map<Post>((r) => Post.fromRow(r)).toList();
   }
 
+  /// Posts whose caption has a hashtag (the caller checks the exact tag).
+  static Future<List<Post>> postsWithTag(String tag) async {
+    final rows = await _c.from('posts_feed').select().ilike('caption', '%$tag%').order('created_at', ascending: false).limit(100);
+    return rows.map<Post>((r) => Post.fromRow(r)).toList();
+  }
+
   static Future<Set<String>> _ids(String table, String column) async {
     final rows = await Offline.rows('ids:$table', () => _c.from(table).select(column).eq(table == 'follows' ? 'follower_id' : 'user_id', uid!));
     return rows.map<String>((r) => r[column] as String).toSet();
@@ -233,16 +254,41 @@ class Backend {
   }
 
   static Future<List<Comment>> comments(String postId) async {
-    final rows =
-        await _c.from('comments').select('body, profiles(name)').eq('post_id', postId).order('created_at');
+    final rows = await _c
+        .from('comments')
+        .select('id, user_id, parent_id, body, created_at, profiles(name, avatar_url), comment_likes(user_id)')
+        .eq('post_id', postId)
+        .order('created_at');
     return rows.map<Comment>((r) {
-      final who = (r['profiles'] is Map ? r['profiles']['name'] : null) as String? ?? 'Traveler';
-      return Comment(who, r['body'] as String);
+      final prof = r['profiles'] is Map ? r['profiles'] as Map : const {};
+      final likes = (r['comment_likes'] as List?) ?? const [];
+      return Comment(
+        (prof['name'] as String?) ?? 'Traveler',
+        r['body'] as String,
+        id: r['id'] as String,
+        userId: r['user_id'] as String?,
+        parentId: r['parent_id'] as String?,
+        avatar: prof['avatar_url'] as String?,
+        at: DateTime.tryParse('${r['created_at']}')?.toLocal(),
+        likes: likes.length,
+        liked: likes.any((l) => l['user_id'] == uid),
+      );
     }).toList();
   }
 
-  static Future<void> addComment(String postId, String body) async {
-    await _c.from('comments').insert({'post_id': postId, 'body': body});
+  static Future<String> addComment(String postId, String body, {String? parentId}) async {
+    final row = await _c.from('comments').insert({'post_id': postId, 'body': body, if (parentId != null) 'parent_id': parentId}).select('id').single();
+    return row['id'] as String;
+  }
+
+  static Future<void> deleteComment(String id) async => _c.from('comments').delete().eq('id', id);
+
+  static Future<void> setCommentLike(String commentId, bool on) async {
+    if (on) {
+      await _c.from('comment_likes').upsert({'comment_id': commentId, 'user_id': uid});
+    } else {
+      await _c.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', uid!);
+    }
   }
 
   /// Uploads to Storage under "<user id>/<timestamp>.<ext>" (the folder rule in schema.sql)

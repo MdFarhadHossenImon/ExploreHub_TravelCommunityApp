@@ -8,6 +8,7 @@ import '../data/mock_data.dart';
 import '../data/models.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/rich_caption.dart' show plainText;
 import '../widgets/pull_refresh.dart';
 import '../widgets/feed_video.dart';
 import 'community.dart';
@@ -182,7 +183,7 @@ class _ReelState extends State<_Reel> {
             const SizedBox(height: 10),
             Text((p.videoTitle ?? '') as String, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
-            Text(p.caption as String, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+            Text(plainText(p.caption as String), maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 13)),
             if (place != null) ...[
               const SizedBox(height: 12),
               FilledButton.icon(

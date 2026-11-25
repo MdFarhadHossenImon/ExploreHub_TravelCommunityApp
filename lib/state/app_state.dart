@@ -304,17 +304,55 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> addComment(Post p, String text) async {
-    final c = Comment(name.split(' ').first, text);
+  Future<void> addComment(Post p, String text, {Comment? replyTo}) async {
+    if (replyTo != null && replyTo.id == null) replyTo.id = 'local-${DateTime.now().microsecondsSinceEpoch}';
+    final parent = replyTo == null ? null : (replyTo.parentId ?? replyTo.id); // replies stay one level deep
+    var c = Comment(name.split(' ').first, text,
+        id: Backend.on ? null : 'local-${DateTime.now().microsecondsSinceEpoch + 1}', userId: Backend.uid, parentId: parent, avatar: avatarSeed, at: DateTime.now());
     p.comments.add(c);
     p.commentCount++;
     notifyListeners();
     if (!Backend.on) return;
     try {
-      await Backend.addComment(p.id, text);
+      final id = await Backend.addComment(p.id, text, parentId: parent);
+      final i = p.comments.indexOf(c);
+      c = Comment(c.user, c.text, id: id, userId: c.userId, parentId: parent, avatar: c.avatar, at: c.at);
+      if (i >= 0) p.comments[i] = c;
+      notifyListeners();
     } catch (e) {
       p.comments.remove(c);
       p.commentCount--;
+      notifyListeners();
+      say(errText(e));
+    }
+  }
+
+  Future<void> toggleCommentLike(Comment c) async {
+    c.liked = !c.liked;
+    c.likes += c.liked ? 1 : -1;
+    notifyListeners();
+    if (!Backend.on || c.id == null || c.id!.startsWith('local-')) return;
+    try {
+      await Backend.setCommentLike(c.id!, c.liked);
+    } catch (e) {
+      c.liked = !c.liked;
+      c.likes += c.liked ? 1 : -1;
+      notifyListeners();
+      say(errText(e));
+    }
+  }
+
+  Future<void> deleteComment(Post p, Comment c) async {
+    final removed = p.comments.where((x) => x == c || (c.id != null && x.parentId == c.id)).toList();
+    p.comments.removeWhere(removed.contains);
+    p.commentCount -= removed.length;
+    notifyListeners();
+    if (!Backend.on || c.id == null || c.id!.startsWith('local-')) return;
+    try {
+      await Backend.deleteComment(c.id!);
+    } catch (e) {
+      p.comments.addAll(removed);
+      p.commentCount += removed.length;
       notifyListeners();
       say(errText(e));
     }

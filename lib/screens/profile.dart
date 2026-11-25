@@ -6,6 +6,7 @@ import '../core/responsive.dart';
 import '../core/theme.dart';
 import '../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/personal_fields.dart';
 import '../widgets/lang_switch.dart';
 import '../widgets/pull_refresh.dart';
 import 'auth.dart';
@@ -82,26 +83,7 @@ class ProfileScreen extends StatelessWidget {
             ),
           ],
           _h('My Account'),
-          _tile(Icons.person_outline_rounded, tr('Personal information'), () {
-            final ctl = TextEditingController(text: s.name);
-            showDialog(
-              context: context,
-              builder: (c) => AlertDialog(
-                title: Text(tr('Edit name')),
-                content: TextField(controller: ctl),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(c), child: Text(tr('Cancel'))),
-                  FilledButton(
-                    onPressed: () {
-                      if (ctl.text.trim().isNotEmpty) s.updateName(ctl.text.trim());
-                      Navigator.pop(c);
-                    },
-                    child: Text(tr('Save')),
-                  ),
-                ],
-              ),
-            );
-          }),
+          _tile(Icons.person_outline_rounded, tr('Personal information'), () => go(context, const PersonalInfoScreen())),
           _tile(Icons.language_rounded, tr('Language'), () {
             showModalBottomSheet(
               context: context,

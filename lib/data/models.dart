@@ -137,7 +137,12 @@ class Review {
 
 class Comment {
   final String user, text;
-  const Comment(this.user, this.text);
+  String? id; // null for demo comments until something needs to point at them
+  final String? userId, parentId, avatar;
+  final DateTime? at;
+  int likes;
+  bool liked;
+  Comment(this.user, this.text, {this.id, this.userId, this.parentId, this.avatar, this.at, this.likes = 0, this.liked = false});
 }
 
 class Post {
