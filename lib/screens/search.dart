@@ -226,7 +226,7 @@ class PlaceCard extends StatelessWidget {
                     Text(money(p.price), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                     Text(tr(' /person'), style: TextStyle(fontSize: 11, color: C.muted)),
                   ] else if (p.dailyBudget > 0) ...[
-                    Text('from \$${p.dailyBudget}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    Text('from ${moneyApprox(p.dailyBudget)}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                     Text(tr(' /day'), style: TextStyle(fontSize: 11, color: C.muted)),
                   ] else
                     Text(tr(p.category), style: const TextStyle(fontSize: 12, color: C.muted)),

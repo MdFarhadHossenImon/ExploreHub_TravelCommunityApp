@@ -132,7 +132,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               if (posts.isEmpty) empty,
               for (var i = 0; i < posts.length; i++) ...[
                 PostCard(posts[i]),
-                if (i == 1 && _filter == 'For you') const PeopleStrip(),
+                if (i == (posts.length < 2 ? posts.length - 1 : 1) && _filter == 'For you') const PeopleStrip(),
               ],
             ])),
           ),
@@ -157,13 +157,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
             chips,
             const SizedBox(height: 18),
             if (posts.isEmpty) empty,
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(child: Column(children: [for (final p in left) PostCard(p)])),
-                Expanded(child: Column(children: [for (final p in right) PostCard(p)])),
-              ]),
-            ),
+            // First row of posts, then "Travelers you may know" across the feed (Facebook style), then the rest.
+            for (final (from, to) in [(0, 1), (1, 1 << 30)]) ...[
+              if (from == 1 && _filter == 'For you') const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: PeopleStrip()),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(child: Column(children: [for (final p in left.skip(from).take(to - from)) PostCard(p)])),
+                  Expanded(child: Column(children: [for (final p in right.skip(from).take(to - from)) PostCard(p)])),
+                ]),
+              ),
+            ],
           ])),
         ),
         Container(

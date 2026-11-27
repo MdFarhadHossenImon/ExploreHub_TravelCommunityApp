@@ -120,7 +120,7 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
               Text(tr('Add an expense'), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
               const SizedBox(height: 12),
               LabeledField('What for', 'e.g. Boat hire, dinner, hostel', controller: title),
-              LabeledField('Amount (USD)', 'e.g. 45', controller: amount, keyboard: const TextInputType.numberWithOptions(decimal: true)),
+              LabeledField('Amount ($currencyCode)', appCurrency == 'BDT' ? 'e.g. 1500' : 'e.g. 45', controller: amount, keyboard: const TextInputType.numberWithOptions(decimal: true)),
               Text(tr('Paid by'), style: TextStyle(fontWeight: FontWeight.w500)),
               const SizedBox(height: 6),
               Wrap(spacing: 8, runSpacing: 8, children: [
@@ -146,7 +146,8 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
       ),
     );
     if (ok != true) return;
-    final value = double.tryParse(amount.text.trim().replaceAll(',', ''));
+    final typed = double.tryParse(amount.text.trim().replaceAll(',', ''));
+    final value = typed == null ? null : toUsd(typed);
     if (title.text.trim().isEmpty || value == null || value <= 0) {
       if (mounted) toast(context, tr('Add a name and an amount above 0'));
       return;
@@ -196,13 +197,13 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(tr('Total spent'), style: TextStyle(color: C.muted, fontSize: 12.5)),
-                        Text('\$${total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+                        Text(money(total), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
                       ]),
                     ),
                     Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                       Text(tr('Your balance'), style: TextStyle(color: C.muted, fontSize: 12.5)),
                       Text(
-                        (bal[me] ?? 0) >= 0 ? '+\$${(bal[me] ?? 0).toStringAsFixed(2)}' : '-\$${(-(bal[me] ?? 0)).toStringAsFixed(2)}',
+                        (bal[me] ?? 0) >= 0 ? '+${money(bal[me] ?? 0)}' : '-${money(-(bal[me] ?? 0))}',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: (bal[me] ?? 0) >= 0 ? const Color(0xFF30A46C) : C.danger),
                       ),
                     ]),
@@ -219,7 +220,7 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: const CircleAvatar(backgroundColor: C.card, child: Icon(Icons.swap_horiz_rounded, color: C.primary)),
                       title: Text(_name(members, s.$1) == 'You' ? 'You pay ${_name(members, s.$2)}' : '${_name(members, s.$1)} pays ${_name(members, s.$2) == 'You' ? 'you' : _name(members, s.$2)}'),
-                      trailing: Text('\$${s.$3.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                      trailing: Text(money(s.$3), style: const TextStyle(fontWeight: FontWeight.w700)),
                     ),
                 const SizedBox(height: 14),
                 Text(tr('Expenses'), style: TextStyle(fontWeight: FontWeight.w700)),
@@ -241,7 +242,7 @@ class _TripExpensesScreenState extends State<TripExpensesScreen> {
                       title: Text(e.title, style: const TextStyle(fontWeight: FontWeight.w600)),
                       subtitle: Text('${_name(members, e.paidBy)} paid · split ${e.split.isEmpty ? 'with everyone' : 'between ${e.split.length}'} · ${fmtDate(e.at)}',
                           style: const TextStyle(fontSize: 12, color: C.muted)),
-                      trailing: Text('\$${e.amount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                      trailing: Text(money(e.amount), style: const TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ),
                 if (_items.isNotEmpty) Text(tr('Swipe left on an expense to delete it.'), style: TextStyle(fontSize: 11.5, color: C.muted)),

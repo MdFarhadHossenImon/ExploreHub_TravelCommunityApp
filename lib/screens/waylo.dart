@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../core/currency.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -197,8 +198,8 @@ class _Guide {
     if (place != null && best < 1) {
       final p = place;
       return bn
-          ? '${p.name}, ${p.where}\n${p.about}\n\nঘোরার সেরা সময়: ${p.season}\nকীভাবে যাবেন: ${p.hub} থেকে, ${p.lastDetail} (${p.lastDuration})${p.budgetLow != null ? '\nদৈনিক খরচ: প্রায় \$${p.budgetLow}–${p.budgetHigh}' : ''}\n[[place:${p.id}]]\n[[open:planner]]'
-          : '${p.name}, ${p.where}\n${p.about}\n\nBest season: ${p.season}\nGetting there: from ${p.hub}, ${p.lastDetail} (${p.lastDuration})${p.budgetLow != null ? '\nDaily budget: about \$${p.budgetLow}–${p.budgetHigh}' : ''}\n[[place:${p.id}]]\n[[open:planner]]';
+          ? '${p.name}, ${p.where}\n${p.about}\n\nঘোরার সেরা সময়: ${p.season}\nকীভাবে যাবেন: ${p.hub} থেকে, ${p.lastDetail} (${p.lastDuration})${p.budgetLow != null ? '\nদৈনিক খরচ: প্রায় ${moneyApprox(p.budgetLow!)}–${moneyApprox(p.budgetHigh ?? p.budgetLow! * 3)}' : ''}\n[[place:${p.id}]]\n[[open:planner]]'
+          : '${p.name}, ${p.where}\n${p.about}\n\nBest season: ${p.season}\nGetting there: from ${p.hub}, ${p.lastDetail} (${p.lastDuration})${p.budgetLow != null ? '\nDaily budget: about ${moneyApprox(p.budgetLow!)}–${moneyApprox(p.budgetHigh ?? p.budgetLow! * 3)}' : ''}\n[[place:${p.id}]]\n[[open:planner]]';
     }
     if (hit != null && best >= 0.3) {
       final a = hit['action'] as String?;

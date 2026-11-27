@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/currency.dart';
 import 'package:provider/provider.dart';
 import '../core/env.dart';
 import '../core/i18n.dart';
@@ -22,7 +23,7 @@ class AiPlannerScreen extends StatefulWidget {
 class _AiPlannerScreenState extends State<AiPlannerScreen> {
   late String _place = widget.placeId ?? places.first.id;
   int _days = 3;
-  String _currency = 'BDT';
+  String _currency = appCurrency;
   final _budget = TextEditingController(text: '15000');
   final Set<String> _interests = {};
   DateTime _start = DateTime.now().add(const Duration(days: 7));
@@ -83,7 +84,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
     final days = (plan['days'] as List).cast<Map>();
     final total = (plan['total_estimate'] as num?)?.toDouble() ?? 0;
     // Trip budgets are kept in USD.
-    final usd = _currency == 'USD' ? total : (total / 120).roundToDouble();
+    final usd = _currency == 'USD' ? total : (total / bdtPerUsd).roundToDouble();
     final t = context.read<SocialState>().createTrip(
           title: (plan['title'] as String?)?.trim().isNotEmpty == true ? plan['title'] as String : '${placeById(_place).name} trip',
           placeId: _place,

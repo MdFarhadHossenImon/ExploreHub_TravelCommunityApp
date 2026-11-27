@@ -1111,4 +1111,8 @@ const _bn = <String, String>{
   'Only public posts can be shared': 'শুধু পাবলিক পোস্ট শেয়ার করা যায়',
   'The next video starts when one ends': 'একটি ভিডিও শেষ হলে পরেরটি শুরু হবে',
   'More options': 'আরও অপশন',
+  'Estimated in Bangladeshi taka from typical costs in {0}. Entry tickets and flights are extra.': '{0}-এর সাধারণ খরচ থেকে টাকায় আনুমানিক। প্রবেশ টিকিট ও ফ্লাইট আলাদা।',
+  'Amount (BDT)': 'পরিমাণ (টাকা)',
+  'Price per day (BDT)': 'দৈনিক মূল্য (টাকা)',
+  'Budget per person (BDT)': 'জনপ্রতি বাজেট (টাকা)',
 };

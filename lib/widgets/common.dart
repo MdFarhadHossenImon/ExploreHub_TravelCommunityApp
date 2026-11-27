@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/i18n.dart';
+export '../core/currency.dart';
 
 import '../core/responsive.dart';
 import '../core/theme.dart';
@@ -7,7 +8,6 @@ import '../data/backend.dart';
 
 // ---------- formatting & navigation helpers ----------
 
-String money(num v) => '\$${v == v.roundToDouble() ? v.toInt() : v.toStringAsFixed(2)}';
 
 const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 String fmtDate(DateTime d) => '${d.day} ${_months[d.month - 1]} ${d.year}';

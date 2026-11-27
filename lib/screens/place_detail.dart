@@ -553,7 +553,7 @@ class _BudgetCard extends StatelessWidget {
               Icon(icon, size: 20, color: C.primary),
               const SizedBox(height: 6),
               Text(tr(name), style: const TextStyle(fontSize: 12, color: C.muted)),
-              Text('\$$v', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              Text(moneyApprox(v), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
               Text(tr(what), style: const TextStyle(fontSize: 10.5, color: C.muted, height: 1.3)),
             ]),
           ),
@@ -569,7 +569,7 @@ class _BudgetCard extends StatelessWidget {
         tier('Comfort', Icons.diamond_outlined, high, 'Upscale stay, tours, car'),
       ]),
       const SizedBox(height: 6),
-      Text(trf('Estimated in US dollars from typical costs in {0}. Entry tickets and flights are extra.', [p.country]), style: const TextStyle(fontSize: 11, color: C.muted)),
+      Text(trf(appCurrency == 'USD' ? 'Estimated in US dollars from typical costs in {0}. Entry tickets and flights are extra.' : 'Estimated in Bangladeshi taka from typical costs in {0}. Entry tickets and flights are extra.', [p.country]), style: const TextStyle(fontSize: 11, color: C.muted)),
     ]);
   }
 }

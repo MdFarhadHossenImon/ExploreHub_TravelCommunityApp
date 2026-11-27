@@ -218,7 +218,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                 placeId: _place,
                 start: _range.start,
                 days: _range.duration.inDays + 1,
-                budget: double.tryParse(_budget.text.trim()) ?? 0,
+                budget: toUsd(double.tryParse(_budget.text.trim().replaceAll(',', '')) ?? 0),
               );
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => TripDetailScreen(trip: t)));
         }),
@@ -254,7 +254,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
             ]),
           ),
           const SizedBox(height: 14),
-          LabeledField('Budget per person (USD)', 'Optional', controller: _budget, keyboard: TextInputType.number),
+          LabeledField('Budget per person ($currencyCode)', 'Optional', controller: _budget, keyboard: TextInputType.number),
         ]),
       );
 }

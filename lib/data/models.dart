@@ -1,3 +1,5 @@
+import '../core/currency.dart';
+
 class RouteStep {
   final String mode; // flight | train | bus | boat | jeep | trek | info
   final String title, detail, duration, cost;
@@ -127,7 +129,7 @@ class Place {
       ];
 }
 
-String money0(num v) => '\$${v.round()}';
+String money0(num v) => moneyApprox(v);
 
 class Review {
   final String name, text, when;

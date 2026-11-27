@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../core/currency.dart';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
@@ -432,7 +433,7 @@ class _PlacePanel extends StatelessWidget {
                   Wrap(spacing: 10, children: [
                     if (p.rating > 0) RatingText(p.rating),
                     Text(p.category, style: const TextStyle(fontSize: 12)),
-                    if (p.dailyBudget > 0) Text('from \$${p.dailyBudget}/day', style: const TextStyle(fontSize: 12, color: C.primary, fontWeight: FontWeight.w700)),
+                    if (p.dailyBudget > 0) Text('from ${moneyApprox(p.dailyBudget)}/day', style: const TextStyle(fontSize: 12, color: C.primary, fontWeight: FontWeight.w700)),
                   ]),
                   const SizedBox(height: 6),
                   Text(tr('Tap for photos, budget, weather and how to get there'), style: TextStyle(color: C.muted, fontSize: 11)),

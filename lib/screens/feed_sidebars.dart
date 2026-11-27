@@ -104,7 +104,7 @@ class RightSidebar extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  VerifiedName(t, size: 13.5),
+                  GestureDetector(onTap: () => go(context, TravelerProfileScreen(traveler: t)), child: VerifiedName(t, size: 13.5)),
                   Text(trf('{0} mutual buddies', [social.mutuals(t)]), style: const TextStyle(color: C.muted, fontSize: 11.5)),
                   const SizedBox(height: 6),
                   Row(children: [
@@ -187,21 +187,31 @@ class SuggestionCard extends StatelessWidget {
       decoration: BoxDecoration(color: C.bg, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.line)),
       clipBehavior: Clip.antiAlias,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        GestureDetector(
+        // Cover, photo, name and home all open the traveler's profile.
+        InkWell(
           onTap: () => go(context, TravelerProfileScreen(traveler: t)),
-          child: Stack(clipBehavior: Clip.none, children: [
-            AppImage(t.cover ?? 'cover-${t.seed}', height: 70, width: 160, radius: 0),
-            Positioned(left: 10, bottom: -22, child: CircleAvatar(radius: 26, backgroundColor: C.bg, child: Avatar(t.seed, name: t.name, radius: 23))),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            SizedBox(
+              height: 96,
+              child: Stack(children: [
+                AppImage(t.cover ?? 'cover-${t.seed}', height: 70, width: double.infinity, radius: 0),
+                Positioned(left: 10, bottom: 0, child: CircleAvatar(radius: 26, backgroundColor: C.bg, child: Avatar(t.seed, name: t.name, radius: 23))),
+              ]),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 4, 10, 0),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                VerifiedName(t, size: 13),
+                const SizedBox(height: 2),
+                Text(going == null ? t.home : 'Going to ${going.name}',
+                    maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 11.5)),
+              ]),
+            ),
           ]),
         ),
-        const SizedBox(height: 26),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            VerifiedName(t, size: 13),
-            const SizedBox(height: 2),
-            Text(going == null ? t.home : 'Going to ${going.name}',
-                maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.muted, fontSize: 11.5)),
             const SizedBox(height: 10),
             SizedBox(width: double.infinity, child: BuddyButton(t, dense: true)),
           ]),

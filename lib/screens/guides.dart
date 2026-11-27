@@ -264,7 +264,7 @@ class _GuideSignupScreenState extends State<GuideSignupScreen> {
   late final _areas = TextEditingController(text: widget.existing?.areas ?? '');
   late final _langs = TextEditingController(text: widget.existing?.languages.join(', ') ?? '');
   late final _years = TextEditingController(text: widget.existing == null ? '' : '${widget.existing!.years}');
-  late final _price = TextEditingController(text: widget.existing == null ? '' : widget.existing!.pricePerDay.toStringAsFixed(0));
+  late final _price = TextEditingController(text: widget.existing == null ? '' : fromUsd(widget.existing!.pricePerDay).toStringAsFixed(0));
   late final _phone = TextEditingController(text: widget.existing?.phone ?? '');
   late final _bio = TextEditingController(text: widget.existing?.bio ?? '');
   bool _busy = false;
@@ -282,7 +282,7 @@ class _GuideSignupScreenState extends State<GuideSignupScreen> {
         'areas': _areas.text.trim(),
         'languages': langs,
         'years': int.tryParse(_years.text.trim()) ?? 0,
-        'price_per_day': double.tryParse(_price.text.trim()) ?? 0,
+        'price_per_day': toUsd(double.tryParse(_price.text.trim().replaceAll(',', '')) ?? 0),
         'phone': _phone.text.trim(),
         'bio': _bio.text.trim(),
       });
@@ -345,7 +345,7 @@ class _GuideSignupScreenState extends State<GuideSignupScreen> {
           Row(children: [
             Expanded(child: _f(_years, 'Years of experience', kb: TextInputType.number)),
             const SizedBox(width: 10),
-            Expanded(child: _f(_price, 'Price per day (USD)', kb: TextInputType.number)),
+            Expanded(child: _f(_price, 'Price per day ($currencyCode)', kb: TextInputType.number)),
           ]),
           _f(_phone, 'Phone / WhatsApp *', kb: TextInputType.phone),
           _f(_bio, 'About you and your tours', hint: 'What do you show travelers? Any special skills?', lines: 4),
